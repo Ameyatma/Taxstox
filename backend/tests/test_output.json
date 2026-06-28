@@ -1,0 +1,169 @@
+{
+  "PartA_GeneralInfo": {
+    "AssessmentYear": "2026-27",
+    "ITRType": "2",
+    "PAN": "CFFPM4503N",
+    "Name": "Aman Kumar Mishra",
+    "DOB": "25/04/1995",
+    "AadhaarNo": "",
+    "Status": "IND",
+    "EmployerCategory": "GOV",
+    "ReturnFileDate": "28/06/2026",
+    "MobileNo": "",
+    "Email": "",
+    "ResidentialStatus": "RES",
+    "AuditInfo": {},
+    "FilingSection": {
+      "FilingStatus": "F",
+      "ReturnType": "O",
+      "NoticeNo": "",
+      "NoticeDate": ""
+    },
+    "Regime": "N",
+    "ScheduleBank": {
+      "BankAccounts": [
+        {
+          "BankName": "",
+          "AccountNo": "",
+          "IFSCCode": "",
+          "AccountType": "",
+          "UseForRefund": "Y"
+        }
+      ]
+    }
+  },
+  "ScheduleS": {
+    "SalaryIncome": [
+      {
+        "EmployerName": "APPLIED MATERIALS INDIA PVT LTD",
+        "EmployerTAN": "BLRA04654G",
+        "EmployerPAN": "CFFPM4503N",
+        "Address": "",
+        "Salary_171": "1871602.00",
+        "Perquisites_172": "0.00",
+        "ProfitsLieu_173": "0.00",
+        "TotalGrossSalary": "1871602.00",
+        "StdDeduction_16ia": "75000.00",
+        "Entertainment_16ii": "0",
+        "ProfessionalTax_16iii": "0.00",
+        "IncomeUnderHeadSalaries": "1796602.00"
+      }
+    ]
+  },
+  "Schedule112A": {},
+  "ScheduleCG": {
+    "SecF": {
+      "LTCG_12_5pct": [
+        {
+          "Period": "Upto15Of6",
+          "Amount": "0"
+        },
+        {
+          "Period": "Upto15Of9",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of9To15Of12",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of12To15Of3",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of3To31Of3",
+          "Amount": "0"
+        }
+      ],
+      "Total_LTCG_12_5pct": "0",
+      "STCG_AppRate": [
+        {
+          "Period": "Upto15Of6",
+          "Amount": "0"
+        },
+        {
+          "Period": "Upto15Of9",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of9To15Of12",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of12To15Of3",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of3To31Of3",
+          "Amount": "0"
+        }
+      ],
+      "Total_STCG_AppRate": "0",
+      "STCG_15pct": [
+        {
+          "Period": "Upto15Of6",
+          "Amount": "0"
+        },
+        {
+          "Period": "Upto15Of9",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of9To15Of12",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of12To15Of3",
+          "Amount": "0"
+        },
+        {
+          "Period": "Up16Of3To31Of3",
+          "Amount": "0"
+        }
+      ],
+      "Total_STCG_15pct": "0"
+    }
+  },
+  "ScheduleOS": {},
+  "ScheduleCYLA": {},
+  "ScheduleBFLA": {},
+  "ScheduleSI": {},
+  "ScheduleVI-A": {
+    "Deductions": {
+      "80CCD_2": "47869.00",
+      "Total": "47869.00"
+    },
+    "TotalDeductions": "47869.00"
+  },
+  "PartB-TI": {
+    "IncomeUnderHeadSalaries": "1796602.00",
+    "IncomeUnderHeadHouseProperty": "0",
+    "IncomeUnderHeadCapitalGains": "0",
+    "IncomeUnderHeadOtherSources": "757",
+    "GrossTotalIncome": "1797359.00",
+    "TotalDeductions": "47869.00",
+    "TotalIncome": "1749490.00"
+  },
+  "PartB-TTI": {
+    "TotalIncome": "1749490.00",
+    "TaxOnTotalIncome": "149898",
+    "TaxOnSpecialRates": "0.000",
+    "TotalTaxBeforeRebate": "149898.000",
+    "Rebate87A": "0",
+    "Surcharge": "0",
+    "HealthEducationCess": "5996",
+    "TotalTaxLiability": "155894.000"
+  },
+  "ScheduleTaxPaid": {
+    "TDS": {
+      "SalaryTDS": "155738.00",
+      "OtherTDS": "0",
+      "TotalTDS": "155738.00"
+    },
+    "AdvanceTax": "0",
+    "SelfAssessmentTax": "156.000",
+    "TotalTaxPaid": "155894.000",
+    "BalancePayable": "0",
+    "RefundDue": "0"
+  }
+}
