@@ -1,0 +1,148 @@
+Signup / Login Flow — TaxStox
+================================
+
+Author: Prasoon
+Date: June 2026
+
+
+OVERVIEW
+--------
+
+The authentication flow gates the "Start Filing" action on the TaxStox landing
+page. When a user clicks "Start Filing Now" or "Start Filing for Free", the app
+checks whether they are signed in. If not, they are redirected to the Sign In /
+Sign Up page. After successful authentication, they are automatically returned
+to the filing flow without needing to click again.
+
+
+FILES INVOLVED
+--------------
+
+  New files:
+    src/lib/auth.tsx              — Auth context, provider, hook, mock storage
+    src/components/Providers.tsx  — Client wrapper for AuthProvider
+    src/components/Header.tsx     — Top navigation bar
+    src/app/auth/page.tsx         — Sign Up / Sign In page
+
+  Modified files:
+    src/app/layout.tsx            — Wraps app in Providers + Header
+    src/app/page.tsx              — Landing page with auth-gated CTA buttons
+
+
+FLOW DIAGRAM
+------------
+
+  User clicks "Start Filing Now" or "Start Filing for Free"
+      │
+      ▼
+  handleStartFiling()
+      │
+      ├── isAuthenticated = true?
+      │       │
+      │       YES ──► goUpload()
+      │               (reveals upload portal on landing page,
+      │                scrolls to #upload-section)
+      │
+      │       NO  ──► router.push("/auth?redirect=/?filing=true")
+      │               (redirects to Sign Up / Sign In page,
+      │                preserving intended destination)
+      │
+      ▼
+  /auth page loads
+      │
+      ├── Tab: "Create Account" (default)
+      │       │
+      │       Fields: PAN, DOB, Full Name, Email, Password
+      │       │
+      │       Validation:
+      │         • PAN must match ABCDE1234F format (5 letters + 4 digits + 1 letter)
+      │         • DOB must be 8 digits (DDMMYYYY)
+      │         • Password must be at least 8 characters
+      │         • All fields required
+      │       │
+      │       On submit:
+      │         1. Validates all fields
+      │         2. Checks PAN is not already registered (via localStorage lookup)
+      │         3. Stores user in localStorage ("taxstox_users" array)
+      │         4. Creates session in localStorage ("taxstox_session")
+      │         5. Calls signUp() → sets AuthContext user state
+      │         6. router.push(redirect) → "/?filing=true"
+      │
+      └── Tab: "Sign In"
+              │
+              Fields: PAN, Password
+              │
+              On submit:
+                1. Looks up user by PAN in localStorage
+                2. Compares password (mock — plain text, swap for API later)
+                3. If match → creates session, calls signIn(), router.push(redirect)
+                4. If no match → shows error: "Invalid PAN or password"
+
+
+POST-AUTH REDIRECT
+------------------
+
+  After successful sign-in or sign-up:
+      │
+      ▼
+  Navigate to /?filing=true
+      │
+      ▼
+  page.tsx useEffect detects "filing=true" in URL
+      │
+      ▼
+  setShowUpload(true) → upload portal appears
+  scrollIntoView("#upload-section") → smooth scroll to filing form
+
+
+AUTH INFRASTRUCTURE DETAILS
+---------------------------
+
+  AuthProvider (src/lib/auth.tsx):
+    - React Context wrapping the entire app
+    - On mount, hydrates from localStorage ("taxstox_session")
+    - Provides: user, isAuthenticated, loading, signIn, signUp, signOut
+
+  Storage (localStorage):
+    - "taxstox_users"   → JSON array of registered users (with passwords)
+    - "taxstox_session"  → JSON object of currently logged-in user
+
+  This is a MOCK implementation using localStorage. The API surface is clean:
+    signIn(user)  — accepts an AuthUser object
+    signUp(data)  — accepts { pan, dob, name, email, password }
+    signOut()     — clears session
+
+  To swap for a real backend:
+    1. Replace localStorage calls in auth.tsx with fetch() to your API
+    2. Update signIn/signUp to call POST /api/v1/auth/signin and /signup
+    3. Store JWT token in session instead of user object
+    4. Everything else (context, hook, pages) stays the same
+
+
+ROUTES
+------
+
+  /               Landing page (hero, features, CTAs, upload portal)
+  /?filing=true   Landing page with upload portal auto-shown (post-auth)
+  /auth           Sign Up / Sign In page (tabbed)
+  /questions      Tax questionnaire (after PDF upload)
+  /summary        Tax summary and ITR export
+
+
+WHAT HAPPENS TO EXISTING BEHAVIOR
+---------------------------------
+
+  Unchanged:
+    - Landing page design, hero, features, trust badges, social proof
+    - "View Demo" button
+    - Upload portal (PAN, DOB, PDF dropzones, submit)
+    - Questions page (/questions)
+    - Summary page (/summary)
+    - Navigation links (Home, How it Works, Pricing)
+    - Footer
+    - Header security badge
+
+  Changed:
+    - Header "Start Filing" button REMOVED
+    - Landing page "Start Filing Now" button → now auth-gated
+    - Landing page "Start Filing for Free" button → now auth-gated
