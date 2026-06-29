@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaxStox - Your ITR, done in 2 minutes.</title>
+<!-- Google Fonts: Hanken Grotesk & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#001945",
+                    "on-secondary-container": "#5b2500",
+                    "on-surface": "#0b1c30",
+                    "surface-container": "#e5eeff",
+                    "primary-container": "#0d47a1",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#773200",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#a1bbff",
+                    "surface": "#f8f9ff",
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "success-green": "#166534",
+                    "itd-blue-deep": "#003366",
+                    "itd-orange-vibrant": "#F57C00",
+                    "inverse-surface": "#213145",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#7ecf79",
+                    "surface-container-high": "#dce9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#737783",
+                    "inverse-primary": "#b0c6ff",
+                    "on-tertiary-fixed-variant": "#005312",
+                    "surface-variant": "#d3e4fe",
+                    "on-secondary-fixed": "#331200",
+                    "on-error": "#ffffff",
+                    "secondary-fixed-dim": "#ffb68f",
+                    "primary": "#003178",
+                    "secondary": "#9c4400",
+                    "surface-dim": "#cbdbf5",
+                    "tertiary": "#003f0b",
+                    "tertiary-fixed-dim": "#88d982",
+                    "error-red": "#991B1B",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-fixed": "#002204",
+                    "primary-fixed-dim": "#b0c6ff",
+                    "surface-bright": "#f8f9ff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "outline-variant": "#c3c6d4",
+                    "tertiary-fixed": "#a3f69c",
+                    "on-background": "#0b1c30",
+                    "primary-fixed": "#d9e2ff",
+                    "surface-muted": "#F8FAFC",
+                    "surface-tint": "#2b5bb5",
+                    "background": "#f8f9ff",
+                    "on-surface-variant": "#434652",
+                    "warning-amber": "#92400E",
+                    "on-primary-fixed-variant": "#00429c",
+                    "tertiary-container": "#005914",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#ffdbca",
+                    "secondary-container": "#fd7613"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-page": "40px",
+                    "stack-lg": "32px",
+                    "base": "4px",
+                    "gutter": "24px",
+                    "stack-md": "16px",
+                    "container-max": "1120px",
+                    "stack-sm": "8px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Hanken Grotesk"],
+                    "body-sm": ["Inter"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "subheading": ["Hanken Grotesk"],
+                    "headline-lg-mobile": ["Hanken Grotesk"],
+                    "label-caps": ["Hanken Grotesk"],
+                    "body-base": ["Inter"],
+                    "data-mono": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "subheading": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #F8FAFC;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(211, 228, 254, 0.4) 0%, rgba(248, 250, 252, 0) 70%);
+        }
+        .trust-badge-animate {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-surface">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-page h-16 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex items-center gap-stack-md">
+<span class="font-headline-lg text-headline-lg font-bold text-itd-blue-deep">TaxStox</span>
+<nav class="hidden md:flex ml-8 gap-gutter">
+<a class="font-subheading text-subheading text-primary border-b-2 border-primary hover:text-primary transition-colors" href="#">Home</a>
+<a class="font-subheading text-subheading text-on-surface-variant hover:text-primary transition-colors" href="#">How it Works</a>
+<a class="font-subheading text-subheading text-on-surface-variant hover:text-primary transition-colors" href="#">Pricing</a>
+</nav>
+</div>
+<div class="flex items-center gap-stack-md">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="security">security</span>
+<button class="bg-itd-blue-deep text-on-primary px-6 py-2 rounded font-subheading text-subheading active:opacity-80 transition-all duration-200">Optimize Tax</button>
+</div>
+</header>
+<main class="pt-16">
+<!-- Hero Section -->
+<section class="relative min-h-[870px] flex items-center overflow-hidden hero-gradient">
+<div class="container mx-auto px-margin-page py-stack-lg flex flex-col md:flex-row items-center gap-gutter relative z-10">
+<div class="w-full md:w-3/5 text-left space-y-stack-md">
+<div class="inline-flex items-center px-3 py-1 bg-surface-container rounded-full gap-2 mb-4">
+<span class="material-symbols-outlined text-itd-blue-deep text-sm" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-caps text-label-caps text-itd-blue-deep">LICENSED BY INCOME TAX DEPT.</span>
+</div>
+<h1 class="font-display-lg text-display-lg md:text-6xl text-itd-blue-deep leading-tight">
+                        Your ITR, done in <span class="text-itd-orange-vibrant">2 minutes.</span>
+</h1>
+<p class="font-subheading text-subheading text-on-surface-variant max-w-lg">
+                        Upload 2 PDFs. Answer 5 questions. Done. Precision automation for the modern Indian taxpayer.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-stack-md pt-stack-sm">
+<button class="bg-itd-blue-deep text-on-primary px-8 py-4 rounded-lg font-headline-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                            Start Filing Now
+                            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="border-2 border-itd-blue-deep text-itd-blue-deep px-8 py-4 rounded-lg font-headline-lg flex items-center justify-center gap-2 hover:bg-surface-container-low transition-all">
+                            View Demo
+                        </button>
+</div>
+<div class="flex items-center gap-gutter pt-8">
+<div class="flex items-center gap-2 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
+<span class="material-symbols-outlined text-success-green" data-icon="shield_with_heart" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+<span class="font-label-caps text-label-caps">256-BIT SSL</span>
+</div>
+<div class="flex items-center gap-2 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
+<span class="material-symbols-outlined text-itd-blue-deep" data-icon="account_balance" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<span class="font-label-caps text-label-caps">BANK-GRADE SECURITY</span>
+</div>
+</div>
+</div>
+<div class="w-full md:w-2/5 relative">
+<div class="relative bg-white p-6 rounded-xl shadow-2xl border border-outline-variant trust-badge-animate">
+<div class="flex justify-between items-center mb-6">
+<div class="h-10 w-32 bg-surface-container-low rounded flex items-center px-3 gap-2">
+<div class="w-2 h-2 bg-success-green rounded-full"></div>
+<span class="font-data-mono text-data-mono text-itd-blue-deep">AY 2024-25</span>
+</div>
+<span class="material-symbols-outlined text-itd-orange-vibrant text-3xl" data-icon="smart_toy">smart_toy</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-muted rounded border border-outline-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-itd-blue-deep" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-body-base text-body-base">Form-16.pdf</span>
+</div>
+<span class="text-success-green font-label-caps text-label-caps">PARSED</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-muted rounded border border-outline-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-itd-blue-deep" data-icon="description">description</span>
+<span class="font-body-base text-body-base">AIS_Statement.pdf</span>
+</div>
+<span class="text-success-green font-label-caps text-label-caps">PARSED</span>
+</div>
+<hr class="border-outline-variant border-dashed"/>
+<div class="flex justify-between items-end py-2">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">ESTIMATED REFUND</p>
+<p class="font-display-lg text-display-lg text-success-green">₹ 24,500</p>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-on-surface-variant">REGIME</p>
+<p class="font-headline-lg text-headline-lg text-itd-blue-deep">New</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorator blobs -->
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-itd-orange-vibrant/10 rounded-full blur-3xl -z-10"></div>
+<div class="absolute -bottom-10 -left-10 w-48 h-48 bg-itd-blue-deep/10 rounded-full blur-3xl -z-10"></div>
+</div>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="py-24 bg-white px-margin-page">
+<div class="container mx-auto max-w-container-max">
+<div class="text-center mb-16 space-y-2">
+<p class="font-label-caps text-label-caps text-itd-orange-vibrant uppercase tracking-widest">Efficiency Engine</p>
+<h2 class="font-display-lg text-display-lg text-itd-blue-deep">Taxes reimagined for speed.</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Feature 1: AIS Extraction -->
+<div class="md:col-span-2 bg-surface-container-low p-stack-lg rounded-xl border border-outline-variant flex flex-col justify-between group hover:border-itd-blue-deep transition-all">
+<div class="flex justify-between items-start">
+<div class="space-y-4 max-w-md">
+<div class="w-12 h-12 bg-itd-blue-deep rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-itd-blue-deep">AIS Auto-Extraction</h3>
+<p class="font-body-base text-body-base text-on-surface-variant">
+                                    No more manual entry. Our AI engine reads your Annual Information Statement and Form-16 to automatically pre-fill dividends, salary components, and stock trades with 100% accuracy.
+                                </p>
+</div>
+<div class="hidden lg:block">
+<img class="w-48 h-48 object-contain" data-alt="A clean, minimalist 3D rendering of data flow representing digital information extraction. Glowing blue nodes connect seamlessly to a central database hub, symbolizing automated precision and expert authority. High-clarity, high-performance SaaS visual style with a pristine white background and subtle depth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA12jgCXvYMwReQKM17tT0hx_gjbNBbGf95esn04gyW-Zl4FPYECin9OlgZevmZKQW-EOuiVzwxq9kFL8ywIrMYEEZ3-6bW_fjkT7oYwCpa1-Kxp008RLjgg5Sx3EKXkwlvwDLYqf_vaDp87nx6c4GyyKq0WGKYfl5RORKYqh9RbWJxrxeG4vypBt-S3PT0vqud88z02k34sOo4sAtC6dIlTLTglbQmM5PlBDyZJdYFSk71Z_JzVxODD7JswkfMB6hSVHA5LzXjpBs"/>
+</div>
+</div>
+</div>
+<!-- Feature 2: Regime Optimizer -->
+<div class="bg-on-primary-fixed p-stack-lg rounded-xl text-white flex flex-col justify-between group">
+<div class="space-y-4">
+<div class="w-12 h-12 bg-itd-orange-vibrant rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="calculate">calculate</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg">Regime Optimizer</h3>
+<p class="font-body-sm text-body-sm text-primary-fixed opacity-90">
+                                Side-by-side comparison of Old vs. New tax regimes. We calculate thousands of permutations to guarantee you pay the absolute legal minimum tax.
+                            </p>
+</div>
+<div class="mt-8 pt-4 border-t border-white/10">
+<div class="flex items-center gap-2 text-itd-orange-vibrant">
+<span class="font-label-caps text-label-caps">SAVE UP TO ₹45,000</span>
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+</div>
+<!-- Feature 3: Validation Engine -->
+<div class="bg-surface-container-low p-stack-lg rounded-xl border border-outline-variant flex flex-col justify-between group hover:border-itd-blue-deep transition-all">
+<div class="space-y-4">
+<div class="w-12 h-12 bg-success-green rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-itd-blue-deep">Validation Engine</h3>
+<p class="font-body-base text-body-base text-on-surface-variant">
+                                400+ algorithmic checks identify potential notice-triggering mismatches before you file. It's like having a CA audit your return instantly.
+                            </p>
+</div>
+</div>
+<!-- Feature 4: Secure Session -->
+<div class="md:col-span-2 bg-surface-muted p-stack-lg rounded-xl border border-outline-variant flex items-center gap-gutter group overflow-hidden">
+<div class="w-1/2 space-y-4">
+<h3 class="font-headline-lg text-headline-lg text-itd-blue-deep">Bank-Grade Privacy</h3>
+<p class="font-body-base text-body-base text-on-surface-variant">
+                                We don't store your documents. All extraction happens in a sandbox and data is purged once your ITR is generated. Your security is our primary identity.
+                            </p>
+<div class="flex gap-4">
+<img class="h-8" data-alt="A small group of sleek metallic security shields icons in a row, shining under soft studio lighting with a high-trust professional corporate blue glow. Minimalist and secure aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM5smx4H8ojN53JSABGStxYZ-7QRfpx5Rc-pmR92jJ8zbCe5bEKrkCtMxL_iJPnpg99aQLjZV1uueogcdwEEMatozb77TXTfERTrk27MeSQGkuKxa27J7hSz_J4goaoWrk-LjlSBRFhMb1NAJokMQPbgOMedyCOV4OyxKtSuRO9HSKztzbKzMDwYql5Eq3drbN-OiI0Z5TFalX7DLu3O_gdzKmWR1oIAsHgmqVq7lEVJzL-WJ6905U8hE-mf9lolara65KiJOL8ns"/>
+<img class="h-8" data-alt="A digital certificate seal with a gold lock icon, signifying high-end 256-bit encryption and security standards. Professional corporate visual." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7f-Zfmz6z_ZHZDFL4nf6gBHSE25GM0BIGkOfEcvAD3pH64-8sVWtpzO-LeohmJQo-dC7rIlKEYRslDziX-o6kpWGF0FKrx56GfADVG5YoItywmYLKCMLVwvVQn47utPvkxbzERqr3XJdRtLCubZalmBGbuLFi7xkrirwNAgNdcQtj-w1zG7H82sMAOSAg3WkPbR-PjmQ756Vze-FUfNgrtnOe_X5ntE4XY6Zz23rw19cWB90Jl24YFS9kjpaNkcK19R_PToHxdNo"/>
+</div>
+</div>
+<div class="w-1/2 relative h-full min-h-[160px]">
+<div class="absolute inset-0 bg-cover bg-center rounded-lg" data-alt="A conceptual high-tech data secure vault visualization, showing layers of transparent blue digital barriers and glowing security lines. Corporate SaaS aesthetic, minimalist and clean." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD0df9cDHCk6ukLjkyCqf_sym38bnI8e2sZQ__3jmePf2-We-1ngrALeYYDRy7cigD-rVdhMNI0frwn0LmChUJV-TaNWcsPr5K2cdEpNymXhjvnhbYwKH_2KiK0OsKv22OM6_u9r2cXKNlFm0SiwGYhv3gN5n_dfDDCKjorbQTlf8G2i9RimzIqmrf1fqI_tCoB2K9pJBFgoUZqxOGlZCMy6Deew031UJnZNynMcPC-34rFXwzCVRCOAhz68a0fYAfJcjEP7w8VSfE')"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof Section -->
+<section class="py-16 bg-surface-container-low border-y border-outline-variant">
+<div class="container mx-auto px-margin-page text-center">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-8">TRUSTED BY TAXPAYERS AT INDIA'S TOP FIRMS</p>
+<div class="flex flex-wrap justify-center items-center gap-16 opacity-50 grayscale">
+<!-- Fictional logo placeholders using text for reliability -->
+<div class="font-headline-lg text-itd-blue-deep font-extrabold tracking-tighter">INFOSYS</div>
+<div class="font-headline-lg text-itd-blue-deep font-extrabold tracking-tighter">TCS</div>
+<div class="font-headline-lg text-itd-blue-deep font-extrabold tracking-tighter">WIPRO</div>
+<div class="font-headline-lg text-itd-blue-deep font-extrabold tracking-tighter">HCL</div>
+<div class="font-headline-lg text-itd-blue-deep font-extrabold tracking-tighter">ACCENTURE</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-24 bg-white relative overflow-hidden">
+<div class="container mx-auto px-margin-page max-w-container-max text-center relative z-10">
+<div class="max-w-3xl mx-auto space-y-stack-md">
+<h2 class="font-display-lg text-display-lg text-itd-blue-deep">Ready to reclaim your weekend?</h2>
+<p class="font-subheading text-subheading text-on-surface-variant">
+                        Join 50,000+ Indians who have simplified their tax journey with TaxStox. Zero expertise required.
+                    </p>
+<div class="pt-stack-lg">
+<button class="bg-itd-orange-vibrant text-white px-10 py-5 rounded-lg font-headline-lg shadow-xl hover:bg-[#E67600] transition-all transform hover:-translate-y-1">
+                            Start Filing for Free
+                        </button>
+<p class="mt-4 font-body-sm text-body-sm text-on-surface-variant">Pay only when you file. No credit card required to start.</p>
+</div>
+</div>
+</div>
+<!-- Background Decoration -->
+<div class="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-primary-container/5 rounded-full blur-3xl"></div>
+<div class="absolute bottom-0 right-0 translate-y-1/3 translate-x-1/3 w-80 h-80 bg-itd-orange-vibrant/5 rounded-full blur-3xl"></div>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="w-full bg-surface-muted py-stack-md px-margin-page border-t border-outline-variant">
+<div class="flex flex-col md:flex-row justify-between items-center gap-stack-md">
+<div class="space-y-2 text-center md:text-left">
+<span class="font-label-caps text-label-caps text-itd-blue-deep">TaxStox</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    © 2024 TaxStox. Secured with 256-bit encryption. Licensed by Income Tax Dept.
+                </p>
+</div>
+<div class="flex gap-gutter">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Security Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Privacy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interactions for scrolling
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('shadow-md');
+                header.classList.remove('bg-surface-container-lowest');
+                header.classList.add('bg-white');
+            } else {
+                header.classList.remove('shadow-md');
+                header.classList.add('bg-surface-container-lowest');
+                header.classList.remove('bg-white');
+            }
+        });
+
+        // Simple stagger entrance for feature cards
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-8');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.grid > div').forEach(card => {
+            card.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-8');
+            observer.observe(card);
+        });
+    </script>
+</body></html>

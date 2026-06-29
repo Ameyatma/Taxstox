@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaxStox | Secure Upload Portal</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary-fixed": "#001945",
+                "on-secondary-container": "#5b2500",
+                "on-surface": "#0b1c30",
+                "surface-container": "#e5eeff",
+                "primary-container": "#0d47a1",
+                "surface-container-highest": "#d3e4fe",
+                "on-secondary-fixed-variant": "#773200",
+                "error": "#ba1a1a",
+                "on-primary-container": "#a1bbff",
+                "surface": "#f8f9ff",
+                "on-error-container": "#93000a",
+                "on-secondary": "#ffffff",
+                "success-green": "#166534",
+                "itd-blue-deep": "#003366",
+                "itd-orange-vibrant": "#F57C00",
+                "inverse-surface": "#213145",
+                "on-primary": "#ffffff",
+                "on-tertiary-container": "#7ecf79",
+                "surface-container-high": "#dce9ff",
+                "surface-container-lowest": "#ffffff",
+                "outline": "#737783",
+                "inverse-primary": "#b0c6ff",
+                "on-tertiary-fixed-variant": "#005312",
+                "surface-variant": "#d3e4fe",
+                "on-secondary-fixed": "#331200",
+                "on-error": "#ffffff",
+                "secondary-fixed-dim": "#ffb68f",
+                "primary": "#003178",
+                "secondary": "#9c4400",
+                "surface-dim": "#cbdbf5",
+                "tertiary": "#003f0b",
+                "tertiary-fixed-dim": "#88d982",
+                "error-red": "#991B1B",
+                "error-container": "#ffdad6",
+                "surface-container-low": "#eff4ff",
+                "on-tertiary-fixed": "#002204",
+                "primary-fixed-dim": "#b0c6ff",
+                "surface-bright": "#f8f9ff",
+                "inverse-on-surface": "#eaf1ff",
+                "outline-variant": "#c3c6d4",
+                "tertiary-fixed": "#a3f69c",
+                "on-background": "#0b1c30",
+                "primary-fixed": "#d9e2ff",
+                "surface-muted": "#F8FAFC",
+                "surface-tint": "#2b5bb5",
+                "background": "#f8f9ff",
+                "on-surface-variant": "#434652",
+                "warning-amber": "#92400E",
+                "on-primary-fixed-variant": "#00429c",
+                "tertiary-container": "#005914",
+                "on-tertiary": "#ffffff",
+                "secondary-fixed": "#ffdbca",
+                "secondary-container": "#fd7613"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "margin-page": "40px",
+                "stack-lg": "32px",
+                "base": "4px",
+                "gutter": "24px",
+                "stack-md": "16px",
+                "container-max": "1120px",
+                "stack-sm": "8px"
+            },
+            "fontFamily": {
+                "display-lg": ["Hanken Grotesk"],
+                "body-sm": ["Inter"],
+                "headline-lg": ["Hanken Grotesk"],
+                "subheading": ["Hanken Grotesk"],
+                "headline-lg-mobile": ["Hanken Grotesk"],
+                "label-caps": ["Hanken Grotesk"],
+                "body-base": ["Inter"],
+                "data-mono": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "subheading": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .drag-over {
+            border-color: #0d47a1 !important;
+            background-color: #e5eeff !important;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .progress-flow {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-surface-muted text-on-surface font-body-base antialiased">
+<!-- Header (TopAppBar) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-page h-16 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<span class="font-headline-lg text-headline-lg font-bold text-itd-blue-deep">TaxStox</span>
+<div class="h-6 w-[1px] bg-outline-variant"></div>
+<span class="font-subheading text-subheading text-outline">Upload Portal</span>
+</div>
+<div class="flex items-center gap-stack-md">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full">
+<span class="material-symbols-outlined text-[18px] text-success-green" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="font-label-caps text-label-caps text-on-surface">AES-256 Encrypted</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-sm">JD</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-margin-page px-margin-page min-h-screen flex flex-col items-center">
+<!-- Focused Wizard Container -->
+<div class="w-full max-w-[640px] flex flex-col gap-stack-lg">
+<!-- Step Header -->
+<div class="text-center space-y-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Import Your Tax Data</h1>
+<p class="font-body-base text-on-surface-variant max-w-md mx-auto">Upload your Form 16 or AIS PDF. Our AI engine will automatically classify and optimize your deductions.</p>
+</div>
+<!-- Upload Zone -->
+<div class="relative group cursor-pointer bg-white border-2 border-dashed border-outline-variant rounded-xl p-stack-lg transition-all duration-300 hover:border-primary hover:shadow-lg text-center flex flex-col items-center gap-4" id="dropzone">
+<div class="w-20 h-20 rounded-full bg-surface-container flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[40px]">upload_file</span>
+</div>
+<div class="space-y-1">
+<h3 class="font-subheading text-subheading text-on-surface">Drag &amp; drop files here</h3>
+<p class="font-body-sm text-on-surface-variant">Supports Form 16, AIS, and TIS in PDF format (Max 10MB)</p>
+</div>
+<button class="mt-2 px-6 py-2 bg-itd-blue-deep text-white font-bold rounded-lg hover:opacity-90 transition-all">
+                    Browse Files
+                </button>
+<input accept=".pdf" class="absolute inset-0 opacity-0 cursor-pointer" id="fileInput" type="file"/>
+</div>
+<!-- Active Processing State (Initially Hidden) -->
+<div class="hidden flex flex-col gap-stack-md animate-in fade-in duration-500" id="processingState">
+<div class="bg-white border border-outline-variant rounded-xl p-stack-md space-y-stack-md">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">picture_as_pdf</span>
+</div>
+<div>
+<p class="font-body-base font-bold text-on-surface" id="fileName">form_16_john_doe_2024.pdf</p>
+<p class="font-body-sm text-on-surface-variant" id="statusText">Parsing document...</p>
+</div>
+</div>
+<span class="font-data-mono text-primary" id="percentage">0%</span>
+</div>
+<!-- Progress Bar Component -->
+<div class="w-full h-2 bg-surface-container rounded-full overflow-hidden relative">
+<div class="progress-flow h-full bg-itd-blue-deep w-0 relative" id="progressBar">
+<div class="shimmer absolute inset-0"></div>
+</div>
+</div>
+<!-- Progress Steps -->
+<div class="grid grid-cols-3 gap-2">
+<div class="flex flex-col gap-1 opacity-40 transition-opacity" id="step-parsing">
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-success-green w-0 transition-all" id="step-parsing-bar"></div>
+</div>
+<span class="font-label-caps text-label-caps">Parsing</span>
+</div>
+<div class="flex flex-col gap-1 opacity-40 transition-opacity" id="step-classification">
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-success-green w-0 transition-all" id="step-classification-bar"></div>
+</div>
+<span class="font-label-caps text-label-caps">Classification</span>
+</div>
+<div class="flex flex-col gap-1 opacity-40 transition-opacity" id="step-optimization">
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-success-green w-0 transition-all" id="step-optimization-bar"></div>
+</div>
+<span class="font-label-caps text-label-caps">Optimization</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Success Card (Initially Hidden) -->
+<div class="hidden bg-green-50 border border-success-green/30 rounded-xl p-stack-md animate-in zoom-in-95 duration-500" id="successCard">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-success-green flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-subheading text-subheading text-success-green">Verification Complete</h4>
+<p class="font-body-sm text-on-surface-variant">We've identified 14 income entries and found ₹2,45,000 in eligible deductions. You're ready to review.</p>
+<button class="mt-4 px-6 py-2 bg-itd-orange-vibrant text-white font-bold rounded-lg hover:opacity-90 transition-all shadow-sm">
+                            Optimize My Taxes
+                        </button>
+</div>
+</div>
+</div>
+<!-- Trust Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-stack-md mt-stack-lg">
+<div class="p-stack-md bg-surface-container-low border border-outline-variant/30 rounded-xl flex items-start gap-3">
+<span class="material-symbols-outlined text-itd-blue-deep mt-1" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<div class="space-y-1">
+<p class="font-body-base font-bold text-itd-blue-deep">Government Licensed</p>
+<p class="font-body-sm text-on-surface-variant">Official E-Return Intermediary (ERI) licensed by ITD.</p>
+</div>
+</div>
+<div class="p-stack-md bg-surface-container-low border border-outline-variant/30 rounded-xl flex items-start gap-3">
+<span class="material-symbols-outlined text-itd-blue-deep mt-1" style="font-variation-settings: 'FILL' 1;">encrypted</span>
+<div class="space-y-1">
+<p class="font-body-base font-bold text-itd-blue-deep">Bank-Grade Privacy</p>
+<p class="font-body-sm text-on-surface-variant">Your documents are auto-deleted after 48 hours of filing.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Help Section -->
+<div class="mt-24 w-full max-w-[1120px]">
+<div class="flex flex-col md:flex-row items-center justify-between border-t border-outline-variant pt-stack-lg gap-stack-md">
+<div class="flex gap-stack-md">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline uppercase">Need Help?</span>
+<a class="font-body-base font-medium text-primary hover:underline" href="#">View Upload Guide</a>
+</div>
+<div class="w-[1px] h-10 bg-outline-variant"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline uppercase">Support</span>
+<a class="font-body-base font-medium text-primary hover:underline" href="#">Chat with Tax Expert</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<img class="h-8 grayscale opacity-50" data-alt="Official Income Tax Department of India logo, featuring the national emblem and corporate identity colors of the ITD, clean and sharp, rendered against a white background for a professional government service feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl9hp8HZi0vBWX7EarDXdhnib9OB-UuRC-JDQX0sypss_TRwu6390HzSXFxCCY6_qY7yD8OYxGJmC027XV9-I9IvhAZPc291QLjSu-Ig_D-iN1C-Pyu1lebryxOsDKDSLqZV_4nx96rEzLATnkykx4UHEsIXyHR5UszsulP7v86zwyKcyu9V9drBp_KSmpecbD-k3m1hIjIy-J7ppSAHIkz7l-Da6YCS5fcFG8xvd-PeHymKuwvk7T2leMnZRO0QJpq7RVxFjJWZ0"/>
+<img class="h-8 grayscale opacity-50" data-alt="A small security trust badge showing a locked padlock icon and 'Verified by Digicert' text in a modern flat design style, professional blue and silver color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8pP8U9vmmx0FQDZDBoUhWZCQIWSFCuU3QkLQmp1hYg6gHrOy5ZpQTCHtImhaQeMedre1pFxFxfc6lDQjbTtfer2ZfEuW3K7ayzXQyAySdOplWm7j276m2c3NkDJk92sUyJ8nfG95rjumU_MWr8LNXvb1vviqIXdUzikyoQ1s9qCTY5fBGObpUI4uXp8BdbfKp8RKrGZAShRYZ9yDLz3cmlfXNN8B1_W2gLpoRx5_U4p9KDhARIp7MGJae5aU9cZHCxyEtXSrPz9M"/>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-stack-md px-margin-page flex flex-col md:flex-row justify-between items-center gap-stack-md border-t border-outline-variant bg-surface-muted mt-auto">
+<p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 TaxStox. Secured with 256-bit encryption. Licensed by Income Tax Dept.</p>
+<div class="flex gap-stack-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Security Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Privacy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+<!-- Micro-interactions Script -->
+<script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const processingState = document.getElementById('processingState');
+        const successCard = document.getElementById('successCard');
+        const progressBar = document.getElementById('progressBar');
+        const percentageText = document.getElementById('percentage');
+        const statusText = document.getElementById('statusText');
+        const fileNameLabel = document.getElementById('fileName');
+
+        // Animation helpers
+        const steps = [
+            { id: 'parsing', text: 'Parsing document...', limit: 35 },
+            { id: 'classification', text: 'Classifying income sources...', limit: 70 },
+            { id: 'optimization', text: 'Applying Tax Regime optimizations...', limit: 100 }
+        ];
+
+        function simulateUpload(file) {
+            dropzone.classList.add('hidden');
+            processingState.classList.remove('hidden');
+            fileNameLabel.textContent = file.name;
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 5) + 1;
+                if (progress > 100) progress = 100;
+
+                progressBar.style.width = `${progress}%`;
+                percentageText.textContent = `${progress}%`;
+
+                // Step highlighting logic
+                if (progress <= 35) {
+                    updateStep('parsing', progress / 35 * 100);
+                } else if (progress <= 70) {
+                    updateStep('parsing', 100);
+                    updateStep('classification', (progress - 35) / 35 * 100);
+                    statusText.textContent = steps[1].text;
+                } else {
+                    updateStep('classification', 100);
+                    updateStep('optimization', (progress - 70) / 30 * 100);
+                    statusText.textContent = steps[2].text;
+                }
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        processingState.classList.add('opacity-50');
+                        successCard.classList.remove('hidden');
+                    }, 500);
+                }
+            }, 150);
+        }
+
+        function updateStep(stepId, width) {
+            const stepEl = document.getElementById(`step-${stepId}`);
+            const barEl = document.getElementById(`step-${stepId}-bar`);
+            stepEl.classList.remove('opacity-40');
+            stepEl.classList.add('opacity-100');
+            barEl.style.width = `${width}%`;
+        }
+
+        // Drag and drop handlers
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('drag-over');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length) simulateUpload(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) simulateUpload(e.target.files[0]);
+        });
+    </script>
+</body></html>
