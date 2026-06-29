@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 import { uploadPDFs, type UploadResponseData } from "@/lib/api";
 import { setState } from "@/lib/store";
 
 export default function HomePage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [showUpload, setShowUpload] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -27,6 +29,23 @@ export default function HomePage() {
     setShowUpload(true);
     setTimeout(() => document.getElementById("upload-section")?.scrollIntoView({ behavior: "smooth" }), 100);
   };
+
+  const handleStartFiling = () => {
+    if (isAuthenticated) {
+      goUpload();
+    } else {
+      router.push("/auth?redirect=/?filing=true");
+    }
+  };
+
+  // Auto-show upload portal when ?filing=true (post-auth redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("filing") === "true") {
+      setShowUpload(true);
+      setTimeout(() => document.getElementById("upload-section")?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+  }, []);
 
   async function handleUpload() {
     setError("");
@@ -100,7 +119,7 @@ export default function HomePage() {
                   Upload 2 PDFs. Answer 5 questions. Done. Precision automation for the modern Indian taxpayer.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                  <button onClick={goUpload} className="bg-[#003366] text-white px-8 py-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                  <button onClick={handleStartFiling} className="bg-[#003366] text-white px-8 py-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
                     Start Filing Now
                     <span className="material-symbols-outlined">arrow_forward</span>
                   </button>
@@ -233,7 +252,7 @@ export default function HomePage() {
             <div className="max-w-3xl mx-auto px-6 relative z-10 space-y-5">
               <h2 className="text-3xl md:text-4xl font-bold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Ready to reclaim your weekend?</h2>
               <p className="text-lg text-[#434652]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Join 50,000+ Indians who have simplified their tax journey with TaxStox. Zero expertise required.</p>
-              <button onClick={goUpload} className="bg-[#F57C00] text-white px-10 py-5 rounded-lg font-semibold text-lg shadow-xl hover:bg-[#E67600] transition-all transform hover:-translate-y-1" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+              <button onClick={handleStartFiling} className="bg-[#F57C00] text-white px-10 py-5 rounded-lg font-semibold text-lg shadow-xl hover:bg-[#E67600] transition-all transform hover:-translate-y-1" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
                 Start Filing for Free
               </button>
               <p className="text-xs text-[#434652] mt-3">Pay only when you file. No credit card required to start.</p>
