@@ -1,5 +1,8 @@
-# TaxStox — ITR Auto-Filing & Stock Analytics Platform Architecture
+# TaxStox — Detailed Architecture Reference
 
+> **👉 For the buildable spec, see [MASTER_PLAN.md](MASTER_PLAN.md) — give that to any AI agent.**
+> This file is the detailed reference with code snippets, data structures, and algorithms.
+>
 > **Authored by:** A 25-year CA + A 25-year Software Engineer, sitting side-by-side.
 > **Principle:** The user uploads 2 PDFs, answers at most 5 yes/no questions, and gets a
 > validated, regime-optimized, upload-ready ITR JSON. Every single piece of data that exists
