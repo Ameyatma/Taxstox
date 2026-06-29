@@ -1,9 +1,25 @@
-# Multi-Agent AI Architecture: TaxStox
+# ⛔ DEPRECATED — Multi-Agent AI Architecture
+
+> **Status:** REJECTED — Over-engineered for current scale.
+> **Replaced by:** [docs/MASTER_PLAN.md](../docs/MASTER_PLAN.md) — Cost-aware modular monolith.
+> **Reason:** 8 AI agents, inter-agent communication bus, separate Tax Rule Engine service,
+> circuit breakers, model fallback chains = enterprise complexity with no measurable benefit
+> for a single-developer MVP. The MASTER_PLAN achieves the same outcome with 6 Python modules
+> and zero AI calls for deterministic work.
+>
+> **Kept for reference:** The validation rules catalog (Section 3.5) and deduction discovery
+> algorithm (Section 3.4) contain useful tax logic that can be adapted into deterministic
+> Python code. The rest is architectural fantasy that violates cost-aware engineering principles.
+>
+> **Original header below:**
+>
+> ---
+>
+> # Multi-Agent AI Architecture: TaxStox
 
 > **Version:** 1.0  
 > **Last Updated:** 2026-06-29  
-> **Status:** Approved for Implementation  
-> **Design Authority:** Principal AI Architect, TaxStox Engineering
+> **Status:** ~~Approved for Implementation~~ → REJECTED (see above)
 
 ---
 
