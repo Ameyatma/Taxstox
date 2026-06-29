@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaxStox | Smart Questionnaire</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#001945",
+                    "on-secondary-container": "#5b2500",
+                    "on-surface": "#0b1c30",
+                    "surface-container": "#e5eeff",
+                    "primary-container": "#0d47a1",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#773200",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#a1bbff",
+                    "surface": "#f8f9ff",
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "success-green": "#166534",
+                    "itd-blue-deep": "#003366",
+                    "itd-orange-vibrant": "#F57C00",
+                    "inverse-surface": "#213145",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#7ecf79",
+                    "surface-container-high": "#dce9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "outline": "#737783",
+                    "inverse-primary": "#b0c6ff",
+                    "on-tertiary-fixed-variant": "#005312",
+                    "surface-variant": "#d3e4fe",
+                    "on-secondary-fixed": "#331200",
+                    "on-error": "#ffffff",
+                    "secondary-fixed-dim": "#ffb68f",
+                    "primary": "#003178",
+                    "secondary": "#9c4400",
+                    "surface-dim": "#cbdbf5",
+                    "tertiary": "#003f0b",
+                    "tertiary-fixed-dim": "#88d982",
+                    "error-red": "#991B1B",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-fixed": "#002204",
+                    "primary-fixed-dim": "#b0c6ff",
+                    "surface-bright": "#f8f9ff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "outline-variant": "#c3c6d4",
+                    "tertiary-fixed": "#a3f69c",
+                    "on-background": "#0b1c30",
+                    "primary-fixed": "#d9e2ff",
+                    "surface-muted": "#F8FAFC",
+                    "surface-tint": "#2b5bb5",
+                    "background": "#f8f9ff",
+                    "on-surface-variant": "#434652",
+                    "warning-amber": "#92400E",
+                    "on-primary-fixed-variant": "#00429c",
+                    "tertiary-container": "#005914",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#ffdbca",
+                    "secondary-container": "#fd7613"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-page": "40px",
+                    "stack-lg": "32px",
+                    "base": "4px",
+                    "gutter": "24px",
+                    "stack-md": "16px",
+                    "container-max": "1120px",
+                    "stack-sm": "8px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Hanken Grotesk"],
+                    "body-sm": ["Inter"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "subheading": ["Hanken Grotesk"],
+                    "headline-lg-mobile": ["Hanken Grotesk"],
+                    "label-caps": ["Hanken Grotesk"],
+                    "body-base": ["Inter"],
+                    "data-mono": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "subheading": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .active-ring {
+            box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #003366;
+        }
+        .step-transition {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+        }
+    </style>
+</head>
+<body class="bg-surface-muted font-body-base text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-page h-16 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex items-center gap-stack-md">
+<span class="font-headline-lg text-headline-lg font-bold text-itd-blue-deep">TaxStox</span>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<span class="font-subheading text-subheading text-on-surface-variant">ITR-2 Flow</span>
+</div>
+<div class="flex items-center gap-stack-lg">
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors uppercase">Save Progress</button>
+<div class="flex items-center gap-stack-sm">
+<span class="material-symbols-outlined text-itd-blue-deep">security</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">256-bit Secure</span>
+</div>
+</div>
+</header>
+<!-- Progress Indicator -->
+<nav class="fixed top-16 left-0 w-full z-40 bg-surface-container-low px-margin-page py-3">
+<div class="max-w-[640px] mx-auto flex items-center justify-between">
+<div class="flex-1 flex gap-2 h-1">
+<div class="flex-1 bg-secondary rounded-full"></div>
+<div class="flex-1 bg-outline-variant rounded-full"></div>
+<div class="flex-1 bg-outline-variant rounded-full"></div>
+<div class="flex-1 bg-outline-variant rounded-full"></div>
+<div class="flex-1 bg-outline-variant rounded-full"></div>
+</div>
+<span class="ml-stack-md font-label-caps text-label-caps text-secondary">STEP 1 OF 5</span>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-32 pb-margin-page flex items-center justify-center px-4">
+<div class="w-full max-w-[640px] space-y-stack-lg">
+<!-- Wizard Card Container -->
+<div class="step-transition bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-lg shadow-sm">
+<!-- Impact Badge -->
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-success-green border border-green-100 rounded-full mb-stack-md animate-pulse">
+<span class="material-symbols-outlined text-[18px]">trending_down</span>
+<span class="font-label-caps text-label-caps uppercase">Potential Tax Savings: ₹77,582</span>
+</div>
+<!-- Question Headline -->
+<h1 class="font-subheading text-subheading text-on-surface mb-stack-sm leading-tight">
+                    Do you reside in a rented accommodation and pay monthly rent?
+                </h1>
+<p class="font-body-base text-on-surface-variant mb-stack-lg">
+                    Providing rent details helps us calculate your House Rent Allowance (HRA) exemption automatically.
+                </p>
+<!-- Toggle Options (The "Simple Yes/No") -->
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Yes Option -->
+<label class="group relative cursor-pointer">
+<input checked="" class="peer sr-only" name="rent_question" type="radio"/>
+<div class="flex flex-col items-center justify-center p-stack-lg border-2 border-outline-variant rounded-xl bg-white transition-all group-hover:border-primary peer-checked:border-primary peer-checked:bg-surface-container-low">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-white" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+<span class="font-subheading text-subheading text-on-surface">Yes</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">I pay rent</span>
+</div>
+</label>
+<!-- No Option -->
+<label class="group relative cursor-pointer">
+<input class="peer sr-only" name="rent_question" type="radio"/>
+<div class="flex flex-col items-center justify-center p-stack-lg border-2 border-outline-variant rounded-xl bg-white transition-all group-hover:border-primary peer-checked:border-primary peer-checked:bg-surface-container-low">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:text-white">close</span>
+</div>
+<span class="font-subheading text-subheading text-on-surface">No</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Own house/NA</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Navigation Buttons -->
+<div class="flex justify-between items-center px-2">
+<button class="flex items-center gap-2 px-6 py-3 font-label-caps text-label-caps text-primary hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                    BACK
+                </button>
+<button class="bg-itd-blue-deep text-white px-10 py-3 rounded-lg font-label-caps text-label-caps flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md">
+                    NEXT STEP
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+<!-- Expert Prompt / Assistance -->
+<div class="flex items-start gap-stack-md p-stack-md bg-surface-container-lowest border border-dashed border-outline-variant rounded-xl">
+<div class="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-primary-container border-2 border-white shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female tax expert with a friendly and knowledgeable expression, wearing corporate attire, set against a clean blurred office background. The lighting is soft and professional, reflecting the high-clarity and trust-focused aesthetic of the TaxStox platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC11yg4zQGZRvAQKt5jN_yud6RHjAQPf7q6CYJ9ZkZv_2mR8pXBUHLWC-anbknwKB9yPp184Mh9Lvxe-78w6GYEQRd7Xvayn8r5YNcISGXdtBzg4mKNJbtt-DZuSMdyryFbIFTcfiPoyspm3JagkFo9ImI9A5SC3142t4x7jA1SPJNhZAsLv3wG094fA-k4d8mFa473zuf-5Pe5ZT2YsbBVCwP_qkY5fjYCGMvEmFLUNlYVm5cuJvj3rBeN6qwFurkMSxNQWywxGBU"/>
+</div>
+<div class="space-y-1">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+                        "If you live with parents but pay them rent via bank transfer, you can still claim this deduction! Make sure to have a valid rent agreement."
+                    </p>
+<button class="text-primary font-label-caps text-label-caps hover:underline">Talk to Expert Assistant</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-stack-md px-margin-page flex flex-col md:flex-row justify-between items-center gap-stack-md border-t border-outline-variant bg-surface-container-lowest mt-auto">
+<span class="font-label-caps text-label-caps text-itd-blue-deep uppercase">TaxStox Secure Platform</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-center md:text-left max-w-md">
+            © 2024 TaxStox. Secured with 256-bit encryption. Licensed by Income Tax Dept.
+        </p>
+<div class="flex gap-stack-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Security Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Privacy</a>
+</div>
+</footer>
+<!-- Success Confetti/Micro-interaction Script -->
+<script>
+        // Simple logic for card selection styling
+        const radioInputs = document.querySelectorAll('input[name="rent_question"]');
+        radioInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                // Future implementation: automatic next step or visual feedback
+                console.log('User selected:', input.nextElementSibling.querySelector('.text-on-surface').innerText);
+            });
+        });
+
+        // Entrance animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.step-transition');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body></html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaxStox | Post-Export Instructions</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-primary-fixed": "#001945",
+          "on-secondary-container": "#5b2500",
+          "on-surface": "#0b1c30",
+          "surface-container": "#e5eeff",
+          "primary-container": "#0d47a1",
+          "surface-container-highest": "#d3e4fe",
+          "on-secondary-fixed-variant": "#773200",
+          "error": "#ba1a1a",
+          "on-primary-container": "#a1bbff",
+          "surface": "#f8f9ff",
+          "on-error-container": "#93000a",
+          "on-secondary": "#ffffff",
+          "success-green": "#166534",
+          "itd-blue-deep": "#003366",
+          "itd-orange-vibrant": "#F57C00",
+          "inverse-surface": "#213145",
+          "on-primary": "#ffffff",
+          "on-tertiary-container": "#7ecf79",
+          "surface-container-high": "#dce9ff",
+          "surface-container-lowest": "#ffffff",
+          "outline": "#737783",
+          "inverse-primary": "#b0c6ff",
+          "on-tertiary-fixed-variant": "#005312",
+          "surface-variant": "#d3e4fe",
+          "on-secondary-fixed": "#331200",
+          "on-error": "#ffffff",
+          "secondary-fixed-dim": "#ffb68f",
+          "primary": "#003178",
+          "secondary": "#9c4400",
+          "surface-dim": "#cbdbf5",
+          "tertiary": "#003f0b",
+          "tertiary-fixed-dim": "#88d982",
+          "error-red": "#991B1B",
+          "error-container": "#ffdad6",
+          "surface-container-low": "#eff4ff",
+          "on-tertiary-fixed": "#002204",
+          "primary-fixed-dim": "#b0c6ff",
+          "surface-bright": "#f8f9ff",
+          "inverse-on-surface": "#eaf1ff",
+          "outline-variant": "#c3c6d4",
+          "tertiary-fixed": "#a3f69c",
+          "on-background": "#0b1c30",
+          "primary-fixed": "#d9e2ff",
+          "surface-muted": "#F8FAFC",
+          "surface-tint": "#2b5bb5",
+          "background": "#f8f9ff",
+          "on-surface-variant": "#434652",
+          "warning-amber": "#92400E",
+          "on-primary-fixed-variant": "#00429c",
+          "tertiary-container": "#005914",
+          "on-tertiary": "#ffffff",
+          "secondary-fixed": "#ffdbca",
+          "secondary-container": "#fd7613"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        "spacing": {
+          "margin-page": "40px",
+          "stack-lg": "32px",
+          "base": "4px",
+          "gutter": "24px",
+          "stack-md": "16px",
+          "container-max": "1120px",
+          "stack-sm": "8px"
+        },
+        "fontFamily": {
+          "display-lg": ["Hanken Grotesk"],
+          "body-sm": ["Inter"],
+          "headline-lg": ["Hanken Grotesk"],
+          "subheading": ["Hanken Grotesk"],
+          "headline-lg-mobile": ["Hanken Grotesk"],
+          "label-caps": ["Hanken Grotesk"],
+          "body-base": ["Inter"],
+          "data-mono": ["JetBrains Mono"]
+        },
+        "fontSize": {
+          "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+          "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+          "subheading": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+          "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+          "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+          "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+          "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+        }
+      },
+    },
+  }
+</script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+  }
+  .fill-icon { font-variation-settings: 'FILL' 1; }
+  .step-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    transition: all 0.2s ease;
+  }
+  .step-card:hover {
+    border-color: #003366;
+    box-shadow: 0 4px 12px rgba(0,51,102,0.06);
+  }
+  .step-card.completed {
+    border-left: 3px solid #166534;
+  }
+  .step-card.warning {
+    border-left: 3px solid #F57C00;
+  }
+  .copy-btn:active { transform: scale(0.95); }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white; padding: 0; }
+    .step-card { break-inside: avoid; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body class="bg-surface-muted text-on-surface font-body-base antialiased">
+
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-page h-16 bg-surface-container-lowest border-b border-outline-variant no-print">
+  <div class="flex items-center gap-stack-md">
+    <span class="font-headline-lg text-headline-lg font-bold text-itd-blue-deep">TaxStox</span>
+    <div class="h-6 w-px bg-outline-variant mx-2"></div>
+    <span class="font-subheading text-subheading text-on-surface-variant">ITR-2 Filing</span>
+  </div>
+  <div class="flex items-center gap-stack-md">
+    <span class="font-data-mono text-data-mono text-primary bg-surface-container px-3 py-1 rounded">ITR2_CFFPM4503N_2025-26.json</span>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="pt-24 pb-24 px-4 md:px-margin-page">
+  <div class="w-full max-w-[880px] mx-auto">
+
+    <!-- Header: Success State -->
+    <div class="text-center mb-stack-lg space-y-stack-md">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success-green/10 mb-2">
+        <span class="material-symbols-outlined text-success-green text-[48px] fill-icon">check_circle</span>
+      </div>
+      <h1 class="font-display-lg text-display-lg text-itd-blue-deep">Your ITR JSON is ready.</h1>
+      <p class="font-subheading text-subheading text-on-surface-variant max-w-lg mx-auto">
+        Downloaded to your computer. Now follow these 8 steps to file on the ITR portal.
+      </p>
+      <div class="flex justify-center gap-stack-md pt-2">
+        <button class="bg-itd-blue-deep text-on-primary px-6 py-3 rounded-lg font-label-caps text-label-caps flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+          <span class="material-symbols-outlined text-[20px]">download</span>
+          Download JSON Again
+        </button>
+        <button class="border-2 border-outline-variant text-on-surface-variant px-6 py-3 rounded-lg font-label-caps text-label-caps flex items-center gap-2 hover:bg-surface-container-low transition-all" id="copyInstructions">
+          <span class="material-symbols-outlined text-[20px]">content_copy</span>
+          Copy Instructions
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 1: Pay Tax (Conditional — Balance Payable) -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md warning">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-orange-vibrant text-white flex items-center justify-center shrink-0 font-bold text-lg">1</div>
+        <div class="flex-1 space-y-stack-sm">
+          <div class="flex items-center gap-3">
+            <h3 class="font-subheading text-subheading font-bold text-on-surface">Pay Your Tax</h3>
+            <span class="bg-warning-amber/10 text-warning-amber font-label-caps text-label-caps px-3 py-1 rounded-full">REQUIRED</span>
+          </div>
+          <div class="bg-warning-amber/5 border border-warning-amber/20 rounded-lg p-stack-md space-y-2">
+            <p class="font-body-base text-body-base text-on-surface">You owe: <span class="font-data-mono text-warning-amber font-bold text-lg">₹1,240</span></p>
+            <div class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+              <p>👉 Go to: <a href="https://eportal.incometax.gov.in" class="text-primary underline" target="_blank">eportal.incometax.gov.in</a></p>
+              <p>👉 Login → <strong>e-Pay Tax</strong> → <strong>New Payment</strong></p>
+              <p>👉 Select: <strong>AY 2026-27</strong> | Type: <strong>Self-Assessment Tax (300)</strong></p>
+              <p>👉 Enter amount: <span class="font-data-mono">1240</span> → Pay via UPI / NetBanking / Card</p>
+              <p>👉 <strong>Save the Challan Receipt</strong> — you'll need BSR Code & Challan Number</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="material-symbols-outlined text-warning-amber text-sm">warning</span>
+            <p class="font-body-sm text-body-sm text-warning-amber">Payment must reflect before Step 6. UPI is instant.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Login to ITR Portal -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-blue-deep text-white flex items-center justify-center shrink-0 font-bold text-lg">2</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-on-surface">Go to the ITR Filing Portal</h3>
+          <div class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+            <p>👉 Open: <a href="https://eportal.incometax.gov.in" class="text-primary underline" target="_blank">eportal.incometax.gov.in</a></p>
+            <p>👉 Click <strong>"Login"</strong> (top right corner)</p>
+            <p>👉 Enter PAN: <span class="font-data-mono bg-surface-container-low px-2 py-0.5 rounded">CFFPM4503N</span></p>
+            <p>👉 Enter your password → <strong>Login</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Navigate to File ITR -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-blue-deep text-white flex items-center justify-center shrink-0 font-bold text-lg">3</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-on-surface">Navigate to File ITR</h3>
+          <div class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+            <p>👉 After login, click: <strong>e-File</strong> → <strong>Income Tax Returns</strong></p>
+            <p>👉 Click the blue button: <strong>"File Income Tax Return"</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Select Filing Options -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-blue-deep text-white flex items-center justify-center shrink-0 font-bold text-lg">4</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-on-surface">Select Filing Options</h3>
+          <p class="font-body-sm text-body-sm text-error-red font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            These 5 dropdowns MUST match exactly
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-sm">
+            <div class="bg-surface-muted rounded-lg p-stack-md flex justify-between items-center">
+              <span class="font-body-sm text-body-sm text-on-surface-variant">Assessment Year</span>
+              <span class="font-data-mono text-on-surface font-bold">2026-27</span>
+            </div>
+            <div class="bg-surface-muted rounded-lg p-stack-md flex justify-between items-center">
+              <span class="font-body-sm text-body-sm text-on-surface-variant">Mode of Filing</span>
+              <span class="font-data-mono text-on-surface font-bold">Offline</span>
+            </div>
+            <div class="bg-surface-muted rounded-lg p-stack-md flex justify-between items-center">
+              <span class="font-body-sm text-body-sm text-on-surface-variant">Filing Type</span>
+              <span class="font-data-mono text-on-surface font-bold">Original</span>
+            </div>
+            <div class="bg-surface-muted rounded-lg p-stack-md flex justify-between items-center">
+              <span class="font-body-sm text-body-sm text-on-surface-variant">Audited u/s 44AB?</span>
+              <span class="font-data-mono text-on-surface font-bold">No</span>
+            </div>
+            <div class="bg-surface-muted rounded-lg p-stack-md flex justify-between items-center md:col-span-2">
+              <span class="font-body-sm text-body-sm text-on-surface-variant">ITR Type</span>
+              <span class="font-data-mono text-on-surface font-bold">ITR-2</span>
+            </div>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant pt-1">👉 Click <strong>"Continue"</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Upload JSON -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-blue-deep text-white flex items-center justify-center shrink-0 font-bold text-lg">5</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-on-surface">Upload Your JSON File</h3>
+          <div class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+            <p>👉 Click <strong>"Choose File"</strong> or <strong>"Browse"</strong></p>
+            <p>👉 Select: <span class="font-data-mono bg-surface-container-low px-2 py-0.5 rounded">ITR2_CFFPM4503N_2025-26.json</span></p>
+            <p>👉 Click <strong>"Upload"</strong></p>
+          </div>
+          <div class="bg-success-green/5 border border-success-green/20 rounded-lg p-stack-md mt-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-success-green fill-icon">check_circle</span>
+              <p class="font-body-sm text-body-sm text-success-green font-medium">Wait 5-10 seconds. You should see: "JSON uploaded successfully"</p>
+            </div>
+          </div>
+          <!-- Error fallback -->
+          <div class="bg-error-container border border-error-red/20 rounded-lg p-stack-md mt-stack-sm" id="errorAlert">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-error-red fill-icon mt-0.5">error</span>
+              <div class="space-y-2">
+                <p class="font-body-sm text-body-sm text-on-error-container font-bold">If you see ANY red error, DO NOT PANIC.</p>
+                <ol class="font-body-sm text-body-sm text-on-error-container space-y-1 list-decimal list-inside">
+                  <li>Copy the exact error text</li>
+                  <li>Come back to TaxStox → <strong>Help</strong> → Paste error</li>
+                  <li>We'll fix the JSON and give you a new file</li>
+                </ol>
+                <button class="mt-2 px-4 py-2 bg-error-red text-on-error rounded-lg font-label-caps text-label-caps hover:opacity-90 transition-all">
+                  Report Error Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6: Verify Computation -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-blue-deep text-white flex items-center justify-center shrink-0 font-bold text-lg">6</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-on-surface">Verify the Tax Computation</h3>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">The portal will show your income and tax breakdown. Cross-check these 4 numbers:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-stack-sm mt-2">
+            <div class="bg-surface-container-low rounded-lg p-stack-md">
+              <span class="font-label-caps text-label-caps text-outline">Total Income</span>
+              <p class="font-data-mono text-on-surface text-lg">₹17,54,687</p>
+            </div>
+            <div class="bg-surface-container-low rounded-lg p-stack-md">
+              <span class="font-label-caps text-label-caps text-outline">Gross Tax</span>
+              <p class="font-data-mono text-on-surface text-lg">₹1,56,974</p>
+            </div>
+            <div class="bg-surface-container-low rounded-lg p-stack-md">
+              <span class="font-label-caps text-label-caps text-outline">Balance Payable</span>
+              <p class="font-data-mono text-success-green text-lg font-bold">₹0</p>
+            </div>
+            <div class="bg-surface-container-low rounded-lg p-stack-md">
+              <span class="font-label-caps text-label-caps text-outline">Regime Applied</span>
+              <p class="font-data-mono text-on-surface text-lg">New Regime</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 pt-2">
+            <span class="material-symbols-outlined text-error-red text-sm fill-icon">warning</span>
+            <p class="font-body-sm text-body-sm text-error-red font-medium">If any number differs by more than ₹5, STOP. Contact support. DO NOT submit.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7: Submit & E-Verify -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-itd-blue-deep text-white flex items-center justify-center shrink-0 font-bold text-lg">7</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-on-surface">Submit & E-Verify</h3>
+          <div class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+            <p>👉 Scroll to bottom of the page</p>
+            <p>👉 Check: <strong>"I declare that the information is correct..."</strong></p>
+            <p>👉 Click: <strong>"Proceed to Verification"</strong></p>
+          </div>
+          <div class="bg-surface-container-low rounded-lg p-stack-md mt-3">
+            <p class="font-label-caps text-label-caps text-on-surface mb-2">Choose verification method:</p>
+            <div class="space-y-2">
+              <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-success-green cursor-pointer">
+                <div class="w-6 h-6 rounded-full bg-success-green flex items-center justify-center">
+                  <span class="material-symbols-outlined text-white text-sm fill-icon">check</span>
+                </div>
+                <div>
+                  <p class="font-body-sm font-bold text-on-surface">E-Verify via Aadhaar OTP</p>
+                  <p class="font-body-sm text-success-green text-xs">← EASIEST — OTP sent to Aadhaar-linked mobile</p>
+                </div>
+              </label>
+              <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-outline-variant opacity-70 cursor-pointer hover:opacity-100">
+                <span class="material-symbols-outlined text-outline">radio_button_unchecked</span>
+                <p class="font-body-sm text-on-surface-variant">E-Verify via Net Banking</p>
+              </label>
+              <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-outline-variant opacity-70 cursor-pointer hover:opacity-100">
+                <span class="material-symbols-outlined text-outline">radio_button_unchecked</span>
+                <p class="font-body-sm text-on-surface-variant">E-Verify via Demat Account</p>
+              </label>
+              <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-outline-variant opacity-50">
+                <span class="material-symbols-outlined text-outline">radio_button_unchecked</span>
+                <div>
+                  <p class="font-body-sm text-on-surface-variant">Send signed ITR-V to CPC Bangalore</p>
+                  <p class="font-body-sm text-warning-amber text-xs">← SLOWEST — 30 days by post</p>
+                </div>
+              </label>
+            </div>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant pt-2">👉 Enter Aadhaar OTP → Click <strong>"Verify"</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 8: Download Acknowledgement -->
+    <div class="step-card rounded-xl p-stack-lg mb-stack-md completed">
+      <div class="flex items-start gap-stack-md">
+        <div class="w-10 h-10 rounded-full bg-success-green text-white flex items-center justify-center shrink-0 font-bold text-lg">8</div>
+        <div class="flex-1 space-y-stack-sm">
+          <h3 class="font-subheading text-subheading font-bold text-success-green">Download Acknowledgement</h3>
+          <div class="bg-success-green/5 border border-success-green/20 rounded-lg p-stack-md space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-success-green text-[32px] fill-icon">celebration</span>
+              <div>
+                <p class="font-body-base font-bold text-success-green">ITR Submitted Successfully!</p>
+                <p class="font-body-sm text-on-surface-variant">Your return has been filed with the Income Tax Department.</p>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-1 font-body-sm text-body-sm text-on-surface-variant pt-2">
+            <p>👉 Click <strong>"Download Acknowledgement"</strong></p>
+            <p>👉 Save the PDF — it has your ITR-V / Acknowledgement Number</p>
+            <p>👉 Note the Acknowledgement Number: <span class="font-data-mono bg-surface-container-low px-2 py-0.5 rounded">_______________</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Done Celebration -->
+    <div class="text-center py-stack-lg">
+      <div class="inline-flex items-center gap-2 px-6 py-3 bg-success-green rounded-full text-white font-headline-lg text-headline-lg shadow-lg">
+        <span class="material-symbols-outlined fill-icon">party_mode</span>
+        YOU'RE DONE!
+      </div>
+    </div>
+
+    <!-- Troubleshooting Section -->
+    <div class="mt-stack-lg border-t border-outline-variant pt-stack-lg">
+      <h2 class="font-headline-lg text-headline-lg text-itd-blue-deep mb-stack-md flex items-center gap-2">
+        <span class="material-symbols-outlined text-warning-amber">construction</span>
+        Troubleshooting — Common Portal Errors
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-error-red fill-icon">bug_report</span>
+            <h4 class="font-label-caps text-label-caps text-on-surface font-bold">Schema validation failed</h4>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Your JSON has a format mismatch. Download again from TaxStox — do NOT edit the JSON manually.</p>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-error-red fill-icon">lock</span>
+            <h4 class="font-label-caps text-label-caps text-on-surface font-bold">Invalid hash — modification detected</h4>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">The JSON was edited outside the utility. Use our original, unmodified file.</p>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-warning-amber fill-icon">link_off</span>
+            <h4 class="font-label-caps text-label-caps text-on-surface font-bold">PAN-Aadhaar not linked</h4>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Go to incometax.gov.in → Link PAN-Aadhaar → Pay ₹1,000 fine. Wait 24 hours before filing.</p>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-warning-amber fill-icon">file_copy</span>
+            <h4 class="font-label-caps text-label-caps text-on-surface font-bold">Return already filed</h4>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Someone (employer/CA) already filed. Check with them, or select "Revised Return" under section 139(5).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Support Footer -->
+    <div class="mt-stack-lg text-center p-stack-lg bg-white border border-outline-variant rounded-xl">
+      <p class="font-subheading text-subheading text-on-surface mb-1">Need help?</p>
+      <p class="font-body-base text-body-base text-on-surface-variant mb-stack-md">
+        <a href="#" class="text-primary underline">support@taxstox.com</a> · WhatsApp: +91-XXXXX-XXXXX
+      </p>
+      <div class="flex justify-center gap-stack-md">
+        <button class="px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-label-caps text-label-caps hover:bg-surface-container-low transition-all flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">mail</span>
+          Email Instructions
+        </button>
+        <button class="px-6 py-3 bg-itd-blue-deep text-white rounded-lg font-label-caps text-label-caps hover:opacity-90 transition-all flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">contact_support</span>
+          Chat with CA Expert
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="w-full py-stack-md px-margin-page flex flex-col md:flex-row justify-between items-center gap-stack-md bg-surface-muted border-t border-outline-variant no-print">
+  <div class="flex items-center gap-2">
+    <span class="font-label-caps text-label-caps text-itd-blue-deep">TaxStox</span>
+  </div>
+  <p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 TaxStox. Secured with 256-bit encryption. Licensed by Income Tax Dept.</p>
+  <div class="flex gap-stack-md">
+    <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Security</a>
+    <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Privacy</a>
+    <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Support</a>
+  </div>
+</footer>
+
+<!-- Copy Instructions Script -->
+<script>
+  document.getElementById('copyInstructions').addEventListener('click', () => {
+    const steps = document.querySelectorAll('.step-card');
+    let text = 'TAXSTOX — ITR PORTAL UPLOAD INSTRUCTIONS\n';
+    text += '========================================\n\n';
+    steps.forEach((step, i) => {
+      text += step.innerText.replace(/\n+/g, '\n') + '\n\n---\n\n';
+    });
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyInstructions');
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">check</span> Copied!';
+      btn.classList.add('text-success-green', 'border-success-green');
+      setTimeout(() => {
+        btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">content_copy</span> Copy Instructions';
+        btn.classList.remove('text-success-green', 'border-success-green');
+      }, 2000);
+    });
+  });
+
+  // Smooth scroll highlight on hover
+  document.querySelectorAll('.step-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      card.style.transform = 'translateY(-1px)';
+      card.style.boxShadow = '0 8px 24px rgba(0,51,102,0.08)';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'translateY(0)';
+      card.style.boxShadow = 'none';
+    });
+  });
+</script>
+</body>
+</html>

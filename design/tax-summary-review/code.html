@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaxStox Review Summary</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#001945",
+                        "on-secondary-container": "#5b2500",
+                        "on-surface": "#0b1c30",
+                        "surface-container": "#e5eeff",
+                        "primary-container": "#0d47a1",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary-fixed-variant": "#773200",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#a1bbff",
+                        "surface": "#f8f9ff",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "success-green": "#166534",
+                        "itd-blue-deep": "#003366",
+                        "itd-orange-vibrant": "#F57C00",
+                        "inverse-surface": "#213145",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#7ecf79",
+                        "surface-container-high": "#dce9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#737783",
+                        "inverse-primary": "#b0c6ff",
+                        "on-tertiary-fixed-variant": "#005312",
+                        "surface-variant": "#d3e4fe",
+                        "on-secondary-fixed": "#331200",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#ffb68f",
+                        "primary": "#003178",
+                        "secondary": "#9c4400",
+                        "surface-dim": "#cbdbf5",
+                        "tertiary": "#003f0b",
+                        "tertiary-fixed-dim": "#88d982",
+                        "error-red": "#991B1B",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#eff4ff",
+                        "on-tertiary-fixed": "#002204",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "outline-variant": "#c3c6d4",
+                        "tertiary-fixed": "#a3f69c",
+                        "on-background": "#0b1c30",
+                        "primary-fixed": "#d9e2ff",
+                        "surface-muted": "#F8FAFC",
+                        "surface-tint": "#2b5bb5",
+                        "background": "#f8f9ff",
+                        "on-surface-variant": "#434652",
+                        "warning-amber": "#92400E",
+                        "on-primary-fixed-variant": "#00429c",
+                        "tertiary-container": "#005914",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffdbca",
+                        "secondary-container": "#fd7613"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-page": "40px",
+                        "stack-lg": "32px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "stack-md": "16px",
+                        "container-max": "1120px",
+                        "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Hanken Grotesk"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "subheading": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "body-base": ["Inter"],
+                        "data-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "subheading": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #F8FAFC;
+        }
+        .wizard-container {
+            max-width: 1120px;
+            margin: 0 auto;
+        }
+        .print-only {
+            display: none;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block; }
+            body { background-color: white; padding: 0; }
+            .print-container { width: 100%; border: none; shadow: none; }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bento-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s ease;
+        }
+        .bento-card:hover {
+            border-color: #003366;
+        }
+        .custom-dashed {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23CBD5E1' stroke-width='1' stroke-dasharray='6%2c 4' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-surface">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-page h-16 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex items-center gap-stack-md">
+<span class="font-headline-lg text-headline-lg font-bold text-itd-blue-deep">TaxStox</span>
+<div class="hidden md:flex gap-gutter items-center ml-12">
+<a class="font-subheading text-subheading text-on-surface-variant hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="font-subheading text-subheading text-primary border-b-2 border-primary" href="#">Review</a>
+<a class="font-subheading text-subheading text-on-surface-variant hover:text-primary transition-colors" href="#">Profile</a>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary">security</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a confident male executive in his early 40s, representing a high-net-worth individual using a premium tax service. He is wearing a dark navy business suit and a light blue shirt, set against a soft, out-of-focus high-end office background with warm lighting. The aesthetic is clean, corporate, and trustworthy, matching a professional financial SaaS environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzI1ohv8KFglAkMuo3UFKKB4qF5B6Fpd9bXzRIDMeMOs4mEyCc7VjCUNRYrVHE3QR8Fo6ZUaGPzU6SFNcl801UlzV8-LLw9KrALLst29g6bVEc75So2MH1FArri2uwpxe-bcp5aCJVby2ecvSOpRu_iXxnkJF2dBYXMxZDjZlLzvA8-Ts5VLy8p1_DR8uU8szSvRTfALMii410cIU8YHOZwpMGZ5i6QRJPBFqkC1Sv7IIeCqbxuAcQVhIAehFu6t_tUuGFis5Ur2c"/>
+</div>
+<button class="bg-itd-blue-deep text-white px-stack-md py-2 rounded-lg font-label-caps text-label-caps hover:opacity-90 transition-all">Optimize Tax</button>
+</div>
+</header>
+<!-- Side Navigation (Web) -->
+<aside class="hidden lg:flex flex-col fixed left-0 top-16 bottom-0 w-64 p-stack-md bg-surface-container-low border-r border-outline-variant z-40">
+<div class="mb-stack-lg">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-1">ITR-1 Filing</h2>
+<p class="font-body-sm text-body-sm text-outline">AY 2024-25</p>
+</div>
+<nav class="flex flex-col gap-1 grow">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-caps text-label-caps">Income Sources</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-label-caps text-label-caps">Deductions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-caps text-label-caps">Tax Credits</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container font-bold rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="font-label-caps text-label-caps">Review</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg opacity-50 cursor-not-allowed" href="#">
+<span class="material-symbols-outlined">send</span>
+<span class="font-label-caps text-label-caps">File Now</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-stack-md flex flex-col gap-2">
+<button class="w-full bg-surface-container-highest text-itd-blue-deep font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-80">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-caps text-label-caps">Talk to Expert</span>
+</button>
+<div class="flex justify-around py-2">
+<button class="material-symbols-outlined text-outline">settings</button>
+<button class="material-symbols-outlined text-outline">help</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 pt-16 pb-24 px-4 md:px-margin-page">
+<div class="wizard-container py-stack-lg">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-end mb-stack-lg gap-stack-md">
+<div class="max-w-2xl">
+<span class="text-primary font-label-caps text-label-caps mb-2 block tracking-widest">STEP 4 OF 5</span>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Review Your Tax Summary</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">We've calculated your final tax liability based on the data provided. Review the numbers below before generating your final ITR file.</p>
+</div>
+<div class="flex gap-stack-sm no-print">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-caps text-label-caps hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-lg">print</span>
+                        Print PDF
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-caps text-label-caps hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-lg">share</span>
+                        Share
+                    </button>
+</div>
+</div>
+<!-- Bento Summary Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Data Breakdown -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- Regime Optimizer Recommendation -->
+<div class="bento-card rounded-xl p-stack-lg relative overflow-hidden bg-primary-container text-white border-none shadow-lg">
+<div class="absolute top-0 right-0 w-32 h-32 opacity-10">
+<span class="material-symbols-outlined text-[128px]">verified</span>
+</div>
+<div class="flex flex-col md:flex-row items-center gap-stack-md relative z-10">
+<div class="bg-itd-orange-vibrant p-stack-sm rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-3xl">bolt</span>
+</div>
+<div class="grow">
+<h3 class="font-subheading text-subheading font-bold mb-1">Optimizer Recommendation</h3>
+<p class="font-body-base text-body-base opacity-90">Switching to the <strong>New Tax Regime</strong> will save you <span class="font-data-mono">₹42,500</span> this year.</p>
+</div>
+<div class="flex gap-stack-sm">
+<button class="bg-white text-itd-blue-deep px-6 py-2 rounded-full font-label-caps text-label-caps font-bold hover:bg-on-primary-container transition-all">
+                                    Switch to New
+                                </button>
+<button class="px-6 py-2 border border-white/30 rounded-full font-label-caps text-label-caps hover:bg-white/10 transition-all">
+                                    Keep Old
+                                </button>
+</div>
+</div>
+</div>
+<!-- Comparison Table -->
+<div class="bento-card rounded-xl p-stack-lg">
+<div class="flex items-center justify-between mb-stack-md">
+<h3 class="font-subheading text-subheading font-bold">Tax Regime Comparison</h3>
+<span class="bg-surface-container text-on-primary-container px-3 py-1 rounded-full text-xs font-bold uppercase">Side-by-side</span>
+</div>
+<div class="space-y-stack-md">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md pb-stack-sm border-b border-outline-variant font-label-caps text-label-caps text-outline">
+<div>Component</div>
+<div class="text-right">Old Regime (115BAC)</div>
+<div class="text-right">New Regime (Default)</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md py-2 border-b border-slate-50">
+<div class="font-body-base text-body-base">Gross Total Income</div>
+<div class="text-right font-data-mono">₹14,50,000</div>
+<div class="text-right font-data-mono">₹14,50,000</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md py-2 border-b border-slate-50">
+<div class="font-body-base text-body-base flex items-center gap-1">
+                                    Total Deductions
+                                    <span class="material-symbols-outlined text-sm text-outline cursor-help">info</span>
+</div>
+<div class="text-right font-data-mono text-success-green">- ₹2,50,000</div>
+<div class="text-right font-data-mono text-success-green">- ₹50,000</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md py-2 border-b border-slate-50 bg-surface-muted/50 rounded">
+<div class="font-body-base text-body-base font-bold">Taxable Income</div>
+<div class="text-right font-data-mono font-bold">₹12,00,000</div>
+<div class="text-right font-data-mono font-bold">₹14,00,000</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md py-2 border-b border-slate-50">
+<div class="font-body-base text-body-base">Total Tax Liability</div>
+<div class="text-right font-data-mono">₹1,72,500</div>
+<div class="text-right font-data-mono text-itd-orange-vibrant font-bold">₹1,30,000</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md pt-stack-sm font-bold text-lg">
+<div class="text-itd-blue-deep">Final Tax Payable</div>
+<div class="text-right font-data-mono">₹1,72,500</div>
+<div class="text-right font-data-mono text-success-green">₹1,30,000</div>
+</div>
+</div>
+</div>
+<!-- Income Sources Summary -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+<div class="bento-card rounded-xl p-stack-md">
+<div class="flex items-center gap-stack-sm mb-4">
+<div class="bg-surface-container p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">work</span>
+</div>
+<div>
+<h4 class="font-label-caps text-label-caps font-bold">Income Summary</h4>
+<p class="text-xs text-outline">Verified from Form-26AS</p>
+</div>
+</div>
+<ul class="space-y-3">
+<li class="flex justify-between text-body-sm">
+<span class="text-on-surface-variant">Salary Income</span>
+<span class="font-data-mono">₹12,00,000</span>
+</li>
+<li class="flex justify-between text-body-sm">
+<span class="text-on-surface-variant">House Property</span>
+<span class="font-data-mono">₹2,00,000</span>
+</li>
+<li class="flex justify-between text-body-sm">
+<span class="text-on-surface-variant">Other Sources</span>
+<span class="font-data-mono">₹50,000</span>
+</li>
+</ul>
+</div>
+<div class="bento-card rounded-xl p-stack-md">
+<div class="flex items-center gap-stack-sm mb-4">
+<div class="bg-surface-container p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">savings</span>
+</div>
+<div>
+<h4 class="font-label-caps text-label-caps font-bold">Deduction Details</h4>
+<p class="text-xs text-outline">Section 80C, 80D etc.</p>
+</div>
+</div>
+<ul class="space-y-3">
+<li class="flex justify-between text-body-sm">
+<span class="text-on-surface-variant">80C (PPF/LIC)</span>
+<span class="font-data-mono">₹1,50,000</span>
+</li>
+<li class="flex justify-between text-body-sm">
+<span class="text-on-surface-variant">80D (Health)</span>
+<span class="font-data-mono">₹25,000</span>
+</li>
+<li class="flex justify-between text-body-sm">
+<span class="text-on-surface-variant">Standard Deduction</span>
+<span class="font-data-mono">₹50,000</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Right Column: Actions & Status -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Computation Score/Refund Card -->
+<div class="bento-card rounded-xl p-stack-lg border-l-4 border-l-success-green flex flex-col justify-center min-h-[160px]">
+<span class="font-label-caps text-label-caps text-outline mb-2">COMPUTATION RESULT</span>
+<div class="flex items-baseline gap-2 mb-1">
+<h2 class="font-display-lg text-display-lg text-success-green">₹14,500</h2>
+<span class="font-subheading text-subheading text-success-green">REFUND</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Based on TDS already paid (₹1,44,500) vs Tax Liability (₹1,30,000)</p>
+</div>
+<!-- Action Center -->
+<div class="bento-card rounded-xl p-stack-lg bg-surface-container-low">
+<h3 class="font-label-caps text-label-caps font-bold mb-stack-md">NEXT STEPS</h3>
+<div class="flex flex-col gap-stack-md">
+<button class="w-full bg-itd-blue-deep text-white py-4 rounded-xl font-headline-lg-mobile text-headline-lg-mobile font-bold flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1 transition-all">
+<span class="material-symbols-outlined">download</span>
+                                Download ITR JSON
+                            </button>
+<button class="w-full bg-white text-itd-blue-deep border border-outline-variant py-3 rounded-xl font-label-caps text-label-caps font-bold flex items-center justify-center gap-2 hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined">receipt</span>
+                                See Full Computation
+                            </button>
+</div>
+<div class="mt-stack-lg pt-stack-md border-t border-outline-variant">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-warning-amber mt-1" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<p class="font-label-caps text-label-caps font-bold text-on-surface">Data Verification</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Ensure your Bank Account ending in <strong>*4921</strong> is pre-validated on the E-filing portal to receive your refund.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Trust Seal -->
+<div class="custom-dashed p-stack-md rounded-xl text-center">
+<div class="flex justify-center gap-stack-sm mb-2 opacity-60">
+<img class="h-8 grayscale" data-alt="A minimalist Income Tax Department of India logo, featuring the iconic Ashoka Pillar emblem and government typography. The style is clean, vector-based, and rendered in a subtle professional slate grey for high-end UI trust-building. It embodies official government authority and unshakeable financial security." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB--sCJzb2qGZhxKA04gKyMoRVw_Kgjqy_WolTpp25gKHBWWX2hHkD4puYqIkhbs0eE9Tv7x6zY6Hf-QR-itRU1nqV1Nxbp5VqHZQ2idOYmMyR6xBIKuvRjDzceJu5gywB1A2T6Bidu43150AJM7Jmk1Fv6i_8ydye0x24ZsVhP03_yDO3lCrwsFRffRVK-tE1c2e1wQMIB3NoXcFIfQX7simDXg_Qy_zql3bJUqLiN16WmH3pLMVccfEcNSyiA2_k9-EKDH8HIsvo"/>
+</div>
+<p class="text-[10px] uppercase tracking-widest text-outline">Licensed ITR e-Return intermediary</p>
+<p class="text-[10px] text-outline font-bold mt-1">Reg No: 2024-STOX-1102</p>
+</div>
+</div>
+</div>
+<!-- Detailed Explanation Card -->
+<div class="mt-gutter bento-card rounded-xl p-stack-lg">
+<h3 class="font-subheading text-subheading font-bold mb-stack-md flex items-center gap-2">
+<span class="material-symbols-outlined text-itd-blue-deep">auto_awesome</span>
+                    Explain My Tax
+                </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter text-on-surface-variant">
+<div class="space-y-2">
+<h4 class="font-label-caps text-label-caps font-bold text-on-surface">1. GROSS INCOME</h4>
+<p class="text-body-sm leading-relaxed">Your total earnings from salary (verified via Form 16) and rental income from property in Mumbai total ₹14.5L. This is your starting tax base.</p>
+</div>
+<div class="space-y-2">
+<h4 class="font-label-caps text-label-caps font-bold text-on-surface">2. OPTIMIZATION</h4>
+<p class="text-body-sm leading-relaxed">Under the New Regime (Finance Act 2023), tax slabs are broader. Even without deductions like 80C, your effective tax rate is lower at 9.3% compared to 11.9% in the Old Regime.</p>
+</div>
+<div class="space-y-2">
+<h4 class="font-label-caps text-label-caps font-bold text-on-surface">3. FINAL OUTCOME</h4>
+<p class="text-body-sm leading-relaxed">Since your employer deducted ₹1,44,500 in TDS, and your actual tax is ₹1,30,000, you are eligible for a refund of ₹14,500 plus applicable interest.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Section -->
+<footer class="w-full py-stack-md px-margin-page flex flex-col md:flex-row justify-between items-center gap-stack-md bg-surface-muted border-t border-outline-variant mt-12 no-print">
+<div class="flex flex-col md:flex-row items-center gap-stack-md">
+<span class="font-label-caps text-label-caps text-itd-blue-deep">TaxStox</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-center md:text-left">
+                © 2024 TaxStox. Secured with 256-bit encryption. Licensed by Income Tax Dept.
+            </p>
+</div>
+<div class="flex gap-stack-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Security Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Terms</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Privacy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-itd-blue-deep transition-colors" href="#">Support</a>
+</div>
+</footer>
+<!-- Scripts for micro-interactions -->
+<script>
+        // Smooth hover effect for bento cards
+        document.querySelectorAll('.bento-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-2px)';
+                card.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.05)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = 'none';
+            });
+        });
+
+        // Toggle print mode simulation
+        window.onbeforeprint = function() {
+            console.log("Preparing for high-fidelity tax summary print...");
+        };
+    </script>
+</body></html>

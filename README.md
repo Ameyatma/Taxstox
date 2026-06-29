@@ -7,22 +7,43 @@
 
 ---
 
-## The Problem
+## Project Structure
 
-Filing an ITR-2 in India requires a user to navigate 15+ schedules, understand ISIN codes,
-CG date ranges, AIS code mappings, form 112A vs CG B3, 80CCD(2) eligible-amount bugs,
-and a JSON schema with undocumented enum values.
-
-For FY 2025-26, a single salaried individual with some mutual fund redemptions and ETF
-trades needed **4 hours of expert guidance** to file correctly.
-
-## The Solution
-
-Upload 2 PDFs. Answer at most 5 yes/no questions. Download a validated, regime-optimized,
-upload-ready ITR JSON.
-
-**Every piece of data that exists in Form 16 or AIS is machine-extracted.**
-**Every computation a CA does manually is automated.**
+```
+taxstox/
+├── apps/
+│   ├── api/              # Python FastAPI backend
+│   │   ├── src/
+│   │   │   ├── api/      # FastAPI routes
+│   │   │   ├── builders/ # ITR JSON builder + validator
+│   │   │   ├── engine/   # Classifier, regime optimizer, questions
+│   │   │   ├── models/   # Pydantic v2 data models
+│   │   │   ├── parsers/  # Form 16 + AIS PDF parsers
+│   │   │   └── utils/    # Password resolver, session manager
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   └── web/              # Next.js frontend
+│       ├── src/
+│       │   ├── app/      # Pages (upload, questions, summary)
+│       │   ├── components/ui/  # shadcn/ui components
+│       │   └── lib/      # API client, store, utilities
+│       └── package.json
+├── docs/                 # Architecture & design documents
+│   ├── ARCHITECTURE.md
+│   ├── DATA_MODEL.md
+│   └── ITR_TYPES_QUESTIONS.md
+├── design/               # UI design mockups (8 screens)
+│   ├── design-system/    # Design tokens & style guide
+│   ├── landing-page/
+│   ├── secure-upload-portal/
+│   ├── smart-questionnaire/
+│   ├── tax-summary-review/
+│   ├── post-export-instructions/
+│   ├── auth-signup/
+│   ├── user-dashboard/
+│   └── error-edge-cases/
+└── README.md
+```
 
 ---
 
@@ -30,27 +51,21 @@ upload-ready ITR JSON.
 
 ```bash
 # Backend
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+cd apps/api
 pip install -e ".[dev]"
 uvicorn src.main:app --reload
 
 # Frontend
-cd frontend
+cd apps/web
 npm install
 npm run dev
 ```
 
----
-
-## Project Documents
-
-| Document | Description |
+| Service | URL |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Full system architecture — parsers, classifiers, regime engine, JSON builder, validators, deployment |
-| [DATA_MODEL.md](DATA_MODEL.md) | Complete Pydantic v2 type definitions for Form 16, AIS, unified tax data, CG classifier, and API contracts |
-| [ITR_TYPES_QUESTIONS.md](ITR_TYPES_QUESTIONS.md) | Per-ITR-type decision trees — the exact yes/no questions, suppression logic, and auto-detection rules |
+| Frontend | `http://localhost:3000` |
+| Backend API | `http://localhost:8000` |
+| API Docs | `http://localhost:8000/docs` |
 
 ---
 
@@ -97,23 +112,12 @@ Upload Form 16 + AIS + PAN + DOB
 
 ---
 
-## Supported ITR Types
-
-| ITR | Status | Auto-Detection |
-|---|---|---|
-| ITR-1 (Sahaj) | Phase 1 | Salary + Interest + 1 House Property |
-| ITR-2 | Phase 1 | + Capital Gains, Foreign Assets |
-| ITR-3 | Phase 2 | + Business/Professional Income |
-| ITR-4 (Sugam) | Phase 2 | + Presumptive Income |
-
----
-
 ## Technology
 
 | Layer | Stack |
 |---|---|
-| Backend | Python 3.12 + FastAPI + Pydantic v2 + pikepdf + pdfplumber |
-| Frontend | Next.js 14 + Tailwind CSS + shadcn/ui + Zustand |
+| Backend | Python 3.12+ + FastAPI + Pydantic v2 + pikepdf + pdfplumber |
+| Frontend | Next.js 16 + Tailwind CSS 4 + shadcn/ui + Zustand |
 | Mobile | React Native + Expo (Phase 2) |
 | Database | PostgreSQL + Redis |
 | Deployment | Docker + AWS/GCP |
@@ -125,11 +129,12 @@ Upload Form 16 + AIS + PAN + DOB
 - [x] Architecture design
 - [x] Data model definitions
 - [x] ITR-type question trees
-- [ ] Form 16 PDF parser implementation
-- [ ] AIS PDF parser implementation
-- [ ] Classification engine
-- [ ] Regime optimizer
-- [ ] JSON builder (ITR-2 first)
-- [ ] Validation engine
-- [ ] Web frontend
+- [x] Form 16 PDF parser (pikepdf + pdfplumber)
+- [x] AIS PDF parser (pdfplumber table extraction)
+- [x] Classification engine
+- [x] Regime optimizer
+- [x] JSON builder (ITR-2 with 15+ schedules)
+- [x] Validation engine
+- [x] Web frontend (upload → questions → summary → export)
+- [x] Post-export ITR portal instructions
 - [ ] Mobile app
