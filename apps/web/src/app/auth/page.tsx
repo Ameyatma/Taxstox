@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth, findUserByPan } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 
 // ── PAN validation regex ──────────────────────────────────────────
 
@@ -28,7 +28,7 @@ function AuthContent() {
   const [showPassword, setShowPassword] = useState(false);
 
   // ── Sign In form state ──────────────────────────────────────────
-  const [loginPan, setLoginPan] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
@@ -41,7 +41,7 @@ function AuthContent() {
 
   // ── Handlers ────────────────────────────────────────────────────
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     setError("");
 
     if (!pan || !dob || !name || !email || !password) {
@@ -64,7 +64,7 @@ function AuthContent() {
     setLoading(true);
 
     try {
-      signUp({ pan, dob, name, email, password });
+      await signUp(email, password, pan, name);
       router.push(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed.");
@@ -72,25 +72,18 @@ function AuthContent() {
     }
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setError("");
 
-    if (!loginPan || !loginPassword) {
-      setError("PAN and password are required.");
+    if (!loginEmail || !loginPassword) {
+      setError("Email and password are required.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const user = findUserByPan(loginPan);
-      if (!user || user.password !== loginPassword) {
-        setError("Invalid PAN or password.");
-        setLoading(false);
-        return;
-      }
-      const { password: _, ...publicUser } = user;
-      signIn(publicUser);
+      await signIn(loginEmail, loginPassword);
       router.push(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
@@ -327,19 +320,19 @@ function AuthContent() {
               </p>
             </div>
 
-            {/* PAN */}
+            {/* Email */}
             <div className="space-y-1">
               <label className={labelClass} style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
-                PAN Card Number
+                Email Address
               </label>
               <div className={inputWrapperClass}>
-                <span className="material-symbols-outlined text-[#434652]">credit_card</span>
+                <span className="material-symbols-outlined text-[#434652]">mail</span>
                 <input
-                  value={loginPan}
-                  onChange={(e) => setLoginPan(e.target.value.toUpperCase())}
-                  placeholder="ABCDE1234F"
-                  maxLength={10}
-                  className={`${inputClass} font-mono uppercase tracking-widest`}
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="aman@example.com"
+                  type="email"
+                  className={`${inputClass} font-sans`}
                 />
               </div>
             </div>

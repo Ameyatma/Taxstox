@@ -5,16 +5,24 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import router
+from src.api.routes import router as itr_router
+from src.api.auth_routes import router as auth_router
+from src.api.dashboard import router as dashboard_router
+from src.api.calculators import router as calculators_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan — startup/shutdown."""
-    # Startup
+    # Startup: initialize DB, configure logging
     import logging
     logging.basicConfig(level=logging.INFO)
     logging.getLogger("src").setLevel(logging.INFO)
+
+    from src.db.database import init_db
+    init_db()
+    logging.getLogger(__name__).info("Database initialized.")
+
     yield
     # Shutdown — nothing to clean up (no persistence)
 
@@ -35,7 +43,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(itr_router)
+app.include_router(auth_router)
+app.include_router(dashboard_router)
+app.include_router(calculators_router)
 
 
 @app.get("/")
