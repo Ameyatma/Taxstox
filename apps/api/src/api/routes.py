@@ -317,6 +317,139 @@ async def export_itr_json(
     )
 
 
+# ── Broker Statement Upload ──────────────────────────────────────────
+
+@router.post("/upload/broker-statement/{session_id}")
+async def upload_broker_statement(
+    session_id: str,
+    file: UploadFile = File(...),
+    broker: str = Form("zerodha"),
+    session: Session = Depends(get_session),
+):
+    """
+    Upload a broker trade statement (Zerodha CSV, CAMS PDF, etc.)
+    and auto-classify capital gains into the session.
+    """
+    from src.parsers.broker_statements.zerodha import parse_zerodha_tradebook, parse_zerodha_tax_pnl
+
+    content = await file.read()
+
+    try:
+        if broker.lower() == "zerodha":
+            # Try Tax P&L format first (preferred), fall back to tradebook
+            try:
+                entries = parse_zerodha_tax_pnl(content, file.filename or "")
+            except Exception:
+                entries = parse_zerodha_tradebook(content, file.filename or "")
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported broker: {broker}. Currently supported: zerodha")
+
+        if not entries:
+            raise HTTPException(status_code=400, detail="No valid sell transactions found in the uploaded file.")
+
+        # Classify the entries
+        from src.engine.classifier import ClassificationEngine
+        engine = ClassificationEngine()
+
+        # Separate equity/non-equity entries and classify
+        equity_sales = []
+        other_sales = []
+
+        # Convert CGSaleEntry to AIS-compatible format for classification
+        from src.models.ais import AISEquityMFSale, AISOtherUnitSale
+
+        for e in entries:
+            if e.asset_class in ("equity", "equity_mf"):
+                equity_sales.append(AISEquityMFSale(
+                    date_of_sale=e.date,
+                    isin=e.isin,
+                    security_name=e.security_name,
+                    quantity=e.quantity,
+                    sale_price_per_unit=e.sale_price,
+                    sale_consideration=e.consideration,
+                    cost_of_acquisition=e.cost,
+                    stt_paid=Decimal("1") if e.stt_paid else Decimal("0"),
+                    term=e.term or "Short",
+                ))
+            else:
+                other_sales.append(AISOtherUnitSale(
+                    date_of_sale=e.date,
+                    isin=e.isin,
+                    security_name=e.security_name,
+                    quantity=e.quantity,
+                    sale_price=e.sale_price,
+                    sale_consideration=e.consideration,
+                    cost_of_acquisition=e.cost,
+                    term=e.term or "Short",
+                ))
+
+        # Merge with existing AIS data if any
+        if session.ais:
+            equity_sales = (session.ais.equity_mf_sales or []) + equity_sales
+            other_sales = (session.ais.other_unit_sales or []) + other_sales
+
+        # Classify
+        classified = engine.classify(equity_sales, other_sales)
+        session.classified_cg = classified
+
+        return {
+            "status": "classified",
+            "entries_found": len(entries),
+            "equity_sales": len(equity_sales),
+            "other_sales": len(other_sales),
+            "total_cg": str(classified.total_cg),
+            "total_stcg": str(classified.total_stcg),
+            "total_ltcg": str(classified.total_ltcg),
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Broker statement parsing failed")
+        raise HTTPException(status_code=500, detail=f"Failed to parse statement: {str(e)}")
+
+
+# ── Document Upload ──────────────────────────────────────────────────
+
+@router.post("/upload/document/{session_id}")
+async def upload_document(
+    session_id: str,
+    file: UploadFile = File(...),
+    doc_type: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Upload an investment proof document for deduction tracking.
+
+    Supported doc_types: 80c_ppf, 80c_elss, 80c_lic, 80c_tuition,
+                         80d_insurance, hra_rent_receipt, home_loan_cert,
+                         other
+    """
+    valid_types = {
+        "80c_ppf", "80c_elss", "80c_lic", "80c_tuition",
+        "80d_insurance", "hra_rent_receipt", "home_loan_cert", "other",
+    }
+
+    if doc_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Invalid doc_type. Must be one of: {', '.join(sorted(valid_types))}")
+
+    # Store document metadata in session
+    if not hasattr(session, "documents"):
+        session.documents = []
+    session.documents.append({
+        "doc_type": doc_type,
+        "filename": file.filename or "unknown",
+        "size": len(await file.read()),
+    })
+
+    return {
+        "status": "uploaded",
+        "doc_type": doc_type,
+        "filename": file.filename,
+        "total_documents": len(session.documents),
+    }
+
+
 # ── Health Check ────────────────────────────────────────────────────
 
 @router.get("/health")

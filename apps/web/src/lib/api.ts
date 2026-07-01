@@ -2,6 +2,72 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("taxstox_token");
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ── Auth Types ───────────────────────────────────────────────────────
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  pan: string;
+  name: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+// ── Auth API ─────────────────────────────────────────────────────────
+
+export async function registerUser(
+  email: string, password: string, pan: string, name: string
+): Promise<TokenResponse> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, pan, name }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Registration failed");
+  }
+  return res.json();
+}
+
+export async function loginUser(email: string, password: string): Promise<TokenResponse> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Login failed");
+  }
+  return res.json();
+}
+
+export async function fetchMe(): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error("Not authenticated");
+  return res.json();
+}
+
+// ── ITR Types ────────────────────────────────────────────────────────
+
 export interface UploadResponseData {
   session_id: string;
   status: string;
@@ -122,5 +188,66 @@ export async function exportITR(sessionId: string): Promise<ExportData> {
     throw new Error(err.detail || "Export failed");
   }
 
+  return res.json();
+}
+
+// ── Dashboard API ────────────────────────────────────────────────────
+
+export interface DashboardStats {
+  total_filings: number;
+  total_refunds: string;
+  total_tax_saved: string;
+  filed_count: number;
+  draft_count: number;
+  days_remaining: number;
+}
+
+export interface QuickAction {
+  id: string;
+  label: string;
+  icon: string;
+  href: string;
+  primary?: boolean;
+}
+
+export interface FilingRecord {
+  id: string;
+  assessment_year: string;
+  itr_type: string;
+  regime: string | null;
+  gross_income: string | null;
+  tax_paid: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaxCalendarEvent {
+  date: string;
+  title: string;
+  type: string;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  quick_actions: QuickAction[];
+  filings: FilingRecord[];
+  tax_calendar: TaxCalendarEvent[];
+  user_name: string;
+}
+
+export async function fetchDashboard(): Promise<DashboardData> {
+  const res = await fetch(`${API_BASE}/dashboard`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error("Failed to load dashboard");
+  return res.json();
+}
+
+export async function fetchFilings(): Promise<FilingRecord[]> {
+  const res = await fetch(`${API_BASE}/filings`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error("Failed to load filings");
   return res.json();
 }
