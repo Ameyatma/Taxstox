@@ -396,7 +396,7 @@ PAN masking: `CFFPM4503N` → `CFFPM****N` in all logs and UI.
 | Database | SQLite (→ PostgreSQL later) | Zero ops for MVP. Single file. |
 | Sessions | In-memory dict (→ Redis later) | Zero dependencies for MVP |
 | Encryption | cryptography.fernet (→ KMS later) | Env variable key. Battle-tested. |
-| Deployment | Single VPS or Railway.app | One command deploy. No orchestration. |
+| Deployment | Render (backend) + Vercel (frontend) | Free dev tier, one-click scale to $7/mo at launch |
 
 ---
 
@@ -451,7 +451,7 @@ PHASE 4 — Integration + Polish (Week 5)
 PHASE 5 — Edge Cases + Launch (Week 6)
   [ ] Handle: no Form 16, multiple Form 16s, revised returns, capital losses
   [ ] JSON rejection auto-fix (regex match → regenerate)
-  [ ] Deploy to Railway.app / single VPS
+  [ ] Deploy to Render (backend) + Vercel (frontend)
 ```
 
 ---
@@ -461,9 +461,10 @@ PHASE 5 — Edge Cases + Launch (Week 6)
 **Single server.** No Kubernetes. No Docker unless you want it.
 
 ```
-Option A: Railway.app
-  $ railway up
-  → Backend on Railway, Frontend on Vercel (free tier)
+Option A: Render (recommended)
+  → Connect GitHub repo → Render auto-detects render.yaml
+  → Backend on Render (free / $7/mo), Frontend on Vercel (free)
+  → Custom domains: api.taxstox.com → Render, taxstox.com → Vercel
 
 Option B: Single VPS (₹500-1000/month)
   $ git clone && pip install && npm install

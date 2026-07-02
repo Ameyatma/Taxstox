@@ -113,7 +113,7 @@ Upload Form 16 + AIS + PAN + DOB
 | Frontend | Next.js 16 + Tailwind CSS 4 + shadcn/ui + Zustand |
 | Database | SQLite (→ PostgreSQL when needed) |
 | Session | In-memory (→ Redis when needed) |
-| Deployment | Railway.app or single VPS |
+| Deployment | Render (backend) + Vercel (frontend) |
 
 ---
 
