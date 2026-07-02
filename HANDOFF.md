@@ -38,6 +38,88 @@ npm run dev
 
 ---
 
+### 2026-07-02 — Claude (AI Agent) + Aman
+
+**Context:** Deployed TaxStox to production. Switched backend hosting from Railway to Render. Set up custom domains on both Vercel and Render. App is now live at `taxstox.com`.
+
+#### Accounts Created (All use same credentials)
+
+| Service | URL | Email | Purpose |
+|---|---|---|---|
+| **Render** | render.com | `taxstox@gmail.com` | Backend hosting |
+| **Vercel** | vercel.com | `taxstox@gmail.com` | Frontend hosting |
+| **UptimeRobot** | uptimerobot.com | `taxstox@gmail.com` | Keep Render free tier alive |
+
+> ⚠️ **All three services use the SAME password.** Prasoon — ask Aman for it if you haven't received it.
+
+#### What Was Done
+
+**1. Switched Deployment: Railway → Render**
+- Deleted `apps/api/railway.json`
+- Created `render.yaml` at repo root — Render auto-detects this on first deploy
+- Rationale: Render free tier is $0/mo (Railway removed their free tier). Render Starter is $7/mo at launch vs Railway's $5/mo minimum, but with better specs (1GB vs 512MB RAM, 0.5 vs 0.1 CPU).
+- Updated all docs: `HANDOFF.md`, `README.md`, `docs/MASTER_PLAN.md`
+
+**2. Backend Deployed to Render**
+- Service: `taxstox-api` at `https://taxstox-api.onrender.com`
+- Docker build succeeded, FastAPI running on port 8000
+- Health check: `/api/v1/health` → `{"status": "ok", "version": "0.1.0"}`
+- Free tier caveat: spins down after 15 min idle → UptimeRobot cron keeps it warm (every 10 min)
+
+**3. Frontend Deployed to Vercel**
+- Project: `taxstox` at `https://taxstox.vercel.app`
+- Root directory: `apps/web`, Next.js auto-detected
+- Env var: `NEXT_PUBLIC_API_URL` set in Vercel dashboard
+
+**4. Custom Domains Configured (Hostinger)**
+- `taxstox.com` → Vercel (A record: `216.198.79.1`, CNAME www → `eb972152648e5da2.vercel-dns-017.com`)
+- `api.taxstox.com` → Render (CNAME api → `taxstox-api.onrender.com`)
+- Email records (MX, DKIM, SPF, DMARC) left untouched — mail.taxstox.com still works
+
+**5. Production URL Update**
+- Updated `NEXT_PUBLIC_API_URL` in Vercel to `https://api.taxstox.com/api/v1` (was the onrender.com URL)
+
+#### Live URLs (Production)
+
+| Layer | URL | Host |
+|---|---|---|
+| Frontend | `https://taxstox.com` | Vercel ($0/mo) |
+| Backend API | `https://api.taxstox.com` | Render ($0/mo free → $7/mo at launch) |
+| API Docs | `https://api.taxstox.com/docs` | Swagger auto-generated |
+
+#### Render Cold Start Workaround
+
+The free tier idles after 15 minutes. UptimeRobot (free) pings `https://api.taxstox.com/api/v1/health` every 10 minutes to keep the backend warm 24/7 at no cost. Upgrade to Render Starter ($7/mo) at launch to eliminate this entirely.
+
+#### DNS Reference (Hostinger)
+
+```
+A    @    216.198.79.1
+CNAME www  eb972152648e5da2.vercel-dns-017.com
+CNAME api  taxstox-api.onrender.com
+```
+
+#### ⚠️ Action Required — Prasoon
+
+**Set up the cron job to keep Render alive:**
+
+1. Go to [uptimerobot.com](https://uptimerobot.com) and sign up with `taxstox@gmail.com` (same password as everything else)
+2. Click **"Add New Monitor"** → select **HTTP(s)**
+3. URL: `https://api.taxstox.com/api/v1/health`
+4. Monitoring interval: **10 minutes**
+5. Save
+
+This is critical — without it, the backend sleeps after 15 minutes of no traffic and the next request takes 30-60 seconds to wake up.
+
+#### Prasoon — To Deploy Code Changes
+
+1. Push to GitHub `main` branch
+2. Render auto-deploys on push (detects changes in `apps/api/`)
+3. Vercel auto-deploys on push (detects changes in `apps/web/`)
+4. No manual steps needed — just `git push`
+
+---
+
 ### 2026-07-01 — Claude (AI Agent) + Aman
 
 **Context:** Built the E2E MVP from existing codebase (~65% complete). Added real auth, database, dashboard, calculators, broker import, and deployment configs. Goal was ClearTax feature parity for ITR.
