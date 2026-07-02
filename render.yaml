@@ -1,0 +1,20 @@
+# TaxStox — Render deployment config (infra-as-code)
+# Render auto-detects this file when you connect the GitHub repo.
+# It creates the backend web service automatically — no manual setup.
+
+services:
+  - type: web
+    name: taxstox-api
+    runtime: docker
+    rootDir: apps/api
+    dockerfilePath: Dockerfile
+    plan: free # Change to "starter" ($7/mo) when launching
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: TAXSTOX_JWT_SECRET
+        generateValue: true # Auto-generates a random 32-char secret
+      - key: PYTHON_VERSION
+        value: "3.12"
+    autoDeploy: true
+    domains:
+      - api.taxstox.com
