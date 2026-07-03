@@ -38,6 +38,76 @@ npm run dev
 
 ---
 
+### 2026-07-03 — Claude (AI Agent) + Aman
+
+**Context:** Production hardening + feature gap closure. Fixed 4 production blockers, expanded validator from 7 to 28 checks, built ITR-1 builder, added 3 broker parsers, built Settings page with backend.
+
+
+**1. Production Blockers Fixed**
+
+| Issue | File | Fix |
+|---|---|---|
+| Tools page hardcoded `localhost:8000` | `apps/web/src/app/tools/page.tsx` | Changed 4 fetch URLs to `NEXT_PUBLIC_API_URL` |
+| CORS only allowed localhost | `apps/api/src/main.py` | Added `taxstox.com`, `www.taxstox.com`, `taxstox.vercel.app` |
+| ITR form hardcoded to "ITR-2" | `apps/api/src/api/routes.py` | Wired `ITRSelector` into `/process/{session_id}` — auto-detects ITR-1/2/3/4 based on income sources |
+| Export filenames hardcoded `_ITR2_` | `apps/api/src/api/routes.py` | Filename now uses detected ITR form (e.g., `_ITR1_`, `_ITR2_`) |
+
+**2. Validation Engine — 7 → 28 checks** (`apps/api/src/builders/validator.py`)
+
+New checks added:
+- **Identity:** PAN format (V-ID-001), PAN consistency (V-ID-002), DOB validity, personal info completeness
+- **Income:** Total income cross-schedule consistency (V-CON-001), salary/TDS consistency (V-SAL-001), interest income validation
+- **Capital Gains:** CG date range segmentation (V-CG-001), STT paid consistency (V-CG-010)
+- **Deductions:** 80C limit (V-DED-001), 80D self+parents limits (V-DED-005), 80CCD(1B) NPS limit, home loan interest limit
+- **Tax:** Rebate 87A eligibility/amount, surcharge applicability based on total income
+- **Banking:** IFSC format validation (V-BANK-002), bank account refund flag check
+- **Data quality:** Assessment year validity, filing status validity, unrealistic value detection (>₹10Cr), empty schedule warnings
+
+**3. ITR-1 (SAHAJ) Builder** (`apps/api/src/builders/itr1.py`)
+- Full JSON builder for simple salaried returns (no CG, no business, no foreign income)
+- Includes: Schedule S (salary), Schedule HP (house property), Schedule OS (interest), Schedule VI-A (deductions), PartB-TI/TTI
+- Slab-wise tax computation for both Old and New regimes (FY 2025-26)
+- Auto-calculates 80TTA (up to ₹10K) and 80D premiums
+- Wired into `/export/{session_id}` — auto-selects ITR1Builder vs ITRJSONBuilder based on `session.itr_form`
+- Session model updated: `itr_form` field added to `utils/session.py`
+
+**4. Broker Statement Parsers** (`apps/api/src/parsers/broker_statements/generic.py`)
+- **Groww:** `parse_groww_tradebook()` — column auto-detection for Stock/Name, ISIN, Trade Date, Transaction Type, Quantity, Price
+- **Upstox:** `parse_upstox_tradebook()` — handles symbol, isin, trade_date, exchange, segment, qty, avg_price
+- **Angel One:** `parse_angel_one_tradebook()` — handles symbol, isin, trade_date, exchange, qty, avg_traded_price
+- All return `list[CGSaleEntry]` (same interface as Zerodha parser)
+- Unified entry point: `parse_broker_statement()` — auto-detects broker from filename/hint
+- `/upload/broker-statement/{session_id}` updated to support `groww`, `upstox`, `angel_one`
+
+**5. Settings Page + Backend** (NEW)
+- **Frontend:** `apps/web/src/app/settings/page.tsx` — profile editor, password change, sign out button
+- **Backend endpoints:**
+  - `PUT /api/v1/auth/profile` — update name
+  - `POST /api/v1/auth/change-password` — change password (verifies current)
+  - `POST /api/v1/auth/forgot-password` — returns reset token (dev mode; needs SendGrid for production)
+- **DB functions:** `update_user_profile()`, `change_user_password()` in `database.py`
+- Header updated: Settings gear icon for authenticated users
+
+**6. Build Verification**
+- Next.js 16 build: all 8 routes compiled, zero TypeScript errors
+- Python: all new modules import clean (ITR1Builder, ITRValidator 28 checks, ITRSelector, broker parsers)
+
+**7. What Was Not Touched (Still Pending from Priority Lists)**
+
+| Item | Status |
+|---|---|
+| ITR-3 builder (business income) | Not started |
+| ITR-4 builder (presumptive) | Not started |
+| Schedule FA (foreign assets) | Not started |
+| Tests (backend + frontend) | Not started |
+| TanStack Query / React Hook Form + Zod | Not started |
+| Charts (Recharts) on summary page | Not started |
+| Audit trail | Not started |
+| Rate limiting | Not started |
+| CAMS PDF broker parser | Not started |
+
+---
+
 ### 2026-07-02 — Claude (AI Agent) + Aman
 
 **Context:** Deployed TaxStox to production. Switched backend hosting from Railway to Render. Set up custom domains on both Vercel and Render. App is now live at `taxstox.com`.
