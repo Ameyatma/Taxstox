@@ -126,6 +126,36 @@ def get_user_by_id(user_id: str) -> dict | None:
         conn.close()
 
 
+def update_user_profile(user_id: str, name: str) -> dict | None:
+    """Update user's name."""
+    conn = get_db()
+    try:
+        conn.execute("UPDATE users SET name = ? WHERE id = ?", (name, user_id))
+        conn.commit()
+        return get_user_by_id(user_id)
+    finally:
+        conn.close()
+
+
+def change_user_password(user_id: str, current_password: str, new_password: str) -> bool:
+    """Change user password. Returns True on success, False if current password wrong."""
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT password_hash FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        if not row:
+            return False
+        if not verify_password(current_password, row["password_hash"]):
+            return False
+        new_hash = hash_password(new_password)
+        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
 # ── Filing CRUD ──────────────────────────────────────────────────────
 
 def create_filing(user_id: str, assessment_year: str = "2026-27", itr_type: str = "ITR-2") -> str:

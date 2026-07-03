@@ -31,6 +31,7 @@ class Session:
     classified_cg: Optional[ClassifiedCGData] = None
     regime_result: Optional[RegimeResult] = None
     user_answers: UserAnswers = field(default_factory=UserAnswers)
+    itr_form: str = "ITR-2"  # Auto-detected ITR form type
 
     # Final
     itr_json: Optional[dict] = None

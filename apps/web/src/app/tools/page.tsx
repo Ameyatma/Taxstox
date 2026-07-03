@@ -82,7 +82,7 @@ function RegimeCompareCalculator() {
     setLoading(true);
     const params = new URLSearchParams({ salary, deductions_80c: ded80c, deductions_80d: ded80d, hra_exemption: hra, home_loan_interest: homeInt, nps_employer: npsEmp, other_income: other });
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/calculator/regime-compare?${params}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/regime-compare?${params}`);
       setResult(await res.json());
     } catch { setResult(null); }
     setLoading(false);
@@ -155,7 +155,7 @@ function HRACalculator() {
     setLoading(true);
     const params = new URLSearchParams({ basic_salary: basic, hra_received: hraReceived, rent_paid: rent, metro_city: String(metro) });
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/calculator/hra?${params}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/hra?${params}`);
       setResult(await res.json());
     } catch { setResult(null); }
     setLoading(false);
@@ -215,7 +215,7 @@ function CGTaxCalculator() {
     setLoading(true);
     const params = new URLSearchParams({ gain_type: gainType, gain_amount: amount });
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/calculator/capital-gains?${params}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/capital-gains?${params}`);
       setResult(await res.json());
     } catch { setResult(null); }
     setLoading(false);
@@ -276,7 +276,7 @@ function QuickEstimateCalculator() {
     setLoading(true);
     const params = new URLSearchParams({ annual_income: income, regime });
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/calculator/quick-estimate?${params}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/quick-estimate?${params}`);
       setResult(await res.json());
     } catch { setResult(null); }
     setLoading(false);

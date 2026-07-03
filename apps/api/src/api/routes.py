@@ -25,6 +25,7 @@ from src.engine.regime_optimizer import RegimeOptimizer
 from src.engine.questions import QuestionEngine
 from src.builders.itr_json_builder import ITRJSONBuilder
 from src.builders.validator import ITRValidator
+from src.engine.itr_selector import ITRSelector
 from src.utils.password_resolver import PasswordResolver
 from src.utils.session import session_manager, Session
 
@@ -170,6 +171,27 @@ async def process_and_get_questions(
     other_sales = session.ais.other_unit_sales if session.ais else []
     session.classified_cg = classifier.classify(equity_sales, other_sales)
 
+    # Auto-select ITR form based on detected income sources
+    selector = ITRSelector()
+    has_cg = bool(session.classified_cg and session.classified_cg.total_cg > 0)
+    has_foreign = any(
+        (hasattr(session.ais, field) and getattr(session.ais, field))
+        for field in ["foreign_remittance", "foreign_income"]
+    ) if session.ais else False
+    house_count = 1 if session.form16 else 0  # Default to 1; user answers may override
+
+    itr_selection = selector.select(
+        has_salary=bool(session.form16),
+        has_house_property=house_count > 0,
+        house_property_count=house_count,
+        has_capital_gains=has_cg,
+        has_business_income=False,
+        has_foreign_income=has_foreign,
+        total_income=Decimal(session.classified_cg.total_income or "0") if session.classified_cg else Decimal("0"),
+    )
+    session.itr_form = itr_selection.form.value
+    logger.info(f"ITR form auto-selected: {session.itr_form} — {itr_selection.explanation}")
+
     # Optimize regime
     optimizer = RegimeOptimizer()
     savings_interest = session.ais.total_savings_interest if session.ais else Decimal("0")
@@ -185,7 +207,7 @@ async def process_and_get_questions(
     # Generate questions
     question_engine = QuestionEngine()
     response = question_engine.generate(
-        itr_type="ITR-2",
+        itr_type=session.itr_form,
         form16=session.form16,
         ais=session.ais,
         recommended_regime=session.regime_result.recommended,
@@ -283,13 +305,19 @@ async def export_itr_json(
     """
     Build the final ITR JSON, validate it, and return it for download.
     """
-    # Build JSON
-    builder = ITRJSONBuilder()
+    # Build JSON using the correct builder for the ITR form
+    itr_form = getattr(session, "itr_form", "ITR-2")
     unified = session.unified_data
     unified.regime_result = session.regime_result
     unified.recommended_regime = session.regime_result.recommended
 
-    itr_json = builder.build(unified)
+    if itr_form == "ITR-1":
+        from src.builders.itr1 import ITR1Builder
+        builder = ITR1Builder()
+        itr_json = builder.build(unified)
+    else:
+        builder = ITRJSONBuilder()
+        itr_json = builder.build(unified)
 
     # Validate
     validator = ITRValidator()
@@ -299,9 +327,9 @@ async def export_itr_json(
     session.status = "built"
 
     if not report.can_file:
-        # Return JSON anyway but flag validation issues
+        itr_form = getattr(session, "itr_form", "ITR-2")
         return ExportResponse(
-            filename=f"{session.pan}_ITR2_{session.form16.part_a.assessment_year.replace('-', '_')}.json",
+            filename=f"{session.pan}_{itr_form.replace('-', '')}_{session.form16.part_a.assessment_year.replace('-', '_')}.json",
             json_data=itr_json,
             validation_passed=False,
             validation_warnings=[
@@ -310,8 +338,9 @@ async def export_itr_json(
             ],
         )
 
+    itr_form = getattr(session, "itr_form", "ITR-2")
     return ExportResponse(
-        filename=f"{session.pan}_ITR2_{session.form16.part_a.assessment_year.replace('-', '_')}.json",
+        filename=f"{session.pan}_{itr_form.replace('-', '')}_{session.form16.part_a.assessment_year.replace('-', '_')}.json",
         json_data=itr_json,
         validation_passed=True,
     )
@@ -331,18 +360,24 @@ async def upload_broker_statement(
     and auto-classify capital gains into the session.
     """
     from src.parsers.broker_statements.zerodha import parse_zerodha_tradebook, parse_zerodha_tax_pnl
+    from src.parsers.broker_statements.generic import parse_broker_statement
 
     content = await file.read()
 
     try:
-        if broker.lower() == "zerodha":
-            # Try Tax P&L format first (preferred), fall back to tradebook
+        broker_lower = broker.lower().strip()
+        if broker_lower == "zerodha":
             try:
                 entries = parse_zerodha_tax_pnl(content, file.filename or "")
             except Exception:
                 entries = parse_zerodha_tradebook(content, file.filename or "")
+        elif broker_lower in ("groww", "upstox", "angel_one", "angel", "upstox"):
+            entries = parse_broker_statement(content, file.filename or "", broker_lower)
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported broker: {broker}. Currently supported: zerodha")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported broker: {broker}. Supported: zerodha, groww, upstox, angel_one"
+            )
 
         if not entries:
             raise HTTPException(status_code=400, detail="No valid sell transactions found in the uploaded file.")

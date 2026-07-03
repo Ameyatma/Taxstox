@@ -57,6 +57,13 @@ export default function Header() {
 
         {isAuthenticated ? (
           <div className="flex items-center gap-3">
+            <Link
+              href="/settings"
+              className="material-symbols-outlined text-[#434652] hover:text-[#003366] transition-colors"
+              title="Settings"
+            >
+              settings
+            </Link>
             <span className="text-sm font-medium text-[#0b1c30] hidden md:inline" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
               {user?.name?.split(" ")[0]}
             </span>
