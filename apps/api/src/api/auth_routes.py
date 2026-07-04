@@ -202,7 +202,7 @@ async def google_auth(body: GoogleAuthRequest):
             user_id = str(uuid.uuid4())[:12]
             now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
             conn.execute(
-                "INSERT INTO users (id, email, pan, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO users (id, email, pan, name, hashed_password, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                 (user_id, email, "", name, hash_password(google_id), now),
             )
             conn.commit()

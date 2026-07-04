@@ -142,14 +142,14 @@ def change_user_password(user_id: str, current_password: str, new_password: str)
     conn = get_db()
     try:
         row = conn.execute(
-            "SELECT password_hash FROM users WHERE id = ?", (user_id,)
+            "SELECT hashed_password FROM users WHERE id = ?", (user_id,)
         ).fetchone()
         if not row:
             return False
-        if not verify_password(current_password, row["password_hash"]):
+        if not verify_password(current_password, row["hashed_password"]):
             return False
         new_hash = hash_password(new_password)
-        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user_id))
+        conn.execute("UPDATE users SET hashed_password = ? WHERE id = ?", (new_hash, user_id))
         conn.commit()
         return True
     finally:
