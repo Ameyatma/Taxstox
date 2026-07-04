@@ -100,10 +100,8 @@ npm run dev
 
 10. **Animated logo flip in header**
     - TaxStox logo in the navbar automatically flips every 3 seconds using CSS 3D transforms
-    - Front face: "TaxStox" in brand colors
-    - Back face: green pill badge "✓ Licensed by IT Dept."
-    - Full cycle: 3s TaxStox → 500ms flip → 3s badge → 500ms flip back
-    - Uses `preserve-3d`, `rotateY(180deg)`, and `backface-visibility: hidden`
+    - Cycles through 3 states: "TaxStox" → "✓ Licensed by IT Dept." → "🛡 Bank-Grade Security"
+    - 9-second full cycle with 3D rotateY at 0°, 120°, 240°
 
 **What Was Modified**
 | File | Change |
