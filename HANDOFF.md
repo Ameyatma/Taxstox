@@ -98,6 +98,13 @@ npm run dev
    - **FAQ Section** — 7 expandable questions: who should file, free tier, data security, ITR forms, Old vs New regime, support, e-verification process
    - Landing page now has 9 full sections: Hero → Stats → Features → Why TaxStox → How it Works → Segments → Social Proof → FAQ → CTA
 
+10. **Animated logo flip in header**
+    - TaxStox logo in the navbar automatically flips every 3 seconds using CSS 3D transforms
+    - Front face: "TaxStox" in brand colors
+    - Back face: green pill badge "✓ Licensed by IT Dept."
+    - Full cycle: 3s TaxStox → 500ms flip → 3s badge → 500ms flip back
+    - Uses `preserve-3d`, `rotateY(180deg)`, and `backface-visibility: hidden`
+
 **What Was Modified**
 | File | Change |
 |---|---|
@@ -116,6 +123,7 @@ npm run dev
 | `apps/web/src/app/layout.tsx` | Footer links fixed: `#` → `/legal/*` (4 links) |
 | `apps/web/src/app/auth/page.tsx` | Consent links fixed: `#` → `/legal/terms`, `/legal/privacy`; Link import added |
 | `apps/web/src/app/page.tsx` | **MAJOR** — 4 new sections: Stats Bar, Why TaxStox, Taxpayer Segments, FAQ |
+| `apps/web/src/components/Header.tsx` | Logo flip animation: TaxStox ↔ Licensed by IT Dept; link fixes |
 
 **⚠️ Action Items for Aman**
 
