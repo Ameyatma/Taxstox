@@ -325,7 +325,7 @@ export default function HomePage() {
             )}
 
             {/* AIS Dropzone */}
-            <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${aisFile ? "border-[#166534] bg-green-50/20" : "border-[#c3c6d4] hover:border-[#003366] bg-white"}`}
+            <div className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${aisFile ? "border-[#166534] bg-green-50/20" : "border-[#c3c6d4] hover:border-[#003366] bg-white"}`}
               onClick={() => aisRef.current?.click()}>
               <div className="flex flex-col items-center gap-2">
                 <div className="w-14 h-14 rounded-full bg-[#eff4ff] flex items-center justify-center">
