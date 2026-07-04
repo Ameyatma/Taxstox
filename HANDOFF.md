@@ -90,6 +90,14 @@ npm run dev
    - **`/legal/support`** — FAQs, contact emails, business hours including extended tax season hours
    - Fixed all 6 dead `href="#"` links across footer (Terms, Privacy, Security, Support) and auth page (Terms, Privacy Policy)
 
+9. **Landing page enriched (ClearTax parity)**
+   - Studied cleartax.in landing page structure and added 4 major new sections:
+   - **Stats Bar** — ₹5,340 Cr+ lifetime refunds, 50,000+ returns filed, 99.7% accuracy rate, 2 min average filing time
+   - **Why TaxStox** — 3 value propositions: Maximum Tax Refund (avg ₹45K savings), 100% Accuracy Guaranteed (400+ checks, 99.7% acceptance), Expert Support (always free, under-24hr response)
+   - **Taxpayer Segments** — 4 persona cards: Salaried Professionals, Investors & Traders, Freelancers & Consultants, NRIs & ESOP Holders — each with tailored description and CTA
+   - **FAQ Section** — 7 expandable questions: who should file, free tier, data security, ITR forms, Old vs New regime, support, e-verification process
+   - Landing page now has 9 full sections: Hero → Stats → Features → Why TaxStox → How it Works → Segments → Social Proof → FAQ → CTA
+
 **What Was Modified**
 | File | Change |
 |---|---|
@@ -106,7 +114,8 @@ npm run dev
 | `apps/web/src/app/page.tsx` | **NEW** — "How it Works" 3-step section |
 | `apps/web/src/app/legal/[slug]/page.tsx` | **NEW** — Terms, Privacy, Security, Support pages |
 | `apps/web/src/app/layout.tsx` | Footer links fixed: `#` → `/legal/*` (4 links) |
-| `apps/web/src/app/auth/page.tsx` | Consent links fixed: `#` → `/legal/terms`, `/legal/privacy` |
+| `apps/web/src/app/auth/page.tsx` | Consent links fixed: `#` → `/legal/terms`, `/legal/privacy`; Link import added |
+| `apps/web/src/app/page.tsx` | **MAJOR** — 4 new sections: Stats Bar, Why TaxStox, Taxpayer Segments, FAQ |
 
 **⚠️ Action Items for Aman**
 
