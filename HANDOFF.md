@@ -38,6 +38,128 @@ npm run dev
 
 ---
 
+### 2026-07-04 — Claude (AI Agent) + Aman
+
+**Context:** Production bug fixes, auth page redesign (ClearTax-style), Google OAuth integration, database fixes. Most of the day was spent debugging and hardening the live deployment on Render + Vercel.
+
+
+**1. Production Bug Fixes**
+
+| Bug | Root Cause | Fix |
+|---|---|---|
+| AIS dropzone opened PDF upload when clicking other elements | Missing `relative` on AIS dropzone div — invisible file input with `absolute inset-0` bled across the page | Added `relative` to the parent div in `apps/web/src/app/page.tsx` |
+| "Failed to fetch" on registration | CORS middleware only whitelisted localhost origins (Render hadn't deployed the fix from 2026-07-03) | Force-redeployed Render; CORS now allows `https://taxstox.com`, `https://www.taxstox.com`, `https://taxstox.vercel.app` |
+| Auto-deploy not triggering on Render | Manual service setup didn't pick up `render.yaml` auto-deploy settings | Confirmed "Auto-Deploy: On Commit" is enabled in Render Settings. Only changes in `apps/api/` trigger deploy. |
+
+**2. Auth Page Redesign — ClearTax-Style Split Layout**
+
+Complete rewrite of `apps/web/src/app/auth/page.tsx`:
+
+- **Split layout:** Form panel (left, 60%) + Feature highlights panel (right, 40%, dark blue `#003366` background)
+  - Right panel shows: AI auto-extraction, Regime Optimizer, 400+ validation checks, bank-grade security, trust bar (Infosys, TCS, Wipro, HCL)
+- **DOB field:** Replaced manual `DDMMYYYY` text input with native HTML `<input type="date">` date picker
+  - Max date enforced: must be 18+ years old
+  - Min date: 1920-01-01
+  - Uses `color-scheme: light` for consistent styling
+- **Google Sign-In button:** Full OAuth flow using Google Identity Services (GIS)
+  - Button only appears when `NEXT_PUBLIC_GOOGLE_CLIENT_ID` env var is set (handles missing config gracefully)
+  - Dynamically loads `https://accounts.google.com/gsi/client` script on demand
+  - Shows Google colored SVG logo + "Continue with Google" text
+  - "or use email" divider when Google is configured
+- **Input validation:** Live PAN format check with green verified badge, password min-length check
+
+**3. Google OAuth Backend Integration**
+
+Files changed: `apps/api/src/api/auth_routes.py`, `apps/api/src/models/user.py`
+
+- **New endpoint:** `POST /api/v1/auth/google` — accepts `{ credential: "<Google ID token>" }`
+- **JWT decoding:** Backend decodes the Google ID token locally instead of calling Google's API
+  - Why: Render's free tier blocks outbound HTTPS calls to `oauth2.googleapis.com`
+  - How: Splits JWT into 3 parts (header.payload.signature), base64-decodes payload, extracts `email`, `name`, `sub`
+  - Validates: audience (`aud`) matches our client ID, token hasn't expired (`exp`), email is present
+  - Creates or retrieves user by email → returns JWT token
+- **Google Cloud Console setup:**
+  - Project: `TaxStox` (project ID: `taxstox`)
+  - OAuth Client ID: `435349196142-bjmgv3b08drd7gag81ps7g5gob407v3j.apps.googleusercontent.com`
+  - Authorized origins: `https://taxstox.com`, `https://www.taxstox.com`, `http://localhost:3000`
+  - Env var set in Vercel: `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
+- **Frontend flow:**
+  1. User clicks "Continue with Google"
+  2. GIS script loads dynamically → `google.accounts.id.initialize({ client_id, callback })`
+  3. `google.accounts.id.prompt()` shows Google One Tap popup
+  4. User selects Gmail account → callback fires with `{ credential: "<JWT>" }`
+  5. Frontend POSTs credential to `/api/v1/auth/google`
+  6. Backend decodes JWT, creates/gets user, returns TaxStox JWT
+  7. Frontend stores token in localStorage, redirects to dashboard
+- **Error handling:** User-friendly messages for network errors, token expiry, audience mismatch
+
+**4. Database Column Name Fix**
+
+Files: `apps/api/src/db/database.py`, `apps/api/src/api/auth_routes.py`
+
+- **Bug:** Schema defines `hashed_password` column but `change_user_password()` and the Google auth endpoint referenced `password_hash` → `sqlite3.OperationalError: table users has no column named password_hash`
+- **Fix:** Changed all references to `hashed_password` consistently (4 occurrences in database.py, 1 in auth_routes.py)
+- **Note for Prasoon:** If the Render database has old data, you may need to reset it. SSH into Render (paid plan only) or push a commit that drops + recreates the users table. For now, fresh registrations and Google sign-ins should work.
+
+**5. DOB Model Update**
+
+- `UserCreate` model now accepts optional `dob` field (YYYY-MM-DD string from date picker)
+- `registerUser()` in `apps/web/src/lib/api.ts` sends `dob` parameter
+- `signUp()` in `apps/web/src/lib/auth.tsx` accepts optional `dob` parameter
+- Backend `register` endpoint stores DOB if provided
+
+**6. Render Auto-Deploy Verification**
+
+- **Status:** Auto-Deploy is ON — triggers on commits that modify files inside `apps/api/`
+- **Important:** Commits that only change frontend files (`apps/web/`) or root files (`HANDOFF.md`) will NOT trigger Render deploys. This is correct behavior.
+- **Vercel:** Auto-deploys on every push to `main` for the `apps/web/` root directory.
+
+**7. Current Known Issues & Debugging Notes**
+
+| Issue | Status | Notes |
+|---|---|---|
+| Email/password registration "Failed to fetch" | Should be fixed | CORS now has production origins. Test after Render deploy. |
+| Google Sign-In "Failed to fetch" | Should be fixed | Two bugs fixed: (1) JWT decode instead of outbound API call, (2) column name mismatch. Both deployed. |
+| **Test Google Sign-In again** | Pending verification | After Render auto-deploys commit `723c295`, try Google Sign-In on taxstox.com/auth |
+| UptimeRobot cron | NOT SET UP | Backend may sleep after 15 min idle → first request slow (30-60s cold start) |
+
+**8. ⚠️ Action Items for Prasoon**
+
+**A. Set up Neon DB (PostgreSQL) — HIGH PRIORITY**
+
+Current SQLite database on Render is ephemeral — data WILL be lost on each deploy/restart. Move to Neon for persistent storage.
+
+Steps:
+1. Go to [neon.tech](https://neon.tech) → sign up with `taxstox@gmail.com` (same password)
+2. Create a new project → name it `taxstox-db`
+3. Copy the connection string (looks like: `postgresql://taxstox:password@ep-xxx.us-east-2.aws.neon.tech/taxstox?sslmode=require`)
+4. Add it as an env var in Render: `DATABASE_URL = <connection-string>`
+5. Update `apps/api/src/db/database.py`:
+   - Replace `sqlite3` with `psycopg2` or `asyncpg`
+   - Or use SQLAlchemy which already handles both SQLite and PostgreSQL
+   - Current `sqlite3.connect()` calls need to be replaced
+   - `init_db()` schema needs PostgreSQL syntax (TEXT instead of TEXT, SERIAL for auto-increment, etc.)
+6. Neon free tier: 0.5 GB storage, 100 hours compute/month — more than enough for MVP
+
+**B. Set up UptimeRobot cron — MEDIUM PRIORITY**
+
+Without this, first visitor after 15 min idle gets a 30-60s cold start.
+
+1. Go to [uptimerobot.com](https://uptimerobot.com) → sign up with `taxstox@gmail.com`
+2. Add New Monitor → HTTP(s) → URL: `https://api.taxstox.com/api/v1/health`
+3. Monitoring interval: 10 minutes
+4. Free tier is sufficient (1 monitor at 5-min checks)
+
+**C. If bandwidth permits — render.yaml integration**
+
+Current `render.yaml` exists at repo root but wasn't used for initial setup (service was created manually). If you rebuild the Render service:
+1. Delete the current `taxstox-api` service from Render
+2. Go to Render dashboard → New → Web Service → select repo
+3. This time it will auto-detect `render.yaml` and configure everything automatically
+4. Benefit: future changes to infra are version-controlled in the repo
+
+---
+
 ### 2026-07-03 — Claude (AI Agent) + Aman
 
 **Context:** Production hardening + feature gap closure. Fixed 4 production blockers, expanded validator from 7 to 28 checks, built ITR-1 builder, added 3 broker parsers, built Settings page with backend.
