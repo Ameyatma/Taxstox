@@ -141,27 +141,36 @@ async def google_auth(body: GoogleAuthRequest):
     """
     import json
     import urllib.request
+    import urllib.error
+
+    if not body.credential:
+        raise HTTPException(status_code=400, detail="Missing Google credential.")
 
     # Verify token with Google
     try:
-        verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={body.credential}"
-        resp = urllib.request.urlopen(verify_url)
+        verify_url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + body.credential
+        req = urllib.request.Request(verify_url)
+        resp = urllib.request.urlopen(req, timeout=10)
         token_info = json.loads(resp.read())
 
         if "error" in token_info:
-            raise HTTPException(status_code=400, detail="Invalid Google token.")
+            raise HTTPException(status_code=400, detail="Invalid Google token: " + token_info.get("error", "unknown"))
 
-        email = token_info.get("email", "").lower()
-        name = token_info.get("name", "Google User")
-        google_id = token_info.get("sub", "")
+        email = (token_info.get("email") or "").lower()
+        name = token_info.get("name") or "Google User"
+        google_id = token_info.get("sub") or ""
 
         if not email:
-            raise HTTPException(status_code=400, detail="Email not found in Google token.")
+            raise HTTPException(status_code=400, detail="Email not found in Google token. Ensure you granted email permission.")
 
     except HTTPException:
         raise
-    except Exception:
-        raise HTTPException(status_code=400, detail="Failed to verify Google token.")
+    except urllib.error.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Google verification failed (HTTP {e.code}). Please try again.")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Google verification unreachable. Please try again.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error during Google auth. Please use email sign-up.")
 
     # Find or create user
     from src.db.database import get_db, hash_password

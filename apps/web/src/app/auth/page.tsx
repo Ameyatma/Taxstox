@@ -100,20 +100,24 @@ function AuthContent() {
         callback: async (response: any) => {
           try {
             const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-            const res = await fetch(`${base}/auth/google`, {
+            const url = `${base}/auth/google`;
+            const res = await fetch(url, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ credential: response.credential }),
             });
+            const text = await res.text();
             if (!res.ok) {
-              const err = await res.json();
-              throw new Error(err.detail || "Google sign-in failed");
+              let msg = "Google sign-in failed";
+              try { const err = JSON.parse(text); msg = err.detail || msg; } catch {}
+              throw new Error(msg);
             }
-            const data = await res.json();
+            const data = JSON.parse(text);
             localStorage.setItem("taxstox_token", data.access_token);
             router.push(redirect);
           } catch (err) {
-            setError(err instanceof Error ? err.message : "Google sign-in failed.");
+            const msg = err instanceof Error ? err.message : String(err);
+            setError(msg === "Failed to fetch" ? "Network error. Please try again or use email sign-up." : msg);
             setGoogleLoading(false);
           }
         },
