@@ -13,6 +13,7 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     pan: str = Field(..., min_length=10, max_length=10)
     name: str = Field(..., min_length=1, max_length=255)
+    dob: str = Field(default="", max_length=10)  # YYYY-MM-DD from date picker
 
     @field_validator("pan")
     @classmethod

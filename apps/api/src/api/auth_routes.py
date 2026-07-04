@@ -20,6 +20,10 @@ class PasswordChange(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: str
 
+
+class GoogleAuthRequest(BaseModel):
+    credential: str  # Google ID token
+
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
@@ -127,6 +131,64 @@ async def change_password(body: PasswordChange, current_user: dict = Depends(get
             detail="Current password is incorrect.",
         )
     return {"message": "Password changed successfully."}
+
+
+@router.post("/google", response_model=TokenResponse)
+async def google_auth(body: GoogleAuthRequest):
+    """Sign in / sign up with Google ID token.
+
+    Verifies the token with Google, then creates or retrieves the user.
+    """
+    import json
+    import urllib.request
+
+    # Verify token with Google
+    try:
+        verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={body.credential}"
+        resp = urllib.request.urlopen(verify_url)
+        token_info = json.loads(resp.read())
+
+        if "error" in token_info:
+            raise HTTPException(status_code=400, detail="Invalid Google token.")
+
+        email = token_info.get("email", "").lower()
+        name = token_info.get("name", "Google User")
+        google_id = token_info.get("sub", "")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not found in Google token.")
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to verify Google token.")
+
+    # Find or create user
+    from src.db.database import get_db, hash_password
+    import uuid
+
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT id, email, pan, name FROM users WHERE email = ?", (email,)).fetchone()
+        if row:
+            user = dict(row)
+        else:
+            user_id = str(uuid.uuid4())[:12]
+            now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+            conn.execute(
+                "INSERT INTO users (id, email, pan, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, email, "", name, hash_password(google_id), now),
+            )
+            conn.commit()
+            user = {"id": user_id, "email": email, "pan": "", "name": name}
+    finally:
+        conn.close()
+
+    token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(id=user["id"], email=user["email"], pan=user.get("pan", ""), name=user.get("name", "")),
+    )
 
 
 @router.post("/forgot-password")

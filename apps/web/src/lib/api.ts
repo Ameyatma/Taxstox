@@ -31,12 +31,12 @@ export interface TokenResponse {
 // ── Auth API ─────────────────────────────────────────────────────────
 
 export async function registerUser(
-  email: string, password: string, pan: string, name: string
+  email: string, password: string, pan: string, name: string, dob?: string
 ): Promise<TokenResponse> {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, pan, name }),
+    body: JSON.stringify({ email, password, pan, name, dob: dob || "" }),
   });
   if (!res.ok) {
     const err = await res.json();
