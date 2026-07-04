@@ -2,6 +2,7 @@
 
 import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -356,7 +357,7 @@ function AuthContent() {
               </button>
 
               <p className="text-center text-xs text-[#737783]">
-                By signing up, you agree to our <a className="text-[#003178] underline hover:text-[#003366]" href="#">Terms</a> and <a className="text-[#003178] underline hover:text-[#003366]" href="#">Privacy Policy</a>
+                By signing up, you agree to our <Link className="text-[#003178] underline hover:text-[#003366]" href="/legal/terms">Terms</Link> and <Link className="text-[#003178] underline hover:text-[#003366]" href="/legal/privacy">Privacy Policy</Link>
               </p>
             </div>
           )}

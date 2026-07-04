@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Inter, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Providers from "@/components/Providers";
@@ -56,9 +57,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               &copy; {new Date().getFullYear()} TaxStox. Secured with 256-bit encryption. Licensed by Income Tax Dept.
             </span>
             <div className="flex gap-4">
-              <a href="#" className="hover:text-[#003366] transition-colors">Security</a>
-              <a href="#" className="hover:text-[#003366] transition-colors">Privacy</a>
-              <a href="#" className="hover:text-[#003366] transition-colors">Support</a>
+              <Link href="/legal/terms" className="hover:text-[#003366] transition-colors">Terms</Link>
+              <Link href="/legal/privacy" className="hover:text-[#003366] transition-colors">Privacy</Link>
+              <Link href="/legal/security" className="hover:text-[#003366] transition-colors">Security</Link>
+              <Link href="/legal/support" className="hover:text-[#003366] transition-colors">Support</Link>
             </div>
           </div>
         </footer>
