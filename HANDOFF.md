@@ -101,12 +101,19 @@ npm run dev
    - Click **Save Changes** → Render will auto-redeploy
    - Verify: `curl https://api.taxstox.com/api/v1/health` should return `{"status":"ok"}`
 
-2. **Add OAuth redirect URIs in Google Cloud Console**
-   - Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials) → TaxStox project
-   - Click the OAuth 2.0 Client ID → **Authorized redirect URIs** → add:
-     - `http://localhost:3000/auth/google-callback`
-     - `https://taxstox.com/auth/google-callback`
-   - Save
+2. **Fix Google Sign-In `redirect_uri_mismatch` error (CRITICAL — OAuth popup broken without this)**
+   - **The error:** When clicking "Continue with Google", the popup shows:
+     > *"You can't sign in because this app sent an invalid request. Error 400: redirect_uri_mismatch"*
+   - **Why:** We switched from FedCM/One Tap (`google.accounts.id.prompt`) to traditional OAuth 2.0 popup flow. FedCM used "Authorized JavaScript origins" (which are configured). The new popup flow uses "Authorized redirect URIs" (which are NOT configured yet). These are two separate sections in Google Cloud Console.
+   - **Fix:**
+     1. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials)
+     2. Select the **TaxStox** project (project ID: `taxstox`)
+     3. Click the OAuth 2.0 Client ID: `435349196142-bjmgv3b08drd7gag81ps7g5gob407v3j.apps.googleusercontent.com`
+     4. Under **"Authorized redirect URIs"** (NOT "Authorized JavaScript origins"), click **+ ADD URI**:
+        - `http://localhost:3000/auth/google-callback`
+        - `https://taxstox.com/auth/google-callback`
+     5. Click **Save**
+   - **Verify:** Click "Continue with Google" on the auth page → Google account chooser popup should appear → select account → redirected back and signed in.
 
 3. **Set up UptimeRobot cron** (still pending from this morning — see AM session below)
 
