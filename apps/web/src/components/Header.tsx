@@ -34,13 +34,13 @@ export default function Header() {
               Dashboard
             </Link>
           )}
-          <a
-            href="#"
+          <Link
+            href="/#how-it-works"
             className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
             style={{ fontFamily: "var(--font-hanken-grotesk)" }}
           >
             How it Works
-          </a>
+          </Link>
         </nav>
       </div>
       <div className="flex items-center gap-4">

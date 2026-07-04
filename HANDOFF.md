@@ -77,6 +77,11 @@ npm run dev
    - `apps/api/requirements.txt`: removed `sqlalchemy`, `aiosqlite`; added `psycopg2-binary`, `python-dotenv`
    - `apps/api/Dockerfile`: removed `mkdir -p /app/data` (no local SQLite file needed)
 
+7. **"How it Works" link fix**
+   - Header link was `href="#"` (dead link) — page was planned but never built
+   - Added 3-step "How it Works" section to landing page (`id="how-it-works"`) with Upload → Answer → Download steps
+   - Fixed Header link to `<Link href="/#how-it-works">` — now scrolls smoothly to the section
+
 **What Was Modified**
 | File | Change |
 |---|---|
@@ -89,6 +94,8 @@ npm run dev
 | `apps/web/.env.local` | **NEW** — NEXT_PUBLIC_API_URL + NEXT_PUBLIC_GOOGLE_CLIENT_ID |
 | `apps/web/src/app/auth/page.tsx` | Google Sign-In: FedCM → OAuth 2.0 popup flow |
 | `apps/web/src/app/auth/google-callback/page.tsx` | **NEW** — OAuth redirect landing page |
+| `apps/web/src/components/Header.tsx` | "How it Works" link: `#` → `/#how-it-works` |
+| `apps/web/src/app/page.tsx` | **NEW** — "How it Works" 3-step section |
 
 **⚠️ Action Items for Aman**
 

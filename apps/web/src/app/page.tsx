@@ -233,6 +233,36 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* How it Works — 3-step flow */}
+          <section id="how-it-works" className="py-20 bg-[#F8FAFC] px-6 md:px-10 scroll-mt-20">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-14 space-y-2">
+                <p className="text-[11px] tracking-widest font-bold text-[#F57C00] uppercase" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>How it Works</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>File your ITR in 2 minutes.</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Step 1 */}
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-[#003366] rounded-2xl flex items-center justify-center text-white mx-auto text-2xl font-bold" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>1</div>
+                  <h3 className="text-lg font-semibold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Upload Documents</h3>
+                  <p className="text-sm text-[#434652]">Upload your Form 16 and AIS PDFs. Our AI auto-extracts salary, TDS, capital gains, dividends, and interest income in seconds.</p>
+                </div>
+                {/* Step 2 */}
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-[#0d47a1] rounded-2xl flex items-center justify-center text-white mx-auto text-2xl font-bold" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>2</div>
+                  <h3 className="text-lg font-semibold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Answer 5 Questions</h3>
+                  <p className="text-sm text-[#434652]">Simple yes/no questions about your income. No tax jargon. Our engine optimizes across Old & New regimes to minimize your tax.</p>
+                </div>
+                {/* Step 3 */}
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-[#166534] rounded-2xl flex items-center justify-center text-white mx-auto text-2xl font-bold" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>3</div>
+                  <h3 className="text-lg font-semibold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Download & File</h3>
+                  <p className="text-sm text-[#434652]">Get your validated ITR JSON with 400+ checks. Download and upload directly to the Income Tax portal. Done in 2 minutes.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Social Proof */}
           <section className="py-12 bg-[#eff4ff] border-y border-[#c3c6d4]">
             <div className="max-w-6xl mx-auto px-10 text-center">
