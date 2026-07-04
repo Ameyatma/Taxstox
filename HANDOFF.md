@@ -7,15 +7,17 @@
 ## Quick Start
 
 ```bash
-# Backend
+# Backend (requires Python 3.12+ and DATABASE_URL)
 cd apps/api
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn src.main:app --reload
+DATABASE_URL="postgresql://..." uvicorn src.main:app --reload
 # → http://localhost:8000
 # → API Docs: http://localhost:8000/docs
 
 # Frontend
 cd apps/web
+cp .env.example .env.local  # or use the existing .env.local
 npm install
 npm run dev
 # → http://localhost:3000
@@ -38,7 +40,85 @@ npm run dev
 
 ---
 
-### 2026-07-04 — Claude (AI Agent) + Aman
+### 2026-07-04 (PM) — Prasoon
+
+**What Was Done**
+
+1. **Database: SQLite → Neon PostgreSQL migration**
+   - Replaced `sqlite3` with `psycopg2` in `apps/api/src/db/database.py` — Neon is now the only backend
+   - Removed SQLite fallback — `DATABASE_URL` env var is required
+   - All 13 DB functions rewritten: `create_user`, `authenticate_user`, `get_user_by_id`, `get_user_by_email`, `create_user_google`, `user_exists`, `update_user_profile`, `change_user_password`, `create_filing`, `update_filing_status`, `get_user_filings`, `hash_password`, `verify_password`
+   - Placeholders: `?` → `%s`, date defaults: `datetime('now')` → `CURRENT_TIMESTAMP`, errors: `sqlite3.IntegrityError` → `psycopg2.errors.UniqueViolation`
+   - Connection uses `autocommit=True` + `RealDictCursor` for dict-like rows
+   - Neon connection: `postgresql://neondb_owner:***@ep-divine-queen-ahra4kyl.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require`
+
+2. **Schema fix: pan column now nullable**
+   - Changed `pan TEXT UNIQUE NOT NULL` → `pan TEXT UNIQUE` (allows NULL)
+   - Google OAuth users get `NULL` pan until they add it in settings — multiple Google users no longer collide on empty-pan unique constraint
+   - All auth routes handle `None` pan gracefully with `.get("pan") or ""`
+
+3. **Local dev environment upgrade**
+   - Installed Python 3.12.13 via Homebrew (system was 3.9)
+   - Created `.venv` at `apps/api/.venv` with all deps including `psycopg2-binary` and `python-dotenv`
+   - Created `apps/web/.env.local` with `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_API_URL`
+
+4. **Google Sign-In: FedCM → OAuth 2.0 Popup flow**
+   - FedCM (`google.accounts.id.prompt()`) doesn't work on localhost — throws `FedCM get() rejects with NetworkError`
+   - Replaced with traditional OAuth 2.0 implicit flow using `window.open()` popup
+   - Constructs Google OAuth URL with `response_type=id_token`, opens centered popup, polls for redirect
+   - Created `apps/web/src/app/auth/google-callback/page.tsx` — landing page for the OAuth redirect
+   - Parent window extracts `id_token` from popup's URL hash, sends to backend `/auth/google`
+
+5. **Security: render.yaml credentials removed**
+   - `DATABASE_URL` changed from hardcoded value to `sync: false` (set manually in Render dashboard)
+   - Neon password is no longer committed to git
+
+6. **Dependencies updated**
+   - `apps/api/requirements.txt`: removed `sqlalchemy`, `aiosqlite`; added `psycopg2-binary`, `python-dotenv`
+   - `apps/api/Dockerfile`: removed `mkdir -p /app/data` (no local SQLite file needed)
+
+**What Was Modified**
+| File | Change |
+|---|---|
+| `apps/api/requirements.txt` | psycopg2-binary + python-dotenv added; sqlalchemy + aiosqlite removed |
+| `apps/api/src/db/database.py` | Complete rewrite — SQLite → Neon PostgreSQL via psycopg2 |
+| `apps/api/src/api/auth_routes.py` | Inline SQL replaced with `create_user_google()` + `user_exists()`; NULL-safe pan |
+| `apps/api/src/main.py` | Added `load_dotenv()` for local .env support |
+| `render.yaml` | DATABASE_URL → `sync: false`; added setup instructions |
+| `apps/api/Dockerfile` | Removed SQLite data dir; documented DATABASE_URL |
+| `apps/web/.env.local` | **NEW** — NEXT_PUBLIC_API_URL + NEXT_PUBLIC_GOOGLE_CLIENT_ID |
+| `apps/web/src/app/auth/page.tsx` | Google Sign-In: FedCM → OAuth 2.0 popup flow |
+| `apps/web/src/app/auth/google-callback/page.tsx` | **NEW** — OAuth redirect landing page |
+
+**⚠️ Action Items for Aman**
+
+1. **Set DATABASE_URL in Render dashboard (CRITICAL — backend won't start without it)**
+   - Go to [Render Dashboard](https://dashboard.render.com) → `taxstox-api` → **Environment**
+   - Add env var:
+     ```
+     DATABASE_URL = postgresql://neondb_owner:npg_6ExGfH2dovSb@ep-divine-queen-ahra4kyl.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+     ```
+   - Click **Save Changes** → Render will auto-redeploy
+   - Verify: `curl https://api.taxstox.com/api/v1/health` should return `{"status":"ok"}`
+
+2. **Add OAuth redirect URIs in Google Cloud Console**
+   - Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials) → TaxStox project
+   - Click the OAuth 2.0 Client ID → **Authorized redirect URIs** → add:
+     - `http://localhost:3000/auth/google-callback`
+     - `https://taxstox.com/auth/google-callback`
+   - Save
+
+3. **Set up UptimeRobot cron** (still pending from this morning — see AM session below)
+
+**Notes for Next Developer**
+- Python 3.12 is now required. Activate the venv: `source apps/api/.venv/bin/activate`
+- `DATABASE_URL` must be set in the environment for the backend to start — no more SQLite fallback
+- Google Sign-In no longer loads the GIS script. It uses a direct OAuth popup. The GIS script dependency is gone.
+- Neon DB is live at `ep-divine-queen-ahra4kyl`. Tables are auto-created on first `init_db()`.
+
+---
+
+### 2026-07-04 (AM) — Claude (AI Agent) + Aman
 
 **Context:** Production bug fixes, auth page redesign (ClearTax-style), Google OAuth integration, database fixes. Most of the day was spent debugging and hardening the live deployment on Render + Vercel.
 
@@ -688,12 +768,17 @@ These are the critical gaps that need to be addressed before the platform can ha
 
 ### Backend (`apps/api/.env`)
 ```
+# Required — Neon PostgreSQL connection string
+DATABASE_URL=postgresql://neondb_owner:npg_6ExGfH2dovSb@ep-divine-queen-ahra4kyl.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+# Auto-generated by Render in production; set manually for local dev
 TAXSTOX_JWT_SECRET=your-random-secret-here
 ```
 
 ### Frontend (`apps/web/.env.local`)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=435349196142-bjmgv3b08drd7gag81ps7g5gob407v3j.apps.googleusercontent.com
 ```
 
 ---
@@ -723,4 +808,4 @@ git push origin main
 
 ---
 
-*Last updated: 2026-07-01 — Claude (AI Agent) + Aman*
+*Last updated: 2026-07-04 — Prasoon + Claude (AI Agent)*

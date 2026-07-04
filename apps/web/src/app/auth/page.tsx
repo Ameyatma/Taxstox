@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
@@ -65,8 +65,10 @@ function AuthContent() {
   };
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  // We no longer use GIS One Tap (FedCM) — use traditional OAuth popup instead.
+  // The GIS script is not needed; we construct the OAuth URL directly.
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     setGoogleLoading(true);
     setError("");
     try {
@@ -75,56 +77,108 @@ function AuthContent() {
         setGoogleLoading(false);
         return;
       }
-      const gis = (window as any).google?.accounts?.id;
-      if (!gis) {
-        // Load Google GIS script dynamically
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = "https://accounts.google.com/gsi/client";
-          script.async = true;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error("Failed to load Google Sign-In"));
-          document.head.appendChild(script);
-        });
-      }
-      // Small delay for GIS to initialize
-      await new Promise(r => setTimeout(r, 300));
-      const client = (window as any).google?.accounts?.id;
-      if (!client) {
-        setError("Google Sign-In not available. Please use email sign-up.");
+
+      // Build the Google OAuth 2.0 URL for an ID token via popup
+      const redirectUri = `${window.location.origin}/auth/google-callback`;
+      const nonce = crypto.randomUUID();
+      const params = new URLSearchParams({
+        client_id: googleClientId,
+        response_type: "id_token",
+        redirect_uri: redirectUri,
+        scope: "openid email profile",
+        nonce: nonce,
+        prompt: "select_account",
+      });
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+      // Open Google sign-in popup
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      const popup = window.open(
+        authUrl,
+        "google-signin",
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      if (!popup) {
+        setError("Popup was blocked. Please allow popups for this site and try again.");
         setGoogleLoading(false);
         return;
       }
-      client.initialize({
-        client_id: googleClientId,
-        callback: async (response: any) => {
-          try {
-            const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-            const url = `${base}/auth/google`;
-            const res = await fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ credential: response.credential }),
-            });
-            const text = await res.text();
-            if (!res.ok) {
-              let msg = "Google sign-in failed";
-              try { const err = JSON.parse(text); msg = err.detail || msg; } catch {}
-              throw new Error(msg);
-            }
-            const data = JSON.parse(text);
-            localStorage.setItem("taxstox_token", data.access_token);
-            router.push(redirect);
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            setError(msg === "Failed to fetch" ? "Network error. Please try again or use email sign-up." : msg);
+
+      // Poll for the popup closing and check for the ID token in the URL hash
+      const pollInterval = setInterval(() => {
+        try {
+          // Try to read the popup's URL hash (only works if same-origin after redirect)
+          if (popup.closed) {
+            clearInterval(pollInterval);
             setGoogleLoading(false);
+            setError("Google sign-in was cancelled. Please try again.");
+            return;
           }
-        },
-      });
-      client.prompt();
+
+          // The popup will redirect to our callback page.
+          // We detect this by watching the popup's location.
+          // When it reaches our callback page, we extract the token.
+          try {
+            const popupUrl = popup.location.href;
+            if (popupUrl.startsWith(redirectUri)) {
+              clearInterval(pollInterval);
+              // Extract id_token from URL hash
+              const hash = popup.location.hash;
+              if (hash.includes("id_token=")) {
+                const idToken = new URLSearchParams(hash.substring(1)).get("id_token");
+                if (idToken) {
+                  popup.close();
+                  sendGoogleToken(idToken);
+                }
+              }
+            }
+          } catch {
+            // Cross-origin — popup hasn't reached our domain yet, keep polling
+          }
+        } catch {
+          // Popup access error, keep polling
+        }
+      }, 500);
+
+      // Safety timeout — stop polling after 2 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (!popup.closed) {
+          setGoogleLoading(false);
+        }
+      }, 120000);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load Google Sign-In.");
+      setGoogleLoading(false);
+    }
+  }, [googleClientId]);
+
+  // Send the Google ID token to our backend
+  const sendGoogleToken = async (idToken: string) => {
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const res = await fetch(`${base}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: idToken }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = "Google sign-in failed";
+        try { const err = JSON.parse(text); msg = err.detail || msg; } catch {}
+        throw new Error(msg);
+      }
+      const data = JSON.parse(text);
+      localStorage.setItem("taxstox_token", data.access_token);
+      router.push(redirect);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg === "Failed to fetch" ? "Network error. Please try again or use email sign-up." : msg);
       setGoogleLoading(false);
     }
   };

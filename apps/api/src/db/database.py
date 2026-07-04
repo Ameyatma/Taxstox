@@ -1,54 +1,82 @@
-"""SQLite database layer for TaxStox — users, filings, documents."""
+"""Database layer for TaxStox — Neon PostgreSQL via psycopg2."""
+
+from __future__ import annotations
 
 import os
 import uuid
-import sqlite3
 from datetime import datetime, timezone
+
 import bcrypt
+import psycopg2
+import psycopg2.extras
+import psycopg2.errors as pg_errors
+
+# ── Connection ───────────────────────────────────────────────────────
+
+_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+
+def get_db():
+    """Return a psycopg2 connection with RealDictCursor."""
+    if not _DATABASE_URL:
+        raise RuntimeError("DATABASE_URL environment variable is not set.")
+    conn = psycopg2.connect(_DATABASE_URL)
+    conn.autocommit = True
+    conn.cursor_factory = psycopg2.extras.RealDictCursor
+    return conn
+
+
+# ── SQL helpers ──────────────────────────────────────────────────────
+
+def _exec_sql(conn, sql: str, params: tuple | None = None):
+    """Execute a single SQL statement."""
+    cur = conn.cursor()
+    cur.execute(sql, params or ())
+    cur.close()
+
+
+def _uid() -> str:
+    """Return a short unique id."""
+    return str(uuid.uuid4())[:12]
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _row_to_dict(row) -> dict | None:
+    """Normalise a psycopg2 RealDictRow to a plain dict."""
+    return dict(row) if row is not None else None
+
 
 # ── Password hashing ─────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
-    # bcrypt has a 72-byte limit
     return bcrypt.hashpw(password[:72].encode(), bcrypt.gensalt()).decode()
 
+
 def verify_password(password: str, hashed: str) -> bool:
-    """Verify a password against its bcrypt hash."""
     return bcrypt.checkpw(password[:72].encode(), hashed.encode())
-
-# ── Database path ────────────────────────────────────────────────────
-
-DB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data")
-DB_PATH = os.path.join(DB_DIR, "taxstox.db")
-
-
-def get_db() -> sqlite3.Connection:
-    """Get a synchronous SQLite connection."""
-    os.makedirs(DB_DIR, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
 
 
 # ── Schema ───────────────────────────────────────────────────────────
 
 def init_db() -> None:
-    """Create tables if they don't exist."""
+    """Create tables if they don't exist (idempotent)."""
     conn = get_db()
     try:
-        conn.executescript("""
+        _exec_sql(conn, """
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
-                pan TEXT UNIQUE NOT NULL,
+                pan TEXT UNIQUE,
                 name TEXT NOT NULL,
                 hashed_password TEXT NOT NULL,
-                created_at TEXT NOT NULL DEFAULT (datetime('now'))
-            );
-
+                dob TEXT DEFAULT '',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        _exec_sql(conn, """
             CREATE TABLE IF NOT EXISTS filings (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL REFERENCES users(id),
@@ -58,34 +86,35 @@ def init_db() -> None:
                 gross_income TEXT,
                 tax_paid TEXT,
                 status TEXT NOT NULL DEFAULT 'draft',
-                created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_filings_user ON filings(user_id, created_at DESC);
-            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-            CREATE INDEX IF NOT EXISTS idx_users_pan ON users(pan);
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
         """)
-        conn.commit()
+        _exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_filings_user ON filings(user_id, created_at DESC)")
+        _exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+        _exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_users_pan ON users(pan)")
+        _exec_sql(conn, "ALTER TABLE users ADD COLUMN IF NOT EXISTS dob TEXT DEFAULT ''")
+        # Allow NULL pan for Google OAuth users who haven't provided PAN yet
+        _exec_sql(conn, "ALTER TABLE users ALTER COLUMN pan DROP NOT NULL")
     finally:
         conn.close()
 
 
 # ── User CRUD ────────────────────────────────────────────────────────
 
-def create_user(email: str, pan: str, name: str, password: str) -> dict:
-    """Create a new user. Returns user dict. Raises ValueError on duplicate."""
+def create_user(email: str, pan: str, name: str, password: str, dob: str = "") -> dict:
     conn = get_db()
     try:
-        user_id = str(uuid.uuid4())[:12]
+        user_id = _uid()
         hashed = hash_password(password)
-        conn.execute(
-            "INSERT INTO users (id, email, pan, name, hashed_password, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, email, pan, name, hashed, datetime.now(timezone.utc).isoformat()),
+        now = _now_iso()
+        _exec_sql(conn,
+            "INSERT INTO users (id, email, pan, name, hashed_password, dob, created_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (user_id, email, pan, name, hashed, dob, now),
         )
-        conn.commit()
-        return {"id": user_id, "email": email, "pan": pan, "name": name}
-    except sqlite3.IntegrityError as e:
+        return {"id": user_id, "email": email, "pan": pan, "name": name, "dob": dob}
+    except pg_errors.UniqueViolation as e:
         msg = str(e).lower()
         if "email" in msg:
             raise ValueError("An account with this email already exists.")
@@ -97,60 +126,111 @@ def create_user(email: str, pan: str, name: str, password: str) -> dict:
 
 
 def authenticate_user(email: str, password: str) -> dict | None:
-    """Verify credentials and return user dict, or None."""
     conn = get_db()
     try:
-        row = conn.execute(
-            "SELECT id, email, pan, name, hashed_password FROM users WHERE email = ?",
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, email, pan, name, hashed_password FROM users WHERE email = %s",
             (email,),
-        ).fetchone()
+        )
+        row = cur.fetchone()
+        cur.close()
         if row is None:
             return None
-        if not verify_password(password, row["hashed_password"]):
+        d = dict(row)
+        if not verify_password(password, d["hashed_password"]):
             return None
-        return {"id": row["id"], "email": row["email"], "pan": row["pan"], "name": row["name"]}
+        return {"id": d["id"], "email": d["email"], "pan": d.get("pan") or "", "name": d["name"]}
     finally:
         conn.close()
 
 
 def get_user_by_id(user_id: str) -> dict | None:
-    """Get user by ID."""
     conn = get_db()
     try:
-        row = conn.execute(
-            "SELECT id, email, pan, name, created_at FROM users WHERE id = ?",
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, email, pan, name, dob, created_at FROM users WHERE id = %s",
             (user_id,),
-        ).fetchone()
-        return dict(row) if row else None
+        )
+        return _row_to_dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def get_user_by_email(email: str) -> dict | None:
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, email, pan, name FROM users WHERE email = %s",
+            (email,),
+        )
+        return _row_to_dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def create_user_google(email: str, name: str, google_id: str) -> dict:
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, email, pan, name FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if row:
+            cur.close()
+            d = dict(row)
+            return {"id": d["id"], "email": d["email"], "pan": d.get("pan") or "", "name": d["name"]}
+
+        # Create new user
+        user_id = _uid()
+        now = _now_iso()
+        hashed = hash_password(google_id)
+        cur.execute(
+            "INSERT INTO users (id, email, pan, name, hashed_password, dob, created_at) "
+            "VALUES (%s, %s, NULL, %s, %s, %s, %s)",
+            (user_id, email, name, hashed, "", now),
+        )
+        cur.close()
+        return {"id": user_id, "email": email, "pan": "", "name": name}
+    finally:
+        conn.close()
+
+
+def user_exists(email: str) -> bool:
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        cur.close()
+        return row is not None
     finally:
         conn.close()
 
 
 def update_user_profile(user_id: str, name: str) -> dict | None:
-    """Update user's name."""
     conn = get_db()
     try:
-        conn.execute("UPDATE users SET name = ? WHERE id = ?", (name, user_id))
-        conn.commit()
+        _exec_sql(conn, "UPDATE users SET name = %s WHERE id = %s", (name, user_id))
         return get_user_by_id(user_id)
     finally:
         conn.close()
 
 
 def change_user_password(user_id: str, current_password: str, new_password: str) -> bool:
-    """Change user password. Returns True on success, False if current password wrong."""
     conn = get_db()
     try:
-        row = conn.execute(
-            "SELECT hashed_password FROM users WHERE id = ?", (user_id,)
-        ).fetchone()
+        cur = conn.cursor()
+        cur.execute("SELECT hashed_password FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        cur.close()
         if not row:
             return False
-        if not verify_password(current_password, row["hashed_password"]):
+        if not verify_password(current_password, dict(row)["hashed_password"]):
             return False
-        new_hash = hash_password(new_password)
-        conn.execute("UPDATE users SET hashed_password = ? WHERE id = ?", (new_hash, user_id))
-        conn.commit()
+        _exec_sql(conn, "UPDATE users SET hashed_password = %s WHERE id = %s",
+                  (hash_password(new_password), user_id))
         return True
     finally:
         conn.close()
@@ -159,42 +239,40 @@ def change_user_password(user_id: str, current_password: str, new_password: str)
 # ── Filing CRUD ──────────────────────────────────────────────────────
 
 def create_filing(user_id: str, assessment_year: str = "2026-27", itr_type: str = "ITR-2") -> str:
-    """Create a new filing record. Returns filing_id."""
     conn = get_db()
     try:
-        filing_id = str(uuid.uuid4())[:12]
-        now = datetime.now(timezone.utc).isoformat()
-        conn.execute(
-            "INSERT INTO filings (id, user_id, assessment_year, itr_type, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'draft', ?, ?)",
+        filing_id = _uid()
+        now = _now_iso()
+        _exec_sql(conn,
+            "INSERT INTO filings (id, user_id, assessment_year, itr_type, status, created_at, updated_at) "
+            "VALUES (%s, %s, %s, %s, 'draft', %s, %s)",
             (filing_id, user_id, assessment_year, itr_type, now, now),
         )
-        conn.commit()
         return filing_id
     finally:
         conn.close()
 
 
 def update_filing_status(filing_id: str, status: str, gross_income: str = "", tax_paid: str = "", regime: str = "") -> None:
-    """Update filing status and financial summary."""
     conn = get_db()
     try:
-        conn.execute(
-            "UPDATE filings SET status = ?, gross_income = ?, tax_paid = ?, regime = ?, updated_at = ? WHERE id = ?",
-            (status, gross_income, tax_paid, regime, datetime.now(timezone.utc).isoformat(), filing_id),
+        _exec_sql(conn,
+            "UPDATE filings SET status = %s, gross_income = %s, tax_paid = %s, regime = %s, "
+            "updated_at = %s WHERE id = %s",
+            (status, gross_income, tax_paid, regime, _now_iso(), filing_id),
         )
-        conn.commit()
     finally:
         conn.close()
 
 
 def get_user_filings(user_id: str) -> list[dict]:
-    """Get all filings for a user, newest first."""
     conn = get_db()
     try:
-        rows = conn.execute(
-            "SELECT * FROM filings WHERE user_id = ? ORDER BY created_at DESC",
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM filings WHERE user_id = %s ORDER BY created_at DESC",
             (user_id,),
-        ).fetchall()
-        return [dict(r) for r in rows]
+        )
+        return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()

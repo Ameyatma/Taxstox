@@ -5,7 +5,10 @@ from fastapi import APIRouter, HTTPException, status, Depends
 
 from src.models.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from src.auth.jwt import create_access_token, get_current_user
-from src.db.database import create_user, authenticate_user, get_user_by_id, update_user_profile, change_user_password
+from src.db.database import (
+    create_user, authenticate_user, get_user_by_id, get_user_by_email,
+    create_user_google, user_exists, update_user_profile, change_user_password,
+)
 
 
 class ProfileUpdate(BaseModel):
@@ -36,6 +39,7 @@ async def register(body: UserCreate):
             pan=body.pan,
             name=body.name,
             password=body.password,
+            dob=body.dob or "",
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -51,7 +55,7 @@ async def register(body: UserCreate):
         user=UserResponse(
             id=user["id"],
             email=user["email"],
-            pan=user["pan"],
+            pan=user.get("pan") or "",
             name=user["name"],
         ),
     )
@@ -95,7 +99,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(
         id=user["id"],
         email=user["email"],
-        pan=user["pan"],
+        pan=user.get("pan") or "",
         name=user["name"],
         created_at=user.get("created_at"),
     )
@@ -189,26 +193,8 @@ async def google_auth(body: GoogleAuthRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to decode Google token. Please try again.")
 
-    # Find or create user
-    from src.db.database import get_db, hash_password
-    import uuid
-
-    conn = get_db()
-    try:
-        row = conn.execute("SELECT id, email, pan, name FROM users WHERE email = ?", (email,)).fetchone()
-        if row:
-            user = dict(row)
-        else:
-            user_id = str(uuid.uuid4())[:12]
-            now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
-            conn.execute(
-                "INSERT INTO users (id, email, pan, name, hashed_password, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (user_id, email, "", name, hash_password(google_id), now),
-            )
-            conn.commit()
-            user = {"id": user_id, "email": email, "pan": "", "name": name}
-    finally:
-        conn.close()
+    # Find or create user (uses dual-backend DB layer)
+    user = create_user_google(email, name, google_id)
 
     token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
     return TokenResponse(
@@ -225,17 +211,12 @@ async def forgot_password(body: ForgotPasswordRequest):
     For now, returns a reset token directly (dev mode).
     """
     import uuid
-    from src.db.database import get_db
 
     email = body.email.strip().lower()
-    conn = get_db()
-    try:
-        row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-    finally:
-        conn.close()
+    exists = user_exists(email)
 
     # Always return success to prevent email enumeration
-    if not row:
+    if not exists:
         return {"message": "If the email is registered, a reset link has been sent."}
 
     reset_token = str(uuid.uuid4())[:12]

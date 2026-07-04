@@ -1,6 +1,11 @@
 # TaxStox — Render deployment config (infra-as-code)
 # Render auto-detects this file when you connect the GitHub repo.
 # It creates the backend web service automatically — no manual setup.
+#
+# Secrets (set manually in Render dashboard, NOT here):
+#   DATABASE_URL — Neon PostgreSQL connection string
+#     Get it from https://console.neon.tech → taxstox-db → Dashboard → Connection string
+#     Format: postgresql://user:password@host/db?sslmode=require
 
 services:
   - type: web
@@ -13,6 +18,8 @@ services:
     envVars:
       - key: TAXSTOX_JWT_SECRET
         generateValue: true # Auto-generates a random 32-char secret
+      - key: DATABASE_URL
+        sync: false # Set manually in Render dashboard — do NOT commit the connection string
       - key: PYTHON_VERSION
         value: "3.12"
     autoDeploy: true

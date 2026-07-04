@@ -2,6 +2,9 @@
 
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+load_dotenv()  # Load .env file for local dev (DATABASE_URL, etc.)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
