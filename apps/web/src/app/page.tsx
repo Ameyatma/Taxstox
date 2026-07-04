@@ -183,6 +183,30 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* Stats Bar — trust metrics */}
+          <section className="py-10 bg-white border-y border-[#E2E8F0]">
+            <div className="max-w-6xl mx-auto px-6 md:px-10">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div className="space-y-1">
+                  <p className="text-3xl md:text-4xl font-extrabold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>₹5,340 Cr+</p>
+                  <p className="text-xs text-[#434652] font-medium uppercase tracking-wider">Lifetime Refunds Delivered</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-3xl md:text-4xl font-extrabold text-[#166534]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>50,000+</p>
+                  <p className="text-xs text-[#434652] font-medium uppercase tracking-wider">Returns Filed</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-3xl md:text-4xl font-extrabold text-[#0d47a1]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>99.7%</p>
+                  <p className="text-xs text-[#434652] font-medium uppercase tracking-wider">Accuracy Rate</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-3xl md:text-4xl font-extrabold text-[#F57C00]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>2 Min</p>
+                  <p className="text-xs text-[#434652] font-medium uppercase tracking-wider">Average Filing Time</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Features Bento Grid — matches landing-page/code.html */}
           <section className="py-16 bg-white px-6 md:px-10">
             <div className="max-w-6xl mx-auto">
@@ -233,6 +257,42 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* Why TaxStox — Value Propositions */}
+          <section className="py-20 bg-[#F8FAFC] px-6 md:px-10">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-14 space-y-2">
+                <p className="text-[11px] tracking-widest font-bold text-[#F57C00] uppercase" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Why TaxStox</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Why 50,000+ Indians choose TaxStox.</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Maximum Refund */}
+                <div className="text-center space-y-4 bg-white rounded-xl p-8 border border-[#E2E8F0] hover:shadow-lg transition-all">
+                  <div className="w-16 h-16 bg-[#166534]/10 rounded-2xl flex items-center justify-center mx-auto">
+                    <span className="material-symbols-outlined text-[#166534] text-3xl">savings</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Maximum Tax Refund</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">Our engine checks thousands of deduction combinations across Old and New regimes to guarantee you pay the absolute legal minimum. Average savings: ₹45,000 per filer.</p>
+                </div>
+                {/* 100% Accuracy */}
+                <div className="text-center space-y-4 bg-white rounded-xl p-8 border border-[#E2E8F0] hover:shadow-lg transition-all">
+                  <div className="w-16 h-16 bg-[#0d47a1]/10 rounded-2xl flex items-center justify-center mx-auto">
+                    <span className="material-symbols-outlined text-[#0d47a1] text-3xl">fact_check</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>100% Accuracy, Guaranteed</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">400+ algorithmic validation checks catch mismatches, missing deductions, and notice triggers before you file. 99.7% first-time acceptance rate with the IT Department.</p>
+                </div>
+                {/* Support */}
+                <div className="text-center space-y-4 bg-white rounded-xl p-8 border border-[#E2E8F0] hover:shadow-lg transition-all">
+                  <div className="w-16 h-16 bg-[#F57C00]/10 rounded-2xl flex items-center justify-center mx-auto">
+                    <span className="material-symbols-outlined text-[#F57C00] text-3xl">support_agent</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Expert Support, Always Free</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">Stuck? Our tax experts are available via email with under-24-hour response. Extended hours during filing season. Premium phone support coming soon.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* How it Works — 3-step flow */}
           <section id="how-it-works" className="py-20 bg-[#F8FAFC] px-6 md:px-10 scroll-mt-20">
             <div className="max-w-6xl mx-auto">
@@ -263,6 +323,62 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* Who Is This For — Taxpayer Segments */}
+          <section className="py-20 bg-white px-6 md:px-10">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-14 space-y-2">
+                <p className="text-[11px] tracking-widest font-bold text-[#F57C00] uppercase" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Who Is This For</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>India's most trusted tax filing for every taxpayer.</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Salaried */}
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-6 hover:border-[#003366] hover:shadow-md transition-all group">
+                  <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#003366] transition-colors">
+                    <span className="material-symbols-outlined text-[#003366] text-2xl group-hover:text-white transition-colors">work</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#003366] mb-2" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Salaried Professionals</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">Form 16 auto-extraction, HRA, 80C, 80D — everything pre-filled. Simple, accurate filing for every salaried taxpayer.</p>
+                  <button onClick={handleStartFiling} className="mt-4 text-sm font-bold text-[#003178] hover:text-[#003366] flex items-center gap-1 transition-colors" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                    Start Filing <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+                {/* Investors */}
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-6 hover:border-[#003366] hover:shadow-md transition-all group">
+                  <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#003366] transition-colors">
+                    <span className="material-symbols-outlined text-[#003366] text-2xl group-hover:text-white transition-colors">trending_up</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#003366] mb-2" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Investors & Traders</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">1-click capital gains import from Zerodha, Groww, Upstox, Angel One. STCG, LTCG, F&O — all auto-computed with precision.</p>
+                  <button onClick={handleStartFiling} className="mt-4 text-sm font-bold text-[#003178] hover:text-[#003366] flex items-center gap-1 transition-colors" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                    Start Filing <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+                {/* Freelancers */}
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-6 hover:border-[#003366] hover:shadow-md transition-all group">
+                  <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#003366] transition-colors">
+                    <span className="material-symbols-outlined text-[#003366] text-2xl group-hover:text-white transition-colors">laptop_mac</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#003366] mb-2" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Freelancers & Consultants</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">Presumptive taxation under 44ADA, GST-registered professionals, advance tax computation — handled automatically.</p>
+                  <button onClick={handleStartFiling} className="mt-4 text-sm font-bold text-[#003178] hover:text-[#003366] flex items-center gap-1 transition-colors" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                    Start Filing <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+                {/* NRIs */}
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-6 hover:border-[#003366] hover:shadow-md transition-all group">
+                  <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#003366] transition-colors">
+                    <span className="material-symbols-outlined text-[#003366] text-2xl group-hover:text-white transition-colors">flight</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#003366] mb-2" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>NRIs & ESOP Holders</h3>
+                  <p className="text-sm text-[#434652] leading-relaxed">RSU/ESOP taxation, foreign asset reporting (Schedule FA), DTAA relief, foreign income — handled with expert precision.</p>
+                  <button onClick={handleStartFiling} className="mt-4 text-sm font-bold text-[#003178] hover:text-[#003366] flex items-center gap-1 transition-colors" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                    Start Filing <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Social Proof */}
           <section className="py-12 bg-[#eff4ff] border-y border-[#c3c6d4]">
             <div className="max-w-6xl mx-auto px-10 text-center">
@@ -274,6 +390,38 @@ export default function HomePage() {
                 <span className="text-xl font-extrabold text-[#003366] tracking-tighter">HCL</span>
                 <span className="text-xl font-extrabold text-[#003366] tracking-tighter">Accenture</span>
               </div>
+            </div>
+          </section>
+
+          {/* FAQ Section */}
+          <section className="py-20 bg-[#F8FAFC] px-6 md:px-10">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-12 space-y-2">
+                <p className="text-[11px] tracking-widest font-bold text-[#F57C00] uppercase" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Got Questions?</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#003366]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Frequently Asked Questions</h2>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { q: "Who should file an Income Tax Return (ITR)?", a: "Any individual whose total income exceeds the basic exemption limit (₹2.5L for general, ₹3L for seniors 60-80, ₹5L for super seniors 80+) must file an ITR. You should also file if you have foreign assets, want to claim a refund, or have capital gains regardless of income level." },
+                  { q: "Is TaxStox really free to use?", a: "Yes — document upload, data extraction, tax computation, and regime comparison are completely free. You pay only when you download the finalized, validated ITR JSON ready for e-filing." },
+                  { q: "How is my data protected?", a: "All data is encrypted with 256-bit SSL in transit. Uploaded PDFs are processed in-memory and auto-deleted within 48 hours. We never sell or share your data. Our infrastructure runs on SOC 2 compliant cloud providers. See our Security page for full details." },
+                  { q: "Which ITR form do I need?", a: "TaxStox auto-detects the right form for you. ITR-1 (Sahaj) for salaried individuals with income up to ₹50L. ITR-2 for those with capital gains, foreign income, or multiple house properties. ITR-3 and ITR-4 are coming soon." },
+                  { q: "Can I switch between Old and New tax regimes?", a: "Absolutely. Our Regime Optimizer compares both regimes side-by-side and recommends the one that gives you the lowest tax. You can see the exact savings before committing." },
+                  { q: "What if I need help?", a: "We offer support via email (support@taxstox.com) with a response time of under 24 hours. During tax season (June–July), support is available 7 days a week. For complex cases, we recommend consulting a Chartered Accountant." },
+                  { q: "How do I e-verify my ITR after downloading?", a: "After downloading the ITR JSON from TaxStox, upload it to the Income Tax e-filing portal (incometax.gov.in). You can e-verify using Aadhaar OTP, net banking, or by sending a signed ITR-V to CPC Bangalore within 120 days." },
+                ].map((faq, i) => (
+                  <details key={i} className="bg-white border border-[#E2E8F0] rounded-xl group">
+                    <summary className="px-6 py-4 cursor-pointer flex justify-between items-center text-sm font-semibold text-[#003366] hover:text-[#003178] transition-colors" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                      {faq.q}
+                      <span className="material-symbols-outlined text-[#737783] group-open:rotate-180 transition-transform text-lg">expand_more</span>
+                    </summary>
+                    <p className="px-6 pb-4 text-sm text-[#434652] leading-relaxed">{faq.a}</p>
+                  </details>
+                ))}
+              </div>
+              <p className="text-center mt-8 text-sm text-[#434652]">
+                Can't find your answer? <a href="mailto:support@taxstox.com" className="text-[#003178] underline hover:text-[#003366]">Email us</a> — we respond within 24 hours.
+              </p>
             </div>
           </section>
 
