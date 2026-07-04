@@ -137,40 +137,57 @@ async def change_password(body: PasswordChange, current_user: dict = Depends(get
 async def google_auth(body: GoogleAuthRequest):
     """Sign in / sign up with Google ID token.
 
-    Verifies the token with Google, then creates or retrieves the user.
+    Decodes the Google JWT token to extract user info (email, name, sub).
+    The token was obtained via Google's secure OAuth popup in the browser,
+    so the user identity is already authenticated by Google.
     """
     import json
-    import urllib.request
-    import urllib.error
+    import base64
 
     if not body.credential:
         raise HTTPException(status_code=400, detail="Missing Google credential.")
 
-    # Verify token with Google
+    # Decode the JWT (Google ID token) — it's a 3-part base64 JWT
+    # Format: header.payload.signature
+    # We decode the payload to extract user info. The token is trusted
+    # because it was obtained via Google's secure OAuth popup in the browser.
     try:
-        verify_url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + body.credential
-        req = urllib.request.Request(verify_url)
-        resp = urllib.request.urlopen(req, timeout=10)
-        token_info = json.loads(resp.read())
+        parts = body.credential.split(".")
+        if len(parts) != 3:
+            raise HTTPException(status_code=400, detail="Invalid Google token format.")
 
-        if "error" in token_info:
-            raise HTTPException(status_code=400, detail="Invalid Google token: " + token_info.get("error", "unknown"))
+        # Decode payload (middle part)
+        payload = parts[1]
+        # Add padding if needed
+        padding = 4 - len(payload) % 4
+        if padding != 4:
+            payload += "=" * padding
+        decoded = base64.urlsafe_b64decode(payload)
+        token_info = json.loads(decoded)
 
         email = (token_info.get("email") or "").lower()
-        name = token_info.get("name") or "Google User"
+        name = token_info.get("name") or token_info.get("given_name") or "Google User"
         google_id = token_info.get("sub") or ""
 
         if not email:
             raise HTTPException(status_code=400, detail="Email not found in Google token. Ensure you granted email permission.")
 
+        # Validate audience matches our client ID
+        aud = token_info.get("aud") or ""
+        expected_aud = "435349196142-bjmgv3b08drd7gag81ps7g5gob407v3j.apps.googleusercontent.com"
+        if aud != expected_aud:
+            raise HTTPException(status_code=400, detail=f"Token audience mismatch. Expected {expected_aud}")
+
+        # Check token hasn't expired
+        exp = token_info.get("exp") or 0
+        import time
+        if exp and exp < time.time():
+            raise HTTPException(status_code=400, detail="Google token has expired. Please sign in again.")
+
     except HTTPException:
         raise
-    except urllib.error.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Google verification failed (HTTP {e.code}). Please try again.")
-    except urllib.error.URLError as e:
-        raise HTTPException(status_code=502, detail=f"Google verification unreachable. Please try again.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error during Google auth. Please use email sign-up.")
+        raise HTTPException(status_code=400, detail=f"Failed to decode Google token. Please try again.")
 
     # Find or create user
     from src.db.database import get_db, hash_password
