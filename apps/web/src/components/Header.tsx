@@ -7,14 +7,47 @@ export default function Header() {
   const { isAuthenticated, user, signOut } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 flex justify-between items-center h-16 bg-white border-b border-[#E2E8F0] px-6 md:px-10">
+    <>
+      {/* Flip animation for logo */}
+      <style>{`
+        @keyframes logoFlip {
+          0%, 40%, 100% { transform: rotateY(0deg); }
+          45%, 90% { transform: rotateY(180deg); }
+        }
+      `}</style>
+      <header className="sticky top-0 z-50 flex justify-between items-center h-16 bg-white border-b border-[#E2E8F0] px-6 md:px-10">
       <div className="flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2">
-          <span
-            className="text-xl font-bold tracking-tight text-[#003366]"
-            style={{ fontFamily: "var(--font-hanken-grotesk)" }}
-          >
-            Tax<span className="text-[#F57C00]">Stox</span>
+          {/* Flipping logo — alternates between TaxStox and licensed badge every 3s */}
+          <span className="inline-block [perspective:200px] w-[180px] h-7">
+            <span
+              className="relative inline-flex w-full h-full text-center transition-transform duration-500"
+              style={{
+                transformStyle: "preserve-3d",
+                animation: "logoFlip 6s ease-in-out infinite",
+                fontFamily: "var(--font-hanken-grotesk)",
+              }}
+            >
+              {/* Front — TaxStox */}
+              <span
+                className="absolute inset-0 flex items-center justify-center text-xl font-bold tracking-tight text-[#003366]"
+                style={{ backfaceVisibility: "hidden" }}
+              >
+                Tax<span className="text-[#F57C00]">Stox</span>
+              </span>
+              {/* Back — Licensed badge */}
+              <span
+                className="absolute inset-0 flex items-center justify-center gap-1.5 text-[10px] tracking-wider font-bold text-[#166534] uppercase bg-[#eff4ff] rounded-full px-2"
+                style={{
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                  fontFamily: "var(--font-hanken-grotesk)",
+                }}
+              >
+                <span className="material-symbols-outlined text-xs">verified_user</span>
+                Licensed by IT Dept.
+              </span>
+            </span>
           </span>
         </Link>
         <nav className="hidden md:flex gap-6 ml-4">
@@ -86,5 +119,6 @@ export default function Header() {
         )}
       </div>
     </header>
+    </>
   );
 }
