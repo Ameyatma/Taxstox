@@ -11,8 +11,9 @@ export default function Header() {
       {/* Flip animation for logo */}
       <style>{`
         @keyframes logoFlip {
-          0%, 40%, 100% { transform: rotateY(0deg); }
-          45%, 90% { transform: rotateY(180deg); }
+          0%, 28%, 100% { transform: rotateY(0deg); }
+          33%, 61% { transform: rotateY(120deg); }
+          66%, 94% { transform: rotateY(240deg); }
         }
       `}</style>
       <header className="sticky top-0 z-50 flex justify-between items-center h-16 bg-white border-b border-[#E2E8F0] px-6 md:px-10">
@@ -24,7 +25,7 @@ export default function Header() {
               className="relative inline-flex w-full h-full text-center transition-transform duration-500"
               style={{
                 transformStyle: "preserve-3d",
-                animation: "logoFlip 6s ease-in-out infinite",
+                animation: "logoFlip 9s ease-in-out infinite",
                 fontFamily: "var(--font-hanken-grotesk)",
               }}
             >
@@ -35,17 +36,29 @@ export default function Header() {
               >
                 Tax<span className="text-[#F57C00]">Stox</span>
               </span>
-              {/* Back — Licensed badge */}
+              {/* Face 2 — Licensed badge (120deg) */}
               <span
                 className="absolute inset-0 flex items-center justify-center gap-1.5 text-[10px] tracking-wider font-bold text-[#166534] uppercase bg-[#eff4ff] rounded-full px-2"
                 style={{
                   backfaceVisibility: "hidden",
-                  transform: "rotateY(180deg)",
+                  transform: "rotateY(120deg)",
                   fontFamily: "var(--font-hanken-grotesk)",
                 }}
               >
                 <span className="material-symbols-outlined text-xs">verified_user</span>
                 Licensed by IT Dept.
+              </span>
+              {/* Face 3 — Bank-Grade Security (240deg) */}
+              <span
+                className="absolute inset-0 flex items-center justify-center gap-1.5 text-[10px] tracking-wider font-bold text-[#003366] uppercase bg-[#e5eeff] rounded-full px-2"
+                style={{
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(240deg)",
+                  fontFamily: "var(--font-hanken-grotesk)",
+                }}
+              >
+                <span className="material-symbols-outlined text-xs">shield_with_heart</span>
+                Bank-Grade Security
               </span>
             </span>
           </span>
