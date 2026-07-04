@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { uploadPDFs, type UploadResponseData } from "@/lib/api";
 import { setState } from "@/lib/store";
+import TaxUpdatesSection from "@/components/landing/TaxUpdatesSection";
 
 export default function HomePage() {
   const router = useRouter();
@@ -206,6 +207,9 @@ export default function HomePage() {
               </div>
             </div>
           </section>
+
+          {/* Tax Updates & Insights */}
+          <TaxUpdatesSection />
 
           {/* Features Bento Grid — matches landing-page/code.html */}
           <section className="py-16 bg-white px-6 md:px-10">

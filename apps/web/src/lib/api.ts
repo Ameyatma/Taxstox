@@ -251,3 +251,60 @@ export async function fetchFilings(): Promise<FilingRecord[]> {
   if (!res.ok) throw new Error("Failed to load filings");
   return res.json();
 }
+
+// ── Tax Updates & Insights API ────────────────────────────────────────
+
+export interface TaxUpdateItem {
+  id: string;
+  title: string;
+  summary_short: string;
+  what_changed: string;
+  who_affected: string;
+  action_required: string;
+  category: string;
+  effective_date: string;
+  published_date: string;
+  source: string;
+  source_url: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TaxDeadlineItem {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  category: string;
+  is_active: boolean;
+}
+
+export interface TaxTipItem {
+  id: string;
+  text: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface TaxFactItem {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export interface TaxInsightsData {
+  updates: TaxUpdateItem[];
+  deadlines: TaxDeadlineItem[];
+  tips: TaxTipItem[];
+  facts: TaxFactItem[];
+  last_synced: string | null;
+}
+
+export async function fetchTaxInsights(): Promise<TaxInsightsData> {
+  const res = await fetch(`${API_BASE}/tax/insights`);
+  if (!res.ok) throw new Error("Failed to load tax insights");
+  return res.json();
+}

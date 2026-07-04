@@ -100,6 +100,76 @@ def init_db() -> None:
         conn.close()
 
 
+def init_tax_tables() -> None:
+    """Create tax content tables if they don't exist (idempotent)."""
+    conn = get_db()
+    try:
+        _exec_sql(conn, """
+            CREATE TABLE IF NOT EXISTS tax_updates (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                summary_short TEXT NOT NULL,
+                what_changed TEXT DEFAULT '',
+                who_affected TEXT DEFAULT '',
+                action_required TEXT DEFAULT '',
+                category TEXT NOT NULL DEFAULT 'Compliance',
+                effective_date TEXT DEFAULT '',
+                published_date TEXT NOT NULL,
+                source TEXT NOT NULL,
+                source_url TEXT UNIQUE NOT NULL,
+                raw_content TEXT DEFAULT '',
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        _exec_sql(conn, """
+            CREATE TABLE IF NOT EXISTS tax_deadlines (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                date TEXT NOT NULL,
+                description TEXT NOT NULL,
+                category TEXT DEFAULT 'ITR',
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        _exec_sql(conn, """
+            CREATE TABLE IF NOT EXISTS tax_tips (
+                id TEXT PRIMARY KEY,
+                text TEXT NOT NULL,
+                sort_order INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE
+            )
+        """)
+        _exec_sql(conn, """
+            CREATE TABLE IF NOT EXISTS tax_facts (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                icon TEXT DEFAULT 'info',
+                sort_order INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE
+            )
+        """)
+        _exec_sql(conn, """
+            CREATE TABLE IF NOT EXISTS tax_sync_log (
+                id SERIAL PRIMARY KEY,
+                started_at TIMESTAMPTZ NOT NULL,
+                completed_at TIMESTAMPTZ,
+                sources_checked INTEGER DEFAULT 0,
+                updates_found INTEGER DEFAULT 0,
+                updates_new INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'running',
+                error_message TEXT DEFAULT ''
+            )
+        """)
+        _exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_tax_updates_source ON tax_updates(source, published_date DESC)")
+        _exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_tax_updates_category ON tax_updates(category, is_active)")
+    finally:
+        conn.close()
+
+
 # ── User CRUD ────────────────────────────────────────────────────────
 
 def create_user(email: str, pan: str, name: str, password: str, dob: str = "") -> dict:

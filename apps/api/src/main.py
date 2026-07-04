@@ -12,6 +12,7 @@ from src.api.routes import router as itr_router
 from src.api.auth_routes import router as auth_router
 from src.api.dashboard import router as dashboard_router
 from src.api.calculators import router as calculators_router
+from src.api.tax_routes import router as tax_router
 
 
 @asynccontextmanager
@@ -22,12 +23,19 @@ async def lifespan(app: FastAPI):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger("src").setLevel(logging.INFO)
 
-    from src.db.database import init_db
+    from src.db.database import init_db, init_tax_tables
     init_db()
+    init_tax_tables()
     logging.getLogger(__name__).info("Database initialized.")
 
+    # Start the tax sync scheduler
+    from src.scheduler import start_scheduler
+    start_scheduler()
+
     yield
-    # Shutdown — nothing to clean up (no persistence)
+    # Shutdown — stop scheduler
+    from src.scheduler import stop_scheduler
+    stop_scheduler()
 
 
 app = FastAPI(
@@ -56,6 +64,7 @@ app.include_router(itr_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(calculators_router)
+app.include_router(tax_router)
 
 
 @app.get("/")

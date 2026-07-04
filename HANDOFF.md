@@ -40,7 +40,121 @@ npm run dev
 
 ---
 
-### 2026-07-04 (PM) — Prasoon
+### 2026-07-05 (AM) — Claude (AI Agent) + Prasoon
+
+**What Was Done**
+
+**1. Tax Updates & Insights Section — Full Backend + Frontend System**
+
+Built a complete system to fetch, summarize, and display official Government of India tax information on the landing page. Uses only official sources (PIB, CBDT, Income Tax Dept, Ministry of Finance) — no news APIs or third-party content.
+
+**Backend (10 new files):**
+
+- **Provider Framework** (`apps/api/src/providers/__init__.py`):
+  - `BaseProvider` abstract class with `async fetch() -> list[RawUpdate]` interface
+  - `@register_provider` decorator — providers auto-register on import
+  - `RawUpdate` dataclass: title, raw_content, url, published_date, source
+
+- **4 Government Source Providers:**
+  - `providers/pib_provider.py` — PIB RSS feed (most reliable), filters finance/tax keywords, 60-day recency
+  - `providers/incometax_provider.py` — scrapes incometaxindia.gov.in "What's New" + Notifications pages
+  - `providers/cbdt_provider.py` — scrapes CBDT circulars and notifications
+  - `providers/mof_provider.py` — scrapes finmin.gov.in press releases, tax-keyword filtered
+  - All use `httpx` + `BeautifulSoup4`/`lxml`, graceful 403 handling (gov sites block bots)
+
+- **AI Summarizer** (`apps/api/src/summarizer/__init__.py`):
+  - Uses **DeepSeek API** (OpenAI-compatible at `api.deepseek.com/v1`) — not Anthropic
+  - Extracts structured JSON: summary_short, what_changed, who_affected, action_required, category, effective_date
+  - `DEEPSEEK_API_KEY` env var required; skips gracefully if missing (returns raw title as fallback)
+  - Batch processing support; low temperature (0.1) for factual accuracy
+
+- **Background Scheduler** (`apps/api/src/scheduler/__init__.py`):
+  - APScheduler — runs fetch→summarize→store pipeline every 8 hours (configurable via `TAX_SYNC_INTERVAL_HOURS`)
+  - Initial sync runs 60 seconds after startup
+  - Logs every sync run to `tax_sync_log` table (sources checked, items found, items new, errors)
+  - Starts/stops with FastAPI lifespan — no separate worker process needed
+
+- **DB Layer** (`apps/api/src/db/tax_queries.py`):
+  - Follows existing psycopg2 raw-SQL pattern (no ORM)
+  - CRUD: `upsert_tax_update()` (dedup by source_url UNIQUE), `get_tax_updates()`, `get_tax_deadlines()`, `get_tax_tips()`, `get_tax_facts()`
+  - Seed functions: `seed_tax_deadlines()` (7 deadlines), `seed_tax_tips()` (7 tips), `seed_tax_facts()` (5 facts) — auto-populated on first run
+  - Sync logging: `start_sync_log()`, `complete_sync_log()`, `get_last_sync_time()`
+
+- **API Routes** (`apps/api/src/api/tax_routes.py`):
+  - `GET /api/v1/tax/insights` — aggregated: updates, deadlines, tips, facts, last_synced
+  - `GET /api/v1/tax/updates` — latest tax updates (optional category filter)
+  - `GET /api/v1/tax/deadlines` — all active deadlines
+  - `GET /api/v1/tax/tips` — tax-saving tips
+  - `GET /api/v1/tax/facts` — did-you-know facts
+
+- **5 New DB Tables:** `tax_updates`, `tax_deadlines`, `tax_tips`, `tax_facts`, `tax_sync_log`
+
+**Frontend (3 files modified):**
+
+- `lib/api.ts` — Added `TaxInsightsData` type + `fetchTaxInsights()` function
+- `lib/tax-data.ts` — Unchanged; serves as **graceful fallback** when API is unavailable
+- `components/landing/TaxUpdatesSection.tsx` — Complete rewrite:
+  - Fetches from API on mount with `useEffect`
+  - Loading state: skeleton cards with pulse animation
+  - API success → renders real data with source attribution badges + last-synced timestamp
+  - API failure → gracefully falls back to static `tax-data.ts` content
+  - 4 sub-sections: Latest Tax Updates (2-col grid), Important Deadlines (2-col grid with status pills), Rotating Tax Tips (8s auto-cycle), Did You Know? (stacked fact cards)
+
+**Section placement on landing page:** Just above "Efficiency Engine" (Features Bento Grid), between Stats Bar and Features.
+
+**2. What Was Modified**
+
+| File | Change |
+|---|---|
+| `apps/api/requirements.txt` | Added `httpx`, `beautifulsoup4`, `lxml`, `apscheduler`, `openai` |
+| `apps/api/src/main.py` | Registered `tax_router`; scheduler start/stop in lifespan; `init_tax_tables()` call |
+| `apps/api/src/db/database.py` | Added `init_tax_tables()` — creates 5 new tables |
+| `apps/web/src/app/page.tsx` | Import + render `<TaxUpdatesSection />` above Features Bento Grid |
+| `apps/web/src/lib/api.ts` | Added tax API types + `fetchTaxInsights()` |
+| `apps/web/src/components/landing/TaxUpdatesSection.tsx` | **REWRITTEN** — API-first with fallback |
+
+**New files created:**
+| File | Purpose |
+|---|---|
+| `apps/api/src/providers/__init__.py` | Provider base class + registry |
+| `apps/api/src/providers/pib_provider.py` | PIB RSS feed scraper |
+| `apps/api/src/providers/incometax_provider.py` | ITD scraper |
+| `apps/api/src/providers/cbdt_provider.py` | CBDT scraper |
+| `apps/api/src/providers/mof_provider.py` | MoF scraper |
+| `apps/api/src/summarizer/__init__.py` | DeepSeek AI summarizer |
+| `apps/api/src/scheduler/__init__.py` | APScheduler background sync |
+| `apps/api/src/db/tax_queries.py` | Tax content CRUD + seed data |
+| `apps/api/src/api/tax_routes.py` | 5 tax REST endpoints |
+
+**3. Running Locally**
+
+```bash
+# Start PostgreSQL (Postgres.app)
+# It auto-starts. Data dir: ~/Library/Application Support/Postgres/var-16
+
+# Create database (one-time)
+createdb taxstox
+
+# Start backend
+cd apps/api
+source .venv/bin/activate
+DATABASE_URL="postgresql://localhost:5432/taxstox" TAXSTOX_JWT_SECRET="dev-secret" uvicorn src.main:app --reload
+
+# Start frontend
+cd apps/web
+npm run dev
+```
+
+**4. Current Known Issues / Notes**
+
+- **Government sites return 403:** incometaxindia.gov.in and CBDT pages actively block non-browser User-Agents. This is expected behavior. PIB RSS feed works. The system handles this gracefully — empty updates → frontend falls back to static data.
+- **`DEEPSEEK_API_KEY` not set locally:** AI summarization skips gracefully when key is missing → stores title as summary. Set the env var to enable AI processing.
+- **Python 3.12 required:** The `.venv` at `apps/api/.venv` uses Python 3.12. Activate with `source apps/api/.venv/bin/activate`.
+- **Frontend build passes:** Zero TypeScript errors. All 15 routes compile cleanly.
+
+---
+
+
 
 **What Was Done**
 
@@ -153,7 +267,7 @@ npm run dev
 **Notes for Next Developer**
 - Python 3.12 is now required. Activate the venv: `source apps/api/.venv/bin/activate`
 - `DATABASE_URL` must be set in the environment for the backend to start — no more SQLite fallback
-- Google Sign-In no longer loads the GIS script. It uses a direct OAuth popup. The GIS script dependency is gone.
+- Google Sign-In no longer loads the GIS script.- It uses a direct OAuth popup. The GIS script dependency is gone.
 - Neon DB is live at `ep-divine-queen-ahra4kyl`. Tables are auto-created on first `init_db()`.
 
 ---
@@ -553,11 +667,22 @@ This is critical — without it, the backend sleeps after 15 minutes of no traff
 apps/
 ├── api/                              # FastAPI backend (Python 3.12+)
 │   ├── src/
-│   │   ├── main.py                   # Entry point — registers all routers, init DB
+│   │   ├── main.py                   # Entry point — registers all routers, init DB, scheduler
 │   │   ├── auth/
 │   │   │   └── jwt.py                # JWT creation, verification, get_current_user dependency
 │   │   ├── db/
-│   │   │   └── database.py           # SQLite — users, filings tables + CRUD + bcrypt
+│   │   │   ├── database.py           # Neon PostgreSQL — users, filings tables + CRUD + bcrypt
+│   │   │   └── tax_queries.py        # Tax content CRUD — updates, deadlines, tips, facts + sync log
+│   │   ├── providers/                # Official govt source fetchers
+│   │   │   ├── __init__.py           # BaseProvider + RawUpdate + @register_provider
+│   │   │   ├── pib_provider.py       # PIB RSS feed scraper
+│   │   │   ├── incometax_provider.py # incometaxindia.gov.in scraper
+│   │   │   ├── cbdt_provider.py      # CBDT circulars scraper
+│   │   │   └── mof_provider.py       # Ministry of Finance scraper
+│   │   ├── summarizer/
+│   │   │   └── __init__.py           # DeepSeek API (OpenAI-compatible) summarizer
+│   │   ├── scheduler/
+│   │   │   └── __init__.py           # APScheduler — periodic fetch→summarize→store
 │   │   ├── models/
 │   │   │   ├── form16.py             # Form16Data — Part A, Part B, Annexure, Chapter VI-A
 │   │   │   ├── ais.py                # AISData — equity MF sales, other unit sales, interest, TDS
@@ -607,11 +732,14 @@ apps/
 │   │   ├── components/
 │   │   │   ├── Header.tsx            # Auth-aware nav bar
 │   │   │   ├── Providers.tsx         # AuthProvider + Google Fonts
+│   │   │   ├── landing/
+│   │   │   │   └── TaxUpdatesSection.tsx  # Tax Updates section (API-first + fallback)
 │   │   │   └── ui/                   # shadcn/ui components (button, card, input, select, dialog, etc.)
 │   │   └── lib/
 │   │       ├── api.ts                # API client — all endpoints + types
 │   │       ├── auth.tsx              # Auth context + provider + useAuth hook
 │   │       ├── store.ts              # Client state (session, upload, questions, summary)
+│   │       ├── tax-data.ts           # Static fallback data + helpers for tax section
 │   │       └── utils.ts              # Tailwind className merge utility
 │   ├── vercel.json                   # Vercel deployment config
 │   ├── package.json
@@ -645,7 +773,7 @@ apps/
 
 ---
 
-## API Endpoints (21 total)
+## API Endpoints (26 total)
 
 ### Auth
 | Method | Path | Auth | Description |
@@ -682,6 +810,12 @@ apps/
 | GET | `/api/v1/calculator/hra` | No | HRA exemption |
 | GET | `/api/v1/calculator/capital-gains` | No | CG tax |
 | GET | `/api/v1/calculator/quick-estimate` | No | Quick tax estimate |
+
+| GET | `/api/v1/tax/insights` | No | Aggregated tax info (updates, deadlines, tips, facts) |
+| GET | `/api/v1/tax/updates` | No | Latest tax updates, optional ?category= |
+| GET | `/api/v1/tax/deadlines` | No | All active tax deadlines |
+| GET | `/api/v1/tax/tips` | No | Tax-saving tips |
+| GET | `/api/v1/tax/facts` | No | Educational tax facts |
 
 ### Health
 | Method | Path | Auth | Description |
@@ -848,4 +982,4 @@ git push origin main
 
 ---
 
-*Last updated: 2026-07-04 — Prasoon + Claude (AI Agent)*
+*Last updated: 2026-07-05 — Claude (AI Agent)*
