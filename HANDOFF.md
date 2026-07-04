@@ -82,6 +82,14 @@ npm run dev
    - Added 3-step "How it Works" section to landing page (`id="how-it-works"`) with Upload → Answer → Download steps
    - Fixed Header link to `<Link href="/#how-it-works">` — now scrolls smoothly to the section
 
+8. **Legal pages: Terms, Privacy, Security, Support**
+   - Created `/legal/[slug]` dynamic route — all 4 pages share one clean, styled template
+   - **`/legal/terms`** — 13 sections: eligibility, no-legal-advice disclaimer, intellectual property, limitation of liability, fees & refunds, governing law (Bangalore, Karnataka), contact
+   - **`/legal/privacy`** — 13 sections: DPDP Act 2023 compliant, data collection, 48-hour auto-deletion, Google OAuth, your rights, grievance officer (Aman Verma)
+   - **`/legal/security`** — TLS 1.3, bcrypt, in-memory processing, infrastructure details, vulnerability disclosure (security@taxstox.com)
+   - **`/legal/support`** — FAQs, contact emails, business hours including extended tax season hours
+   - Fixed all 6 dead `href="#"` links across footer (Terms, Privacy, Security, Support) and auth page (Terms, Privacy Policy)
+
 **What Was Modified**
 | File | Change |
 |---|---|
@@ -96,6 +104,9 @@ npm run dev
 | `apps/web/src/app/auth/google-callback/page.tsx` | **NEW** — OAuth redirect landing page |
 | `apps/web/src/components/Header.tsx` | "How it Works" link: `#` → `/#how-it-works` |
 | `apps/web/src/app/page.tsx` | **NEW** — "How it Works" 3-step section |
+| `apps/web/src/app/legal/[slug]/page.tsx` | **NEW** — Terms, Privacy, Security, Support pages |
+| `apps/web/src/app/layout.tsx` | Footer links fixed: `#` → `/legal/*` (4 links) |
+| `apps/web/src/app/auth/page.tsx` | Consent links fixed: `#` → `/legal/terms`, `/legal/privacy` |
 
 **⚠️ Action Items for Aman**
 
