@@ -169,12 +169,11 @@ class SalaryComputer:
 
         result.total_exemptions = (
             result.hra_exemption
-            + result.lta_exemption
+            + result.lta_exemption           # Already includes travel_concession_105
             + result.child_edu_exemption
             + result.hostel_exemption
             + result.gratuity_exemption
             + result.leave_encash_exemption
-            + exemptions.travel_concession_105
             + exemptions.commuted_pension_1010A
             + exemptions.special_allowances_1014
             + sum(e.deductible_amount for e in exemptions.other_exemptions_s10)

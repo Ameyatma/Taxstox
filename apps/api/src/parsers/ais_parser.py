@@ -546,8 +546,15 @@ class AISParser:
 
     def _extract_personal_info(self, text: str, ais: AISData) -> None:
         """Extract personal information from Part A text."""
-        # Name — format: "CFFPM4503N XXXX XXXX 0290 AMAN KUMAR MISHRA"
-        pan_pos = text.find("CFFPM4503N")
+        # Name — format: "PAN XXXX XXXX NNNN FULL NAME"
+        # Search using the actual PAN from the AIS data
+        pan_to_find = ais.pan or ""
+        pan_pos = text.find(pan_to_find) if pan_to_find else -1
+        if pan_pos < 0:
+            # Fallback: find any PAN-format string followed by masked Aadhaar
+            pan_match = re.search(r"([A-Z]{5}[0-9]{4}[A-Z])\s+XXXX\s*XXXX", text)
+            if pan_match:
+                pan_pos = text.find(pan_match.group(1))
         if pan_pos >= 0:
             after_pan = text[pan_pos+10:]  # Skip PAN
             # Skip "XXXX XXXX NNNN" (masked Aadhaar)

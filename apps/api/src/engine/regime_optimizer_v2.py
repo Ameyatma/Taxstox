@@ -55,17 +55,16 @@ NEW_SLABS = [
 
 # ── Rebate 87A ──
 REBATE_THRESHOLD_OLD = Decimal("500000")
-REBATE_THRESHOLD_NEW = Decimal("700000")
+REBATE_THRESHOLD_NEW = Decimal("1200000")  # FY 2025-26 Finance Act: raised to 12L
 REBATE_MAX_OLD = Decimal("12500")
-REBATE_MAX_NEW = Decimal("25000")
+REBATE_MAX_NEW = Decimal("60000")          # FY 2025-26: max rebate under new regime
 
 # ── Surcharge thresholds ──
 SURCHARGE_SLABS = [
-    (Decimal("5000000"), Decimal("0.00")),
-    (Decimal("10000000"), Decimal("0.10")),
-    (Decimal("20000000"), Decimal("0.15")),
-    (Decimal("50000000"), Decimal("0.25")),
-    (Decimal("99999999999"), Decimal("0.37")),
+    (Decimal("10000000"), Decimal("0.10")),   # 1Cr+: 10%
+    (Decimal("20000000"), Decimal("0.15")),   # 2Cr+: 15%
+    (Decimal("50000000"), Decimal("0.25")),   # 5Cr+: 25%
+    (Decimal("99999999999"), Decimal("0.37")), # >5Cr: 37%
 ]
 
 
@@ -301,24 +300,32 @@ class RegimeOptimizerV2:
         return tax.quantize(Decimal("0.01"))
 
     def _compute_surcharge(self, total_income: Decimal, tax: Decimal) -> Decimal:
-        """Compute surcharge with marginal relief matching ITD portal."""
-        surcharge_rate = Decimal("0")
-        threshold = Decimal("0")
+        """Compute surcharge with marginal relief matching ITD portal.
 
-        for limit, rate in SURCHARGE_SLABS:
-            if total_income > limit:
-                surcharge_rate = rate
-                threshold = limit
+        FY 2025-26 surcharge: 10% for >50L, 15% for >1Cr, 25% for >2Cr, 37% for >5Cr.
+        Marginal relief ensures surcharge doesn't exceed income above threshold.
+        """
+        # Find applicable surcharge rate
+        surcharge_rate = Decimal("0")
+        if total_income > Decimal("50000000"):
+            surcharge_rate = Decimal("0.37")
+        elif total_income > Decimal("20000000"):
+            surcharge_rate = Decimal("0.25")
+        elif total_income > Decimal("10000000"):
+            surcharge_rate = Decimal("0.15")
+        elif total_income > Decimal("5000000"):
+            surcharge_rate = Decimal("0.10")
 
         if surcharge_rate == 0:
             return Decimal("0")
 
         surcharge = tax * surcharge_rate
 
-        # Marginal relief: surcharge cannot exceed (total_income - threshold)
-        excess_income = total_income - threshold
+        # Marginal relief: surcharge cannot exceed income above the threshold
+        threshold = Decimal("5000000")  # Surcharge starts at 50L
+        excess_income = max(Decimal("0"), total_income - threshold)
         if surcharge > excess_income:
-            surcharge = excess_income  # Cap surcharge at excess income
+            surcharge = excess_income
 
         return surcharge.quantize(Decimal("0.01"))
 
