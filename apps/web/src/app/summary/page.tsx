@@ -67,16 +67,14 @@ function SummaryContent() {
   const oldBreakdown = (summary as any).old_regime_breakdown || {};
   const newBreakdown = (summary as any).new_regime_breakdown || {};
   const showComparison = Object.keys(oldBreakdown).length > 0 && Object.keys(newBreakdown).length > 0;
-  const grossTotal = Object.values(summary.income || {}).reduce((s: number, v: any) => {
-    if (typeof v === "number") return s + v;
-    if (typeof v === "object" && v !== null) {
-      return s + Object.values(v).reduce((ss: number, vv: any) =>
-        typeof vv === "number" ? ss + vv : ss, 0);
-    }
-    return s;
-  }, 0);
-  const totalDeductions = Object.values(summary.deductions || {}).reduce((s: number, v: any) =>
-    typeof v === "number" ? s + v : s, 0);
+  // Sum helpers — handle Decimal objects from API (typeof Decimal === "object")
+  const toNum = (v: any): number => {
+    if (typeof v === "number") return v;
+    if (typeof v === "object" && v !== null) return Number(v) || 0;
+    return Number(v) || 0;
+  };
+  const grossTotal = Object.values(summary.income || {}).reduce((s: number, v: any) => s + toNum(v), 0);
+  const totalDeductions = Object.values(summary.deductions || {}).reduce((s: number, v: any) => s + toNum(v), 0);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
@@ -199,8 +197,8 @@ function SummaryContent() {
                       { label: "Less: Total Deductions", ok: "deductions_total", nk: "deductions_total", isDed: true },
                       { label: "Total Taxable Income", ok: "total_income", nk: "total_income", bold: true },
                     ].map((row) => {
-                      const ov = Number(oldBreakdown[row.ok] || 0);
-                      const nv = Number(newBreakdown[row.nk] || 0);
+                      const ov = Math.round(Number(oldBreakdown[row.ok] || 0));
+                      const nv = Math.round(Number(newBreakdown[row.nk] || 0));
                       return (
                         <tr key={row.label} className={row.bold ? "bg-[#F8FAFC] font-semibold" : ""}>
                           <td className="py-2 pr-4 text-[#0b1c30]">{row.label}</td>
