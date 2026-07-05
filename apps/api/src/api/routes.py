@@ -22,6 +22,7 @@ from src.parsers.form16_parser import Form16Parser
 from src.parsers.ais_parser import AISParser
 from src.engine.classifier import ClassificationEngine
 from src.engine.regime_optimizer import RegimeOptimizer
+from src.engine.regime_optimizer_v2 import RegimeOptimizerV2
 from src.engine.questions import QuestionEngine
 from src.builders.itr_json_builder import ITRJSONBuilder
 from src.builders.validator import ITRValidator
@@ -197,16 +198,19 @@ async def process_and_get_questions(
     session.itr_form = itr_selection.form.value
     logger.info(f"ITR form auto-selected: {session.itr_form} — {itr_selection.explanation}")
 
-    # Optimize regime
-    optimizer = RegimeOptimizer()
+    # Optimize regime using v2 ITD-portal-matching computation
+    optimizer = RegimeOptimizerV2()
     savings_interest = session.ais.total_savings_interest if session.ais else Decimal("0")
-    other_interest = session.ais.total_tds_interest if session.ais else Decimal("0")
+    # AIS TDS interest typically includes FD interest + savings interest
+    other_interest = (session.ais.total_tds_interest if session.ais else Decimal("0")) - savings_interest
+    other_interest = max(Decimal("0"), other_interest)  # Prevent negative
+
     session.regime_result = optimizer.optimize(
-        session.form16,
-        session.classified_cg,
-        session.user_answers,
-        savings_interest,
-        other_interest,
+        form16=session.form16,
+        classified_cg=session.classified_cg,
+        answers=session.user_answers,
+        savings_interest=savings_interest,
+        other_interest=other_interest,
     )
 
     # Generate questions
@@ -252,51 +256,101 @@ async def submit_answers(
         has_other_income=answers.get("other_income") == "yes",
     )
 
-    # Recompute regime with answers
-    optimizer = RegimeOptimizer()
+    # Recompute regime with answers using v2 ITD-portal-matching computation
+    optimizer = RegimeOptimizerV2()
     savings_interest = session.ais.total_savings_interest if session.ais else Decimal("0")
-    other_interest = session.ais.total_tds_interest if session.ais else Decimal("0")
+    other_interest = (session.ais.total_tds_interest if session.ais else Decimal("0")) - savings_interest
+    other_interest = max(Decimal("0"), other_interest)  # Prevent negative
+
+    # Detect if user pays rent from answers
+    rent_monthly = (
+        session.user_answers.rent_per_month
+        if session.user_answers.pays_rent else Decimal("0")
+    )
+
     session.regime_result = optimizer.optimize(
-        session.form16,
-        session.classified_cg,
-        session.user_answers,
-        savings_interest,
-        other_interest,
+        form16=session.form16,
+        classified_cg=session.classified_cg,
+        answers=session.user_answers,
+        savings_interest=savings_interest,
+        other_interest=other_interest,
+        rent_paid_monthly=rent_monthly,
+        metro_city=session.user_answers.rent_city_metro,
     )
 
     r = session.regime_result
     is_new = session.regime_result.recommended.value == "new"
     breakdown = r.new_breakdown if is_new else r.old_breakdown
+    old_breakdown = r.old_breakdown
+    new_breakdown = r.new_breakdown
 
     session.status = "questions_answered"
 
     from datetime import date
+
+    # Build comprehensive income detail from v2 breakdown
+    income_detail = {
+        "Salary": {
+            "Gross Salary": Decimal(breakdown.get("gross_salary", "0")),
+            "Less: HRA Exemption": Decimal(breakdown.get("hra_exemption", "0")),
+            "Less: LTA Exemption": Decimal(breakdown.get("lta_exemption", "0")),
+            "Less: Other Exemptions": str(Decimal(breakdown.get("total_exemptions_s10", "0")) - Decimal(breakdown.get("hra_exemption", "0")) - Decimal(breakdown.get("lta_exemption", "0"))),
+            "Less: Standard Deduction": Decimal(breakdown.get("std_deduction", "0")),
+            "Less: Professional Tax": Decimal(breakdown.get("professional_tax", "0")),
+            "Income from Salary": Decimal(breakdown.get("income_salary", "0")),
+        },
+        "Capital Gains": {
+            "LTCG 112A (12.5%)": Decimal(breakdown.get("cg_ltcg_112a", "0")),
+            "STCG 111A (15%)": Decimal(breakdown.get("cg_stcg_15pct", "0")),
+            "LTCG Other (12.5%)": Decimal(breakdown.get("cg_ltcg_other", "0")),
+            "STCG Slab Rate": Decimal(breakdown.get("cg_stcg_slab", "0")),
+            "Total Capital Gains": Decimal(breakdown.get("income_cg", "0")),
+        },
+        "Interest Income": {
+            "Savings Interest": Decimal(breakdown.get("savings_interest", "0")),
+            "Fixed Deposit Interest": Decimal(breakdown.get("other_interest", "0")),
+            "Total Interest": Decimal(breakdown.get("income_interest", "0")),
+        },
+        "Home Loan Loss": Decimal(breakdown.get("home_loan_loss", "0")),
+    }
+
+    # Build deduction detail from v2
+    ded_detail = breakdown.get("deductions_detail", {})
+    deductions_display = {
+        "80C (EPF + Other)": Decimal(ded_detail.get("sec80c", "0")),
+        "80CCD(1B) NPS": Decimal(ded_detail.get("sec80ccd1b", "0")),
+        "80CCD(2) Employer NPS": Decimal(ded_detail.get("sec80ccd2", "0")),
+        "80D Health Insurance": Decimal(ded_detail.get("sec80d", "0")),
+        "80TTA Savings Interest": Decimal(ded_detail.get("sec80tta", "0")),
+        "Total Deductions": Decimal(breakdown.get("deductions_total", "0")),
+    }
+
     return TaxSummaryResponse(
-        income={
-            "Salary": Decimal(breakdown.get("income_salary", "0")),
-            "Capital Gains": Decimal(breakdown.get("income_cg", "0")),
-            "Interest": Decimal(breakdown.get("income_interest", "0")),
-        },
-        deductions={
-            "Employer NPS (80CCD(2))": session.form16.part_b.chapter_vi_a.sec80ccd2,
-        },
+        income=income_detail,
+        deductions=deductions_display,
         taxable_income=Decimal(breakdown.get("total_income", "0")),
         tax_breakdown={
             "Tax on Slab Income": Decimal(breakdown.get("tax_slab", "0")),
-            "Tax on Special Rates (CG)": Decimal(breakdown.get("tax_special_rates", "0")),
-            "Rebate 87A": Decimal(breakdown.get("rebate_87a", "0")),
-            "Health & Education Cess": Decimal(breakdown.get("cess", "0")),
+            "Tax on LTCG 112A (12.5%)": Decimal(breakdown.get("tax_112a", "0")),
+            "Tax on STCG 111A (15%)": Decimal(breakdown.get("tax_stcg_15pct", "0")),
+            "Tax on LTCG Other (12.5%)": Decimal(breakdown.get("tax_ltcg_other", "0")),
+            "Rebate u/s 87A": -Decimal(breakdown.get("rebate_87a", "0")),
+            "Surcharge": Decimal(breakdown.get("surcharge", "0")),
+            "Health & Education Cess (4%)": Decimal(breakdown.get("cess", "0")),
         },
         payments={
-            "TDS by Employer": session.form16.part_a.total_tds_deducted,
-            "Other TDS": session.ais.total_non_salary_tds if session.ais else Decimal("0"),
+            "TDS by Employer (Form 16)": session.form16.part_a.total_tds_deducted if session.form16 else Decimal("0"),
+            "TDS from AIS (Other)": session.ais.total_non_salary_tds if session.ais else Decimal("0"),
         },
         balance_payable=Decimal(breakdown.get("net_tax", "0"))
-        - session.form16.part_a.total_tds_deducted
+        - (session.form16.part_a.total_tds_deducted if session.form16 else Decimal("0"))
         - (session.ais.total_non_salary_tds if session.ais else Decimal("0")),
         regime=session.regime_result.recommended,
         regime_savings=session.regime_result.savings,
         filing_deadline=date(2026, 7, 31),
+        # V2: Include both regime breakdowns for side-by-side comparison
+        old_regime_breakdown=old_breakdown,
+        new_regime_breakdown=new_breakdown,
     )
 
 

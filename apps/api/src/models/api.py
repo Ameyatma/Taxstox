@@ -49,15 +49,18 @@ class AnswersSubmitRequest(BaseModel):
 
 
 class TaxSummaryResponse(BaseModel):
-    income: dict[str, Decimal] = Field(default_factory=dict)
-    deductions: dict[str, Decimal] = Field(default_factory=dict)
+    income: dict = Field(default_factory=dict)            # Nested detail: {Salary: {Gross, HRA, ...}}
+    deductions: dict = Field(default_factory=dict)         # {80C, 80CCD2, 80D, ...}
     taxable_income: Decimal = Decimal("0")
-    tax_breakdown: dict[str, Decimal] = Field(default_factory=dict)
-    payments: dict[str, Decimal] = Field(default_factory=dict)
+    tax_breakdown: dict = Field(default_factory=dict)      # Line-item tax: {Slab, 112A, 111A, rebate, cess}
+    payments: dict = Field(default_factory=dict)           # {TDS Employer, TDS Other, ...}
     balance_payable: Decimal = Decimal("0")
     regime: Regime = Regime.NEW
     regime_savings: Decimal = Decimal("0")
     filing_deadline: Optional[date] = None
+    # V2: Both regime breakdowns for side-by-side comparison
+    old_regime_breakdown: dict = Field(default_factory=dict)
+    new_regime_breakdown: dict = Field(default_factory=dict)
 
 
 class ExportResponse(BaseModel):
