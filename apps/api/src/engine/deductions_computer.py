@@ -18,6 +18,7 @@ FY 2025-26 limits. All values in INR.
 """
 
 from decimal import Decimal
+from typing import Optional
 
 from src.models.form16 import Form16Data, ChapterVIADeductions
 from src.models.tax import UserAnswers
