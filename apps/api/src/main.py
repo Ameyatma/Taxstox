@@ -12,6 +12,7 @@ from src.api.routes import router as itr_router
 from src.api.auth_routes import router as auth_router
 from src.api.dashboard import router as dashboard_router
 from src.api.calculators import router as calculators_router
+from src.api.simulation import router as simulation_router
 from src.api.tax_routes import router as tax_router
 
 
@@ -64,6 +65,7 @@ app.include_router(itr_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(calculators_router)
+app.include_router(simulation_router)
 app.include_router(tax_router)
 
 
