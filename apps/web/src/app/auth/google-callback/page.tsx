@@ -6,18 +6,48 @@ import { useEffect } from "react";
  * Google OAuth callback page.
  *
  * Google redirects here after the user consents in the popup.
- * The ID token is in the URL fragment (hash), which the parent
- * window reads directly from popup.location.hash.
+ * The ID token is in the URL fragment (#id_token=...).
  *
- * This page just shows a spinner and closes itself — the real
- * work is done by the parent window's polling loop.
+ * This page extracts the token and sends it back to the parent window
+ * via postMessage, then closes itself.
  */
 export default function GoogleCallbackPage() {
   useEffect(() => {
-    // Signal to the parent window that we're on the callback URL.
-    // The parent's polling loop will detect this and extract the token.
-    // If opened directly (not in a popup), redirect to auth page.
-    if (!window.opener || window.opener === window) {
+    // Extract id_token from URL hash
+    const hash = window.location.hash;
+    const hasToken = hash.includes("id_token=");
+
+    if (window.opener && window.opener !== window) {
+      // We're in a popup — send token back to parent
+      if (hasToken) {
+        const idToken = new URLSearchParams(hash.substring(1)).get("id_token");
+        if (idToken) {
+          window.opener.postMessage(
+            { type: "google-signin-success", idToken },
+            window.location.origin
+          );
+        } else {
+          window.opener.postMessage(
+            { type: "google-signin-error", error: "No id_token in redirect" },
+            window.location.origin
+          );
+        }
+      } else if (hash.includes("error=")) {
+        const error = new URLSearchParams(hash.substring(1)).get("error") || "Google auth failed";
+        window.opener.postMessage(
+          { type: "google-signin-error", error },
+          window.location.origin
+        );
+      } else {
+        window.opener.postMessage(
+          { type: "google-signin-error", error: "No token or error in redirect URL" },
+          window.location.origin
+        );
+      }
+      // Close the popup after a short delay
+      setTimeout(() => window.close(), 500);
+    } else {
+      // Opened directly (not a popup) — redirect to auth page
       window.location.href = "/auth";
     }
   }, []);

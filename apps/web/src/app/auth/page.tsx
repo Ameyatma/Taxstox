@@ -109,48 +109,48 @@ function AuthContent() {
         return;
       }
 
-      // Poll for the popup closing and check for the ID token in the URL hash
-      const pollInterval = setInterval(() => {
-        try {
-          // Try to read the popup's URL hash (only works if same-origin after redirect)
-          if (popup.closed) {
-            clearInterval(pollInterval);
-            setGoogleLoading(false);
-            setError("Google sign-in was cancelled. Please try again.");
-            return;
-          }
+      // Listen for postMessage from the callback page
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
 
-          // The popup will redirect to our callback page.
-          // We detect this by watching the popup's location.
-          // When it reaches our callback page, we extract the token.
-          try {
-            const popupUrl = popup.location.href;
-            if (popupUrl.startsWith(redirectUri)) {
-              clearInterval(pollInterval);
-              // Extract id_token from URL hash
-              const hash = popup.location.hash;
-              if (hash.includes("id_token=")) {
-                const idToken = new URLSearchParams(hash.substring(1)).get("id_token");
-                if (idToken) {
-                  popup.close();
-                  sendGoogleToken(idToken);
-                }
+        const { type, idToken, error } = event.data || {};
+        if (type === "google-signin-success" && idToken) {
+          window.removeEventListener("message", handleMessage);
+          if (popup && !popup.closed) popup.close();
+          sendGoogleToken(idToken);
+        } else if (type === "google-signin-error") {
+          window.removeEventListener("message", handleMessage);
+          if (popup && !popup.closed) popup.close();
+          setError(error || "Google sign-in failed. Please try again.");
+          setGoogleLoading(false);
+        }
+      };
+      window.addEventListener("message", handleMessage);
+
+      // Fallback polling for popup close without message
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // If popup closed without sending a message, user cancelled
+          setTimeout(() => {
+            window.removeEventListener("message", handleMessage);
+            // Only show error if still loading (no success message received)
+            setGoogleLoading(prev => {
+              if (prev) {
+                setError("Google sign-in was cancelled. Please try again.");
               }
-            }
-          } catch {
-            // Cross-origin — popup hasn't reached our domain yet, keep polling
-          }
-        } catch {
-          // Popup access error, keep polling
+              return false;
+            });
+          }, 1000);
         }
       }, 500);
 
-      // Safety timeout — stop polling after 2 minutes
+      // Safety timeout — stop after 2 minutes
       setTimeout(() => {
-        clearInterval(pollInterval);
-        if (!popup.closed) {
-          setGoogleLoading(false);
-        }
+        clearInterval(checkClosed);
+        window.removeEventListener("message", handleMessage);
+        if (popup && !popup.closed) popup.close();
+        setGoogleLoading(false);
       }, 120000);
 
     } catch (err) {
