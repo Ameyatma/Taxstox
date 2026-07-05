@@ -26,6 +26,7 @@ Key ITD Rules:
 """
 
 from decimal import Decimal, ROUND_HALF_UP
+from typing import Optional
 
 from src.models.form16 import Form16Data, Regime
 from src.models.tax import UserAnswers, ClassifiedCGData, RegimeResult
