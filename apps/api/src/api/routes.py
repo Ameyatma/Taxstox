@@ -288,56 +288,65 @@ async def submit_answers(
 
     from datetime import date
 
-    # Build comprehensive income detail from v2 breakdown
-    income_detail = {
-        "Salary": {
-            "Gross Salary": Decimal(breakdown.get("gross_salary", "0")),
-            "Less: HRA Exemption": Decimal(breakdown.get("hra_exemption", "0")),
-            "Less: LTA Exemption": Decimal(breakdown.get("lta_exemption", "0")),
-            "Less: Other Exemptions": str(Decimal(breakdown.get("total_exemptions_s10", "0")) - Decimal(breakdown.get("hra_exemption", "0")) - Decimal(breakdown.get("lta_exemption", "0"))),
-            "Less: Standard Deduction": Decimal(breakdown.get("std_deduction", "0")),
-            "Less: Professional Tax": Decimal(breakdown.get("professional_tax", "0")),
-            "Income from Salary": Decimal(breakdown.get("income_salary", "0")),
-        },
-        "Capital Gains": {
-            "LTCG 112A (12.5%)": Decimal(breakdown.get("cg_ltcg_112a", "0")),
-            "STCG 111A (15%)": Decimal(breakdown.get("cg_stcg_15pct", "0")),
-            "LTCG Other (12.5%)": Decimal(breakdown.get("cg_ltcg_other", "0")),
-            "STCG Slab Rate": Decimal(breakdown.get("cg_stcg_slab", "0")),
-            "Total Capital Gains": Decimal(breakdown.get("income_cg", "0")),
-        },
-        "Interest Income": {
-            "Savings Interest": Decimal(breakdown.get("savings_interest", "0")),
-            "Fixed Deposit Interest": Decimal(breakdown.get("other_interest", "0")),
-            "Total Interest": Decimal(breakdown.get("income_interest", "0")),
-        },
-        "Home Loan Loss": Decimal(breakdown.get("home_loan_loss", "0")),
-    }
+    # Build flat income/deduction dicts that the frontend can render
+    # Detailed nested breakdown goes in old/new regime breakdowns for the comparison table
+    salary_income = Decimal(breakdown.get("income_salary", "0"))
+    cg_income = Decimal(breakdown.get("income_cg", "0"))
+    interest_income = Decimal(breakdown.get("income_interest", "0"))
+    hp_loss = Decimal(breakdown.get("home_loan_loss", "0"))
 
-    # Build deduction detail from v2
+    income_flat = {}
+    if salary_income > 0:
+        income_flat["Salary (Gross: " + breakdown.get("gross_salary", "0") + ")"] = salary_income
+    if cg_income > 0:
+        income_flat["Capital Gains"] = cg_income
+    if interest_income > 0:
+        income_flat["Interest Income"] = interest_income
+    if hp_loss > 0:
+        income_flat["Home Loan Loss"] = -hp_loss
+
     ded_detail = breakdown.get("deductions_detail", {})
-    deductions_display = {
-        "80C (EPF + Other)": Decimal(ded_detail.get("sec80c", "0")),
-        "80CCD(1B) NPS": Decimal(ded_detail.get("sec80ccd1b", "0")),
-        "80CCD(2) Employer NPS": Decimal(ded_detail.get("sec80ccd2", "0")),
-        "80D Health Insurance": Decimal(ded_detail.get("sec80d", "0")),
-        "80TTA Savings Interest": Decimal(ded_detail.get("sec80tta", "0")),
-        "Total Deductions": Decimal(breakdown.get("deductions_total", "0")),
-    }
+    deductions_flat = {}
+    if Decimal(ded_detail.get("sec80c", "0")) > 0:
+        deductions_flat["80C (EPF, PPF, ELSS, etc.)"] = Decimal(ded_detail["sec80c"])
+    if Decimal(ded_detail.get("sec80ccd1b", "0")) > 0:
+        deductions_flat["80CCD(1B) Additional NPS"] = Decimal(ded_detail["sec80ccd1b"])
+    if Decimal(ded_detail.get("sec80ccd2", "0")) > 0:
+        deductions_flat["80CCD(2) Employer NPS"] = Decimal(ded_detail["sec80ccd2"])
+    if Decimal(ded_detail.get("sec80d", "0")) > 0:
+        deductions_flat["80D Health Insurance"] = Decimal(ded_detail["sec80d"])
+    if Decimal(ded_detail.get("sec80tta", "0")) > 0:
+        deductions_flat["80TTA Savings Interest"] = Decimal(ded_detail["sec80tta"])
+
+    # Build tax breakdown with correct rounding
+    tax_slab = int(float(breakdown.get("tax_slab", "0")))
+    tax_112a = int(float(breakdown.get("tax_112a", "0")))
+    tax_stcg = int(float(breakdown.get("tax_stcg_15pct", "0")))
+    tax_ltcg_other = int(float(breakdown.get("tax_ltcg_other", "0")))
+    rebate = int(float(breakdown.get("rebate_87a", "0")))
+    surcharge = int(float(breakdown.get("surcharge", "0")))
+    cess = int(float(breakdown.get("cess", "0")))
+
+    tax_breakdown_flat = {}
+    if tax_slab > 0:
+        tax_breakdown_flat["Tax on Slab Income"] = Decimal(str(tax_slab))
+    if tax_112a > 0:
+        tax_breakdown_flat["Tax on LTCG 112A @ 12.5%"] = Decimal(str(tax_112a))
+    if tax_stcg > 0:
+        tax_breakdown_flat["Tax on STCG 111A @ 15%"] = Decimal(str(tax_stcg))
+    if tax_ltcg_other > 0:
+        tax_breakdown_flat["Tax on LTCG Other @ 12.5%"] = Decimal(str(tax_ltcg_other))
+    if rebate > 0:
+        tax_breakdown_flat["Less: Rebate u/s 87A"] = -Decimal(str(rebate))
+    if surcharge > 0:
+        tax_breakdown_flat["Add: Surcharge"] = Decimal(str(surcharge))
+    tax_breakdown_flat["Health & Education Cess @ 4%"] = Decimal(str(cess))
 
     return TaxSummaryResponse(
-        income=income_detail,
-        deductions=deductions_display,
+        income=income_flat,
+        deductions=deductions_flat,
         taxable_income=Decimal(breakdown.get("total_income", "0")),
-        tax_breakdown={
-            "Tax on Slab Income": Decimal(breakdown.get("tax_slab", "0")),
-            "Tax on LTCG 112A (12.5%)": Decimal(breakdown.get("tax_112a", "0")),
-            "Tax on STCG 111A (15%)": Decimal(breakdown.get("tax_stcg_15pct", "0")),
-            "Tax on LTCG Other (12.5%)": Decimal(breakdown.get("tax_ltcg_other", "0")),
-            "Rebate u/s 87A": -Decimal(breakdown.get("rebate_87a", "0")),
-            "Surcharge": Decimal(breakdown.get("surcharge", "0")),
-            "Health & Education Cess (4%)": Decimal(breakdown.get("cess", "0")),
-        },
+        tax_breakdown=tax_breakdown_flat,
         payments={
             "TDS by Employer (Form 16)": session.form16.part_a.total_tds_deducted if session.form16 else Decimal("0"),
             "TDS from AIS (Other)": session.ais.total_non_salary_tds if session.ais else Decimal("0"),
