@@ -64,8 +64,19 @@ function SummaryContent() {
   const regimeSavings = Number(summary.regime_savings || 0);
   const taxableIncome = Number(summary.taxable_income || 0);
   const isNew = summary.regime === "new";
-  const grossTotal = Object.values(summary.income || {}).reduce((s, v) => s + Number(v), 0);
-  const totalDeductions = Object.values(summary.deductions || {}).reduce((s, v) => s + Number(v), 0);
+  const oldBreakdown = (summary as any).old_regime_breakdown || {};
+  const newBreakdown = (summary as any).new_regime_breakdown || {};
+  const showComparison = Object.keys(oldBreakdown).length > 0 && Object.keys(newBreakdown).length > 0;
+  const grossTotal = Object.values(summary.income || {}).reduce((s: number, v: any) => {
+    if (typeof v === "number") return s + v;
+    if (typeof v === "object" && v !== null) {
+      return s + Object.values(v).reduce((ss: number, vv: any) =>
+        typeof vv === "number" ? ss + vv : ss, 0);
+    }
+    return s;
+  }, 0);
+  const totalDeductions = Object.values(summary.deductions || {}).reduce((s: number, v: any) =>
+    typeof v === "number" ? s + v : s, 0);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
@@ -160,6 +171,68 @@ function SummaryContent() {
                 <p className="text-sm text-[#737783] italic">No deductions applicable ({isNew ? "New Regime does not allow most deductions" : "None detected from your data"})</p>
               )}
             </div>
+
+            {/* ── V2: Side-by-Side Regime Comparison ── */}
+            {showComparison && (
+              <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 overflow-x-auto">
+                <h3 className="text-sm font-bold text-[#003366] uppercase tracking-wider mb-4 flex items-center gap-2" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+                  <span className="material-symbols-outlined text-base">compare_arrows</span>
+                  Old vs New Regime — Full Comparison
+                </h3>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#E2E8F0] text-left">
+                      <th className="py-2 pr-4 text-[11px] font-bold text-[#434652] uppercase tracking-wider">Line Item</th>
+                      <th className="py-2 pr-4 text-right text-[11px] font-bold text-[#003366] uppercase tracking-wider">Old Regime</th>
+                      <th className="py-2 text-right text-[11px] font-bold text-[#166534] uppercase tracking-wider">New Regime</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E2E8F0]">
+                    {[
+                      { label: "Gross Salary", ok: "gross_salary", nk: "gross_salary" },
+                      { label: "Less: HRA Exemption", ok: "hra_exemption", nk: "hra_exemption", isDed: true },
+                      { label: "Less: Standard Deduction", ok: "std_deduction", nk: "std_deduction", isDed: true },
+                      { label: "Income from Salary", ok: "income_salary", nk: "income_salary", bold: true },
+                      { label: "Capital Gains", ok: "income_cg", nk: "income_cg" },
+                      { label: "Interest Income", ok: "income_interest", nk: "income_interest" },
+                      { label: "Gross Total Income", ok: "gross_total", nk: "gross_total", bold: true },
+                      { label: "Less: Total Deductions", ok: "deductions_total", nk: "deductions_total", isDed: true },
+                      { label: "Total Taxable Income", ok: "total_income", nk: "total_income", bold: true },
+                    ].map((row) => {
+                      const ov = Number(oldBreakdown[row.ok] || 0);
+                      const nv = Number(newBreakdown[row.nk] || 0);
+                      return (
+                        <tr key={row.label} className={row.bold ? "bg-[#F8FAFC] font-semibold" : ""}>
+                          <td className="py-2 pr-4 text-[#0b1c30]">{row.label}</td>
+                          <td className={`py-2 pr-4 text-right font-mono text-xs ${row.isDed ? "text-[#991B1B]" : ""}`}>
+                            {row.isDed ? "-" : ""}₹{ov.toLocaleString("en-IN")}
+                          </td>
+                          <td className={`py-2 text-right font-mono text-xs ${row.isDed ? "text-[#991B1B]" : ""}`}>
+                            {row.isDed ? "-" : ""}₹{nv.toLocaleString("en-IN")}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* Tax comparison */}
+                    <tr className="border-t-2 border-[#E2E8F0] bg-[#F8FAFC]">
+                      <td className="py-2 pr-4 font-semibold text-[#0b1c30]">Tax on Slab Income</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs font-semibold">₹{Number(oldBreakdown.tax_slab || 0).toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-right font-mono text-xs font-semibold">₹{Number(newBreakdown.tax_slab || 0).toLocaleString("en-IN")}</td>
+                    </tr>
+                    <tr className="bg-[#F8FAFC]">
+                      <td className="py-2 pr-4 text-[#0b1c30]">+ Surcharge</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs">₹{Number(oldBreakdown.surcharge || 0).toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-right font-mono text-xs">₹{Number(newBreakdown.surcharge || 0).toLocaleString("en-IN")}</td>
+                    </tr>
+                    <tr className="bg-[#F8FAFC]">
+                      <td className="py-2 pr-4 text-[#0b1c30]">+ HEC @ 4%</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs">₹{Number(oldBreakdown.cess || 0).toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-right font-mono text-xs">₹{Number(newBreakdown.cess || 0).toLocaleString("en-IN")}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Tax Computation */}
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 hover:border-[#003366] transition-all">
