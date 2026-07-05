@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
+
 load_dotenv()  # Load .env file for local dev (DATABASE_URL, etc.)
 
 from fastapi import FastAPI
@@ -14,29 +15,37 @@ from src.api.dashboard import router as dashboard_router
 from src.api.calculators import router as calculators_router
 from src.api.simulation import router as simulation_router
 from src.api.tax_routes import router as tax_router
+from src.middleware.correlation import CorrelationMiddleware
+from src.utils.logging import setup_logging, get_logger
+
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan — startup/shutdown."""
-    # Startup: initialize DB, configure logging
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger("src").setLevel(logging.INFO)
+    # Startup: structured logging, DB init, scheduler
+    setup_logging()
+    logger.info("TaxStox backend starting")
 
     from src.db.database import init_db, init_tax_tables
+
     init_db()
     init_tax_tables()
-    logging.getLogger(__name__).info("Database initialized.")
+    logger.info("Database initialized")
 
     # Start the tax sync scheduler
     from src.scheduler import start_scheduler
+
     start_scheduler()
+    logger.info("Scheduler started")
 
     yield
-    # Shutdown — stop scheduler
+    # Shutdown
     from src.scheduler import stop_scheduler
+
     stop_scheduler()
+    logger.info("TaxStox backend stopped")
 
 
 app = FastAPI(
@@ -45,6 +54,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Correlation ID — must be added before other middleware
+app.add_middleware(CorrelationMiddleware)
 
 # CORS — allow frontend (local dev + production)
 app.add_middleware(
@@ -77,3 +89,38 @@ async def root():
         "tagline": "File ITR in 2 minutes. Master your stocks.",
         "docs": "/docs",
     }
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    """Enhanced health check with dependency status."""
+    import os
+
+    health = {
+        "status": "ok",
+        "service": "TaxStox ITR Engine",
+        "version": "0.1.0",
+    }
+
+    # Database connectivity check
+    try:
+        from src.db.database import get_db
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+        conn.close()
+        health["database"] = "connected"
+    except Exception as e:
+        health["database"] = "disconnected"
+        health["database_error"] = str(e)[:200]
+
+    # JWT secret configured check
+    jwt_secret = os.environ.get("TAXSTOX_JWT_SECRET", "")
+    if jwt_secret and jwt_secret != "taxstox-dev-secret-change-in-production":
+        health["jwt_secret"] = "configured"
+    else:
+        health["jwt_secret"] = "missing_or_default"
+
+    return health

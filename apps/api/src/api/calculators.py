@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Query
-from src.engine.regime_optimizer import RegimeOptimizer
+from src.engine.regime_optimizer_v2 import RegimeOptimizerV2 as RegimeOptimizer
 
 router = APIRouter(prefix="/api/v1/calculator", tags=["Calculators"])
 

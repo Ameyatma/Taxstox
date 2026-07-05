@@ -239,46 +239,21 @@ class ITR1Builder:
         }
 
     def _compute_tax(self, total_income: Decimal, is_new: bool) -> tuple[Decimal, Decimal, Decimal]:
-        """Compute slab-wise tax for New or Old regime (FY 2025-26)."""
-        if is_new:
-            slabs = [
-                (400_000, Decimal("0")),
-                (800_000, Decimal("0.05")),
-                (1_200_000, Decimal("0.10")),
-                (1_600_000, Decimal("0.15")),
-                (2_000_000, Decimal("0.20")),
-                (2_400_000, Decimal("0.25")),
-                (float("inf"), Decimal("0.30")),
-            ]
-        else:
-            slabs = [
-                (250_000, Decimal("0")),
-                (500_000, Decimal("0.05")),
-                (1_000_000, Decimal("0.20")),
-                (float("inf"), Decimal("0.30")),
-            ]
+        """Compute slab-wise tax using RuleEvaluator (M1: no hardcoded slabs)."""
+        from src.engine.rules.config import rule_repository
+        from src.engine.rules.evaluator import RuleEvaluator
+        from src.models.financial_year import FinancialYear
 
-        tax = Decimal("0")
-        prev_limit = Decimal("0")
-        for limit, rate in slabs:
-            limit_d = Decimal(str(limit))
-            if total_income > prev_limit:
-                taxable_in_slab = min(total_income, limit_d) - prev_limit
-                if taxable_in_slab > 0:
-                    tax += taxable_in_slab * rate
-            prev_limit = limit_d
+        config = rule_repository.get(FinancialYear.from_string("FY2025-26"))
+        regime = config.new_regime if is_new else config.old_regime
+        evaluator = RuleEvaluator()
 
-        # Rebate 87A
-        rebate = Decimal("0")
-        if is_new and total_income <= 700_000:
-            rebate = min(tax, Decimal("25000"))
-        elif not is_new and total_income <= 500_000:
-            rebate = min(tax, Decimal("12500"))
+        slab_tax = evaluator.compute_slab_tax(total_income, regime.slabs)
+        rebate = evaluator.compute_rebate(slab_tax, total_income, regime)
+        tax_after_rebate = max(Decimal("0"), slab_tax - rebate)
+        cess = evaluator.compute_cess(tax_after_rebate, Decimal("0"), config.cess_rate)
 
-        tax_after_rebate = max(Decimal("0"), tax - rebate)
-        cess = (tax_after_rebate * Decimal("0.04")).quantize(Decimal("1"))
-
-        return tax, cess, rebate
+        return slab_tax, cess, rebate
 
     # ── Schedule Tax Paid (TDS) ───────────────────────────────────────
 

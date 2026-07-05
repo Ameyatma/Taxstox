@@ -37,6 +37,9 @@ htmlcov/
 # Database
 apps/api/data/
 
+# Test fixtures (may contain PII)
+apps/api/tests/fixtures/
+
 # Temp
 *.tmp
 *.log

@@ -9,7 +9,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # ── Config ──────────────────────────────────────────────────────────
 
-SECRET_KEY = os.getenv("TAXSTOX_JWT_SECRET", "taxstox-dev-secret-change-in-production")
+_SECRET = os.getenv("TAXSTOX_JWT_SECRET")
+if not _SECRET:
+    raise RuntimeError(
+        "TAXSTOX_JWT_SECRET environment variable is required. "
+        "Generate a strong secret: python -c 'import secrets; print(secrets.token_hex(32))'"
+    )
+SECRET_KEY: str = _SECRET
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 

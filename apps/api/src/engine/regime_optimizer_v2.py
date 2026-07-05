@@ -1,79 +1,38 @@
 """Regime Optimizer v2 — ITD Portal-Matched Tax Computation Engine.
 
 Computes tax under Old and New regimes with EXACT portal matching logic.
+M1: Refactored to use RuleRepository — no hardcoded FY constants.
 
-ITD Portal Computation Order (verified against incometax.gov.in):
-  1. Salary Income (from SalaryComputer)
-  2. House Property Income
-  3. Capital Gains (classified: 112A, 111A, slab rate, other)
-  4. Other Sources (interest, dividend, etc.)
-  5. Gross Total Income = sum(1-4)
-  6. Chapter VI-A Deductions (DeductionsComputer)
-  7. Total Income = GTI - Deductions
-  8. Tax on Slab Income (separate from special-rate CG)
-  9. Tax on Special Rate Income (112A @ 12.5%, 111A @ 15%, other LTCG @ 12.5%)
-  10. Tax Before Rebate = slab_tax + special_rate_tax
-  11. Rebate u/s 87A (if eligible)
-  12. Surcharge (with marginal relief)
-  13. HEC @ 4% on (Tax After Rebate + Surcharge)
-  14. Round FINAL TAX to nearest rupee
-
-Key ITD Rules:
-  - Rounding: ONLY final tax to nearest rupee. No intermediate rounding.
-  - 2 decimal precision throughout.
-  - 87A: Available under new regime if total income <= 7L, even with LTCG
-  - Cess base: (tax after rebate + surcharge) x 4%
+Traceability:
+  C12.1 (Finance Act Versioning), C12.3 (Rule Repository), C12.4 (Rule Evaluation),
+  ARC-001 (Rules hardcoded → extracted), ARC-002 (Single FY → multi-FY),
+  ARC-005 (Dual optimizers → v2 canonical), ARC-007 (Slab duplication → unified),
+  R01 (FY2026 obsolescence → multi-year support)
 """
 
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
+from src.engine.classifier import ClassificationEngine
+from src.engine.deductions_computer import DeductionsComputer
+from src.engine.rules.config import rule_repository, TaxYearConfig
+from src.engine.rules.evaluator import RuleEvaluator
+from src.engine.salary_computer import SalaryComputer
+from src.models.financial_year import FinancialYear
 from src.models.form16 import Form16Data, Regime
-from src.models.tax import UserAnswers, ClassifiedCGData, RegimeResult
-from src.engine.salary_computer import SalaryComputer, SalaryBreakdown
-from src.engine.deductions_computer import DeductionsComputer, DeductionsBreakdown
-
-
-# ── FY 2025-26 Slab Rates ──
-
-OLD_SLABS = [
-    (Decimal("250000"), Decimal("0.00")),
-    (Decimal("500000"), Decimal("0.05")),
-    (Decimal("1000000"), Decimal("0.20")),
-    (Decimal("99999999999"), Decimal("0.30")),
-]
-
-NEW_SLABS = [
-    (Decimal("400000"), Decimal("0.00")),
-    (Decimal("800000"), Decimal("0.05")),
-    (Decimal("1200000"), Decimal("0.10")),
-    (Decimal("1600000"), Decimal("0.15")),
-    (Decimal("2000000"), Decimal("0.20")),
-    (Decimal("2400000"), Decimal("0.25")),
-    (Decimal("99999999999"), Decimal("0.30")),
-]
-
-# ── Rebate 87A ──
-REBATE_THRESHOLD_OLD = Decimal("500000")
-REBATE_THRESHOLD_NEW = Decimal("1200000")  # FY 2025-26 Finance Act: raised to 12L
-REBATE_MAX_OLD = Decimal("12500")
-REBATE_MAX_NEW = Decimal("60000")          # FY 2025-26: max rebate under new regime
-
-# ── Surcharge thresholds ──
-SURCHARGE_SLABS = [
-    (Decimal("10000000"), Decimal("0.10")),   # 1Cr+: 10%
-    (Decimal("20000000"), Decimal("0.15")),   # 2Cr+: 15%
-    (Decimal("50000000"), Decimal("0.25")),   # 5Cr+: 25%
-    (Decimal("99999999999"), Decimal("0.37")), # >5Cr: 37%
-]
+from src.models.tax import ClassifiedCGData, RegimeResult, UserAnswers
 
 
 class RegimeOptimizerV2:
-    """Computes and compares tax under Old and New regimes using ITD portal logic."""
+    """Computes and compares tax under Old and New regimes using ITD portal logic.
 
-    def __init__(self):
+    M1: Uses RuleRepository for all FY-specific constants. No hardcoded rates.
+    """
+
+    def __init__(self) -> None:
         self.salary_computer = SalaryComputer()
         self.deductions_computer = DeductionsComputer()
+        self._evaluator = RuleEvaluator()
 
     def optimize(
         self,
@@ -86,8 +45,16 @@ class RegimeOptimizerV2:
         metro_city: bool = False,
         children_count: int = 0,
         is_senior_citizen: bool = False,
+        financial_year: Optional[FinancialYear] = None,
     ) -> RegimeResult:
-        """Run full comparison and return the optimal regime."""
+        """Run full comparison and return the optimal regime.
+
+        Args:
+            financial_year: FY for tax computation. Defaults to FY2025-26
+                           for backward compatibility with existing callers.
+        """
+        fy = financial_year or FinancialYear.from_string("FY2025-26")
+        config = rule_repository.get(fy)
 
         old_result = self._compute(
             form16=form16,
@@ -100,6 +67,7 @@ class RegimeOptimizerV2:
             children_count=children_count,
             is_senior_citizen=is_senior_citizen,
             is_new_regime=False,
+            config=config,
         )
 
         new_result = self._compute(
@@ -113,6 +81,7 @@ class RegimeOptimizerV2:
             children_count=children_count,
             is_senior_citizen=is_senior_citizen,
             is_new_regime=True,
+            config=config,
         )
 
         old_tax = Decimal(old_result["net_tax"])
@@ -146,11 +115,17 @@ class RegimeOptimizerV2:
         children_count: int,
         is_senior_citizen: bool,
         is_new_regime: bool,
+        config: TaxYearConfig,
     ) -> dict:
-        """Compute complete tax for one regime, matching ITD portal step-by-step."""
+        """Compute complete tax for one regime, matching ITD portal step-by-step.
 
+        M1: All FY-specific values come from TaxYearConfig via RuleRepository.
+        No hardcoded constants.
+        """
         ua = answers or UserAnswers()
         cg = classified_cg or ClassifiedCGData()
+        regime_config = config.new_regime if is_new_regime else config.old_regime
+        regime_key = "new" if is_new_regime else "old"
 
         # ── Step 1-4: Salary Income ──
         salary = self.salary_computer.compute(
@@ -164,7 +139,8 @@ class RegimeOptimizerV2:
         # ── Step 5: House Property Income ──
         home_loan_loss = Decimal("0")
         if ua.has_home_loan and ua.home_loan_self_occupied:
-            home_loan_loss = min(ua.home_loan_interest or Decimal("0"), Decimal("200000"))
+            home_loan_limit = config.get_deduction_limit("24B_SELF", regime_key)
+            home_loan_loss = min(ua.home_loan_interest or Decimal("0"), home_loan_limit)
 
         # ── Step 6: Capital Gains ──
         cg_summary = self._cg_summary(cg)
@@ -173,8 +149,6 @@ class RegimeOptimizerV2:
         total_interest = savings_interest + other_interest
 
         # ── Step 8: Gross Total Income ──
-        # Separately track: slab income (salary + HP loss + STCG slab + interest)
-        # and special-rate income (112A, 111A, other LTCG)
         slab_income = (
             salary.income_from_salary
             + cg_summary["stcg_slab_total"]
@@ -205,8 +179,9 @@ class RegimeOptimizerV2:
         # ── Step 10: Total Income ──
         total_income = max(Decimal("0"), gross_total - deductions.total)
 
-        # ── Step 11: Tax on Slab Income ──
-        slab_tax = self._slab_tax(slab_income - deductions.total, is_new_regime)
+        # ── Step 11-14: Tax using RuleEvaluator (M1) ──
+        slab_taxable = max(Decimal("0"), slab_income - deductions.total)
+        slab_tax = self._evaluator.compute_slab_tax(slab_taxable, regime_config.slabs)
 
         # ── Step 12: Tax on Special Rate Income ──
         tax_112a = cg_summary["ltcg_112a_tax"]
@@ -217,28 +192,25 @@ class RegimeOptimizerV2:
         # ── Step 13: Tax Before Rebate ──
         tax_before_rebate = slab_tax + special_rate_tax
 
-        # ── Step 14: Rebate u/s 87A ──
-        rebate = Decimal("0")
-        if is_new_regime and total_income <= REBATE_THRESHOLD_NEW:
-            rebate = min(tax_before_rebate, REBATE_MAX_NEW)
-        elif not is_new_regime and total_income <= REBATE_THRESHOLD_OLD:
-            rebate = min(tax_before_rebate, REBATE_MAX_OLD)
+        # ── Step 14: Rebate u/s 87A (M1: from TaxYearConfig) ──
+        rebate = self._evaluator.compute_rebate(
+            tax_before_rebate, total_income, regime_config,
+        )
 
         tax_after_rebate = max(Decimal("0"), tax_before_rebate - rebate)
 
-        # ── Step 15: Surcharge (with marginal relief) ──
-        surcharge = self._compute_surcharge(total_income, tax_after_rebate)
+        # ── Step 15: Surcharge (M1: from TaxYearConfig) ──
+        surcharge = self._evaluator.compute_surcharge(
+            total_income, tax_after_rebate, config,
+        )
 
-        # ── Step 16: HEC @ 4% ──
-        cess_base = tax_after_rebate + surcharge
-        cess = (cess_base * Decimal("4") / Decimal("100")).quantize(Decimal("0.01"))
+        # ── Step 16: HEC (M1: from TaxYearConfig) ──
+        cess = self._evaluator.compute_cess(tax_after_rebate, surcharge, config.cess_rate)
 
-        # ── Step 17: Final Tax (rounded to nearest rupee) ──
-        net_tax = (cess_base + cess).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        # ── Step 17: Final Tax (M1: RuleEvaluator rounding) ──
+        net_tax = self._evaluator.round_final_tax(tax_after_rebate + surcharge + cess)
 
-        # ── Build comprehensive breakdown ──
         return {
-            # Salary detail
             "gross_salary": str(salary.gross_salary),
             "hra_exemption": str(salary.hra_exemption),
             "lta_exemption": str(salary.lta_exemption),
@@ -246,26 +218,21 @@ class RegimeOptimizerV2:
             "std_deduction": str(salary.std_deduction),
             "professional_tax": str(salary.professional_tax),
             "income_salary": str(salary.income_from_salary),
-            # HP
             "home_loan_loss": str(home_loan_loss),
-            # CG
             "income_cg": str(cg.total_cg),
             "cg_ltcg_112a": str(cg_summary["ltcg_112a_total"]),
             "cg_stcg_15pct": str(cg_summary["stcg_15pct_total"]),
             "cg_ltcg_other": str(cg_summary["ltcg_other_total"]),
             "cg_stcg_slab": str(cg_summary["stcg_slab_total"]),
-            # Interest
             "income_interest": str(total_interest),
             "savings_interest": str(savings_interest),
             "other_interest": str(other_interest),
-            # Totals
             "slab_income": str(slab_income),
             "special_rate_income": str(special_rate_income),
             "gross_total": str(gross_total),
             "deductions_total": str(deductions.total),
             "deductions_detail": deductions.to_dict(),
             "total_income": str(total_income),
-            # Tax
             "tax_slab": str(slab_tax),
             "tax_112a": str(tax_112a),
             "tax_stcg_15pct": str(tax_stcg_15),
@@ -275,67 +242,19 @@ class RegimeOptimizerV2:
             "surcharge": str(surcharge),
             "cess": str(cess),
             "net_tax": str(net_tax),
-            "regime": "new" if is_new_regime else "old",
+            "regime": regime_key,
+            "financial_year": config.financial_year.label,
         }
 
-    def _slab_tax(self, income: Decimal, is_new: bool) -> Decimal:
-        """Compute slab tax using ITD portal logic.
-
-        Portal separates slab income from special-rate income.
-        Tax is computed ONLY on slab income at progressive rates.
-        """
-        slabs = NEW_SLABS if is_new else OLD_SLABS
-        tax = Decimal("0")
-        remaining = income
-        prev_limit = Decimal("0")
-
-        for limit, rate in slabs:
-            if remaining <= prev_limit:
-                break
-            taxable_in_slab = min(remaining, limit) - prev_limit
-            if taxable_in_slab > 0:
-                tax += taxable_in_slab * rate
-            prev_limit = limit
-
-        return tax.quantize(Decimal("0.01"))
-
-    def _compute_surcharge(self, total_income: Decimal, tax: Decimal) -> Decimal:
-        """Compute surcharge with marginal relief matching ITD portal.
-
-        FY 2025-26 surcharge: 10% for >50L, 15% for >1Cr, 25% for >2Cr, 37% for >5Cr.
-        Marginal relief ensures surcharge doesn't exceed income above threshold.
-        """
-        # Find applicable surcharge rate
-        surcharge_rate = Decimal("0")
-        if total_income > Decimal("50000000"):
-            surcharge_rate = Decimal("0.37")
-        elif total_income > Decimal("20000000"):
-            surcharge_rate = Decimal("0.25")
-        elif total_income > Decimal("10000000"):
-            surcharge_rate = Decimal("0.15")
-        elif total_income > Decimal("5000000"):
-            surcharge_rate = Decimal("0.10")
-
-        if surcharge_rate == 0:
-            return Decimal("0")
-
-        surcharge = tax * surcharge_rate
-
-        # Marginal relief: surcharge cannot exceed income above the threshold
-        threshold = Decimal("5000000")  # Surcharge starts at 50L
-        excess_income = max(Decimal("0"), total_income - threshold)
-        if surcharge > excess_income:
-            surcharge = excess_income
-
-        return surcharge.quantize(Decimal("0.01"))
-
     def _cg_summary(self, classified_cg: ClassifiedCGData) -> dict:
-        """Compute capital gains tax summary, matching keys from ClassificationEngine."""
-        from src.engine.classifier import ClassificationEngine
+        """Compute capital gains tax summary from classified data.
+
+        M1: Module-level import — no circular dependency exists
+        (classifier does not import optimizer).
+        """
         engine = ClassificationEngine()
         try:
             summary = engine.get_tax_summary(classified_cg)
-            # Map to our expected keys
             return {
                 "ltcg_112a_total": Decimal(str(summary.get("ltcg_112a_total_gain", "0"))),
                 "ltcg_112a_taxable": Decimal(str(summary.get("ltcg_112a_taxable", "0"))),

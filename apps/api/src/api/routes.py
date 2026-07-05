@@ -21,7 +21,6 @@ from src.models.tax import UserAnswers
 from src.parsers.form16_parser import Form16Parser
 from src.parsers.ais_parser import AISParser
 from src.engine.classifier import ClassificationEngine
-from src.engine.regime_optimizer import RegimeOptimizer
 from src.engine.regime_optimizer_v2 import RegimeOptimizerV2
 from src.engine.questions import QuestionEngine
 from src.builders.itr_json_builder import ITRJSONBuilder

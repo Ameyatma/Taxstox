@@ -1,7 +1,20 @@
 # TaxStox — ITR Auto-Filing Platform
 
 > **2 documents. 5 yes/no questions. 2 minutes. Your ITR, done.**
->
+
+## 🏛️ Governance & Architecture
+
+> **For AI agents:** Start at [CLAUDE.md](CLAUDE.md) for bootstrap instructions.
+> **Supreme authority:** [docs/governance/00-Constitution.md](docs/governance/00-Constitution.md)
+> **Target architecture:** [docs/architecture/](docs/architecture/) — Enterprise Capability Model (FROZEN)
+> **Current state:** [docs/architecture/ARCHITECTURE_RECOVERY_REPORT.md](docs/architecture/ARCHITECTURE_RECOVERY_REPORT.md)
+> **Gap analysis:** [docs/architecture/EnterpriseGapReport.md](docs/architecture/EnterpriseGapReport.md)
+> **Architecture health:** 31/100 — [docs/architecture/ArchitectureHealthScore.md](docs/architecture/ArchitectureHealthScore.md)
+> **Project memory:** [docs/ai-dos/memory/](docs/ai-dos/memory/)
+> **Navigation:** [docs/architecture/README.md](docs/architecture/README.md) | [docs/governance/README.md](docs/governance/README.md)
+
+---
+
 > Born from 4 hours of manual ITR-2 filing with a 30-year CA and 25-year software engineer
 > sitting side-by-side. Every pain point catalogued. Every fix automated.
 
