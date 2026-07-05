@@ -135,6 +135,9 @@ class SalaryComputer:
 
         # ── Step 2: Section 10 Exemptions ──
 
+        # Get Form 16 Section 10 exemptions (computed by employer)
+        exemptions = pb.exemptions_s10
+
         # HRA Exemption: min(actual HRA, rent-10% basic, 40/50% basic)
         if result.hra_received > 0 and rent_paid > 0:
             actual_hra = result.hra_received
@@ -145,12 +148,11 @@ class SalaryComputer:
             pct_of_basic = result.basic_da * (HRA_METRO_PCT if metro_city else HRA_NON_METRO_PCT)
             result.hra_exemption = min(actual_hra, rent_minus_10pct, pct_of_basic)
 
-        # LTA Exemption: actual LTA received (capped at actual travel cost)
-        # Since we don't have actual travel cost from user input, use Form 16 exempt portion
-        result.lta_exemption = min(
-            result.lta_received,
-            getattr(annex, "lta", Decimal("0"))  # Form 16 already shows exempt portion
-        )
+        # LTA Exemption: ONLY exempt up to actual travel cost
+        # Form 16 shows LTA RECEIVED in Annexure. The exempt portion is under
+        # Section 10(5) in Part B. Without actual travel proof, NONE is exempt.
+        # The employer's Form 16 Section 10 exemption is the authoritative source.
+        result.lta_exemption = exemptions.travel_concession_105 or Decimal("0")
 
         # Child Education Allowance: ₹100/month/child, max 2 children
         if children_count > 0:
@@ -161,9 +163,7 @@ class SalaryComputer:
         # Hostel Allowance: ₹300/month/child, max 2 children
         # Only if hostel allowance is actually received
 
-        # Gratuity and Leave Encashment exemptions
-        # Form 16 Part B shows these under Section 10
-        exemptions = pb.exemptions_s10
+        # Gratuity and Leave Encashment exemptions (from Form 16 Part B Section 10)
         result.gratuity_exemption = exemptions.gratuity_1010
         result.leave_encash_exemption = exemptions.leave_encashment_1010AA
 

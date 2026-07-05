@@ -115,8 +115,8 @@ class RegimeOptimizerV2:
             is_new_regime=True,
         )
 
-        old_tax = old_result["net_tax"]
-        new_tax = new_result["net_tax"]
+        old_tax = Decimal(old_result["net_tax"])
+        new_tax = Decimal(new_result["net_tax"])
 
         if new_tax <= old_tax:
             recommended = Regime.NEW
@@ -322,11 +322,22 @@ class RegimeOptimizerV2:
         return surcharge.quantize(Decimal("0.01"))
 
     def _cg_summary(self, classified_cg: ClassifiedCGData) -> dict:
-        """Compute capital gains tax summary matching ITD portal."""
+        """Compute capital gains tax summary, matching keys from ClassificationEngine."""
         from src.engine.classifier import ClassificationEngine
         engine = ClassificationEngine()
         try:
-            return engine.get_tax_summary(classified_cg)
+            summary = engine.get_tax_summary(classified_cg)
+            # Map to our expected keys
+            return {
+                "ltcg_112a_total": Decimal(str(summary.get("ltcg_112a_total_gain", "0"))),
+                "ltcg_112a_taxable": Decimal(str(summary.get("ltcg_112a_taxable", "0"))),
+                "ltcg_112a_tax": Decimal(str(summary.get("ltcg_112a_tax", "0"))),
+                "stcg_15pct_total": Decimal(str(summary.get("stcg_15pct_total", "0"))),
+                "stcg_15pct_tax": Decimal(str(summary.get("stcg_15pct_tax", "0"))),
+                "stcg_slab_total": Decimal(str(summary.get("stcg_slab_total", "0"))),
+                "ltcg_other_total": Decimal(str(summary.get("ltcg_other_total", "0"))),
+                "ltcg_other_tax": Decimal(str(summary.get("ltcg_other_tax", "0"))),
+            }
         except Exception:
             return {
                 "ltcg_112a_total": Decimal("0"),

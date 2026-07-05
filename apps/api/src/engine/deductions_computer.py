@@ -156,8 +156,11 @@ class DeductionsComputer:
         else:
             result.sec80tta = min(savings_interest, LIMIT_80TTA)
 
-        # ── 80GG: Rent without HRA ──
-        if ua.pays_rent and result.sec80ccd2 is not None:
+        # ── 80GG: Rent without HRA (ONLY if taxpayer does NOT receive HRA) ──
+        hra_received_from_f16 = (
+            form16.annexure.hra if form16 else Decimal("0")
+        )
+        if ua.pays_rent and hra_received_from_f16 == 0:
             annual_rent = (ua.rent_per_month or Decimal("0")) * Decimal("12")
             if annual_rent > 0:
                 # Formula: least of ₹5,000/month, 25% of total income, or rent-10% of total income
