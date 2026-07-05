@@ -166,6 +166,13 @@ async def process_and_get_questions(
     if not session.form16:
         raise HTTPException(status_code=400, detail="Form 16 is required for processing.")
 
+    # Extract complete taxpayer data via data provider abstraction
+    # (PDF backend now; ITD API backend when ERI license obtained)
+    from src.providers.taxpayer_data import PDFDataProvider
+    data_provider = PDFDataProvider(session.form16, session.ais, session.pan, session.dob)
+    auto_data = data_provider.fetch()
+    session.taxpayer_data = auto_data
+
     # Classify capital gains
     classifier = ClassificationEngine()
     equity_sales = session.ais.equity_mf_sales if session.ais else []
@@ -223,6 +230,9 @@ async def process_and_get_questions(
         regime_savings=session.regime_result.savings,
     )
     session.status = "classified"
+    # Attach auto-detected data to response
+    response.auto_detected = auto_data.to_dict()
+    response.itr_form = session.itr_form
     return response
 
 

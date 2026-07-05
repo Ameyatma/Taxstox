@@ -41,6 +41,9 @@ class QuestionsResponse(BaseModel):
     regime_savings: Decimal = Decimal("0")
     income_summary: dict = Field(default_factory=dict)
     questions: list[Question] = Field(default_factory=list)
+    # Auto-detected data from PDFs (salary, TDS, interest, CG, deductions)
+    auto_detected: dict = Field(default_factory=dict)
+    itr_form: str = "ITR-2"
 
 
 class AnswersSubmitRequest(BaseModel):

@@ -32,6 +32,7 @@ class Session:
     regime_result: Optional[RegimeResult] = None
     user_answers: UserAnswers = field(default_factory=UserAnswers)
     itr_form: str = "ITR-2"  # Auto-detected ITR form type
+    taxpayer_data: Optional[dict] = None  # Auto-extracted data from PDFs
 
     # Final
     itr_json: Optional[dict] = None
