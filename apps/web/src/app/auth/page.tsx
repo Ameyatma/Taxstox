@@ -12,7 +12,7 @@ function AuthContent() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"signup" | "signin">("signup");
 
@@ -175,7 +175,10 @@ function AuthContent() {
         throw new Error(msg);
       }
       const data = JSON.parse(text);
-      localStorage.setItem("taxstox_token", data.access_token);
+      // Use signInWithToken to set user directly in AuthContext
+      // This avoids the race condition where router.push navigates
+      // before AuthProvider re-checks localStorage on mount
+      signInWithToken(data.access_token, data.user);
       router.push(redirect);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

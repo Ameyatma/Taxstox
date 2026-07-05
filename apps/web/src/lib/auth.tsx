@@ -11,6 +11,7 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, pan: string, name: string, dob?: string) => Promise<void>;
+  signInWithToken: (token: string, user: AuthUser) => void;
   signOut: () => void;
 }
 
@@ -64,13 +65,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }, []);
 
+  const signInWithToken = useCallback((token: string, userData: AuthUser) => {
+    saveToken(token);
+    setUser(userData);
+  }, []);
+
   const signOut = useCallback(() => {
     clearToken();
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, signIn, signUp, signInWithToken, signOut }}>
       {children}
     </AuthContext.Provider>
   );
