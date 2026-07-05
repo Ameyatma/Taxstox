@@ -475,8 +475,7 @@ export default function HomePage() {
             <div className={`relative group cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition-all ${dragOver ? "border-[#003366] bg-[#e5eeff]" : form16File ? "border-[#166534] bg-green-50/20" : "border-[#c3c6d4] hover:border-[#003366] bg-white"}`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f?.name.endsWith(".pdf")) setForm16File(f); }}
-              onClick={() => form16Ref.current?.click()}>
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f?.name.endsWith(".pdf")) setForm16File(f); }}>
               <div className="flex flex-col items-center gap-3">
                 <div className="w-16 h-16 rounded-full bg-[#eff4ff] flex items-center justify-center group-hover:scale-110 transition-transform">
                   <span className="material-symbols-outlined text-[#003366] text-3xl">upload_file</span>
@@ -507,8 +506,7 @@ export default function HomePage() {
             )}
 
             {/* AIS Dropzone */}
-            <div className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${aisFile ? "border-[#166534] bg-green-50/20" : "border-[#c3c6d4] hover:border-[#003366] bg-white"}`}
-              onClick={() => aisRef.current?.click()}>
+            <div className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${aisFile ? "border-[#166534] bg-green-50/20" : "border-[#c3c6d4] hover:border-[#003366] bg-white"}`}>
               <div className="flex flex-col items-center gap-2">
                 <div className="w-14 h-14 rounded-full bg-[#eff4ff] flex items-center justify-center">
                   <span className="material-symbols-outlined text-[#003366] text-2xl">description</span>

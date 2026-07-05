@@ -180,6 +180,11 @@ async def process_and_get_questions(
     ) if session.ais else False
     house_count = 1 if session.form16 else 0  # Default to 1; user answers may override
 
+    # Compute approximate total income for ITR selection
+    cg_income = session.classified_cg.total_cg if session.classified_cg else Decimal("0")
+    salary_income = session.form16.part_b.total_gross_salary if session.form16 else Decimal("0")
+    approx_total = salary_income + cg_income
+
     itr_selection = selector.select(
         has_salary=bool(session.form16),
         has_house_property=house_count > 0,
@@ -187,7 +192,7 @@ async def process_and_get_questions(
         has_capital_gains=has_cg,
         has_business_income=False,
         has_foreign_income=has_foreign,
-        total_income=Decimal(session.classified_cg.total_income or "0") if session.classified_cg else Decimal("0"),
+        total_income=approx_total,
     )
     session.itr_form = itr_selection.form.value
     logger.info(f"ITR form auto-selected: {session.itr_form} — {itr_selection.explanation}")
