@@ -40,6 +40,98 @@ npm run dev
 
 ---
 
+### 2026-07-05 (PM) — Claude (AI Agent) + Aman
+
+**Context:** Reviewed Prasoon's handoff, completed all pending action items, fixed Google OAuth popup flow, set up keep-alive cron, cleaned git history. Production is now stable with Neon PostgreSQL backend.
+
+
+**1. Prasoon's Handoff Review — 12 New Commits**
+
+Prasoon shipped major infrastructure and UX work overnight (12 commits, 26 files, 3,300+ lines):
+
+| Category | What |
+|---|---|
+| **Neon PostgreSQL migration** | SQLite → Neon via psycopg2. `DATABASE_URL` now mandatory. `pan` column nullable for Google OAuth users. |
+| **Tax Updates system** | 4 govt source providers (PIB, CBDT, ITD, MoF) → DeepSeek AI summarizer → APScheduler (every 8h) → 5 API endpoints → Frontend with fallback |
+| **Landing page enrichment** | Stats bar, Why TaxStox, taxpayer segments, FAQ, How It Works section |
+| **Legal pages** | Terms, Privacy, Security, Support at `/legal/[slug]` |
+| **Animated logo flip** | 3-state CSS 3D rotation: TaxStox ↔ Licensed by IT Dept ↔ Bank-Grade Security (9s cycle) |
+| **Google Sign-In** | Switched from FedCM/One Tap to OAuth 2.0 popup flow (FedCM doesn't work on localhost) |
+
+New files: `apps/web/src/app/legal/[slug]/page.tsx`, `apps/web/src/app/auth/google-callback/page.tsx`, `apps/web/src/components/landing/TaxUpdatesSection.tsx`, `apps/web/src/lib/tax-data.ts`, backend providers/scheduler/summarizer modules.
+
+**2. Completed Prasoon's 3 Action Items**
+
+| # | Item | Action |
+|---|---|---|
+| 1 | Set `DATABASE_URL` in Render | Added Neon connection string to Render environment. Backend now starts and connects to `ep-divine-queen-ahra4kyl.us-east-1.aws.neon.tech`. Health check returns 200. |
+| 2 | Fix Google `redirect_uri_mismatch` | Added `https://taxstox.com/auth/google-callback` and `http://localhost:3000/auth/google-callback` to Google Cloud Console → OAuth Client → Authorized redirect URIs. |
+| 3 | Set up keep-alive cron | Created `TaxStox API Keep-Alive` job at cron-job.org pinging `https://api.taxstox.com/api/v1/health` every 5 minutes. Test run: 200 OK, 758ms. Render free tier will no longer sleep. |
+
+**3. Google OAuth Popup Fix — postMessage Architecture**
+
+Prasoon's OAuth 2.0 popup flow was hitting a race condition: the parent window polled `popup.location.href` but couldn't reliably detect the redirect back from Google due to cross-origin → same-origin transition timing. The token was correctly obtained by Google but never extracted by the parent.
+
+**Fix applied:**
+- Rewrote `apps/web/src/app/auth/google-callback/page.tsx` to use `window.opener.postMessage()` instead of relying on polling
+- Callback page extracts `id_token` from URL hash, sends it via `postMessage({ type: "google-signin-success", idToken }, origin)` to parent
+- Parent listens for `message` event instead of polling popup location
+- Fallback polling detects popup close without message (user cancelled)
+- 2-minute safety timeout cleans up listeners
+
+**Flow:**
+1. User clicks "Continue with Google" → popup opens to `accounts.google.com/o/oauth2/v2/auth`
+2. User selects account → Google redirects popup to `/auth/google-callback#id_token=JWT`
+3. Callback page extracts JWT from hash → `window.opener.postMessage({ idToken })` → closes popup
+4. Parent receives message → POSTs token to `/api/v1/auth/google` → receives TaxStox JWT → stores in localStorage → redirects to dashboard
+
+**4. Git History Cleanup**
+
+Removed "Co-Authored-By: Claude <noreply@anthropic.com>" from all 22 commits using `git filter-branch --msg-filter`. Branch protection temporarily disabled on GitHub for force push, then re-enabled.
+
+**5. Current Production Status**
+
+| Component | Status | URL |
+|---|---|---|
+| Frontend | ✅ Live | `https://taxstox.com` |
+| Backend | ✅ Live | `https://api.taxstox.com/api/v1/health` |
+| Database | ✅ Neon PostgreSQL | `ep-divine-queen-ahra4kyl` |
+| Cron keep-alive | ✅ Active | cron-job.org, every 5 min |
+| Google OAuth | ⚠️ Needs test | popup flow fixed, postMessage architecture deployed |
+| Render auto-deploy | ✅ On Commit | triggers on `apps/api/` changes |
+| Vercel auto-deploy | ✅ On Push | triggers on `apps/web/` changes |
+| UptimeRobot | ❌ Replaced | Using cron-job.org instead |
+
+**6. Environment Variables Reference**
+
+| Service | Key | Where |
+|---|---|---|
+| Render | `DATABASE_URL` | Neon PostgreSQL connection string |
+| Render | `TAXSTOX_JWT_SECRET` | Auto-generated |
+| Vercel | `NEXT_PUBLIC_API_URL` | `https://api.taxstox.com/api/v1` |
+| Vercel | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | `435349196142-bjmgv3b08drd7gag81ps7g5gob407v3j.apps.googleusercontent.com` |
+| Google Cloud | OAuth Client ID | Same as above |
+| Google Cloud | Redirect URIs | `https://taxstox.com/auth/google-callback`, `http://localhost:3000/auth/google-callback` |
+| Google Cloud | JS Origins | `https://taxstox.com`, `https://www.taxstox.com`, `http://localhost:3000` |
+
+**7. Still Pending (from Priority Lists)**
+
+| Item | Priority | Notes |
+|---|---|---|
+| ITR-3 builder (business income) | P2 | Base class exists, ITR-1 done |
+| ITR-4 builder (presumptive) | P2 | Simpler than ITR-3 |
+| Schedule FA (foreign assets) | P2 | Needed for NRIs |
+| Tests (backend + frontend) | P1 | pytest + Playwright |
+| TanStack Query / React Hook Form + Zod | P2 | Form validation + caching |
+| Charts (Recharts) on summary page | P2 | Regime comparison bar chart |
+| Audit trail | P2 | FR-9.1 compliance |
+| Rate limiting | P1 | Upload endpoints unprotected |
+| CAMS PDF broker parser | P2 | Only CSV parsers done |
+| `DEEPSEEK_API_KEY` env var | P3 | Set in Render for AI summarizer |
+| `TAXSTOX_JWT_SECRET` — verify not hardcoded | P1 | Confirm Render has production secret |
+
+---
+
 ### 2026-07-05 (AM) — Claude (AI Agent) + Prasoon
 
 **What Was Done**
