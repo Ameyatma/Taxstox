@@ -1,11 +1,11 @@
-# Next Work — Prasoon's Starting Point
+# Next Work
 
-> **Your first task:** M8 — Enterprise Multi-Tenancy
-> **Roadmap reference:** `docs/architecture/EnterpriseModernizationRoadmap.md` §Wave 8
+> **Current wave:** P4 complete. **Next wave:** P5 — Enterprise Platform.
+> **Roadmap reference:** `docs/architecture/ProductEngineeringRoadmap.md` §P5
 
 ---
 
-## Current Modernization Status
+## Current Status
 
 ```
 ✅ M0  Engineering Foundation
@@ -16,141 +16,81 @@
 ✅ M5  Compliance & ITR Generation
 ✅ M6  Audit, Explainability & Traceability
 ✅ M7  AI Knowledge Platform
+✅ M8  Enterprise Multi-Tenancy
+✅ M9  Security & Privacy
+✅ M10 Integration & Ecosystem
+✅ M11 Production Hardening
+✅ P1  Complete Individual Tax Filing
+✅ P2  Business & Professional Taxation
+✅ P3  Entity Taxation
+✅ P4  AI Intelligence
 ────────────────────────────────────
->>> M8  Enterprise Multi-Tenancy    ← YOU ARE HERE
-⬜ M9  Security & Privacy
-⬜ M10 Integration & Ecosystem
-⬜ M11 Production Hardening
+>>> P5  Enterprise Platform          ← NEXT WAVE
+⬜ P6  Customer Experience
+⬜ P7  Commercial Launch
 ```
 
 ---
 
-## M8: Enterprise Multi-Tenancy
+## P5: Enterprise Platform
 
 ### Objective
 
-Implement tenant management, RBAC with role hierarchy, CA firm multi-role structure, client portfolio management, enterprise SSO, and tenant isolation.
-
-### Why M8 Now
-
-The dependency graph (`WaveDependencyMatrix.md`) shows M8 depends on M7 (knowledge graph for RBAC domain context). M7 is complete. M8 is unblocked.
+Complete the enterprise multi-tenancy platform: CA firm workflows, dashboards, billing, white-label, client portfolio management.
 
 ### Capabilities to Implement
 
-From the Enterprise Capability Model (FROZEN):
-
-| Capability | Current | Target | Description |
-|-----------|---------|--------|-------------|
-| C21.1 Tenant Management | 0% | 60% | Tenant CRUD, branding, feature enablement |
-| C21.2 CA Firm Hierarchy | 0% | 50% | Role hierarchy: Admin→Senior CA→Junior CA→Clerk |
-| C21.3 Client Portfolio | 0% | 50% | Bulk client onboarding, status dashboard |
-| C1.3 Authorization (RBAC) | 5% | 50% | Role-based access with tenant scoping |
-| C21.4 Firm Dashboard | 0% | 30% | Firm-wide analytics and metrics |
-| C21.6 Enterprise SSO | 0% | 30% | SAML/OIDC integration foundation |
-
-### Gap IDs Addressed
-
-- C1.3: Authorization — Critical gap (no RBAC exists)
-- C21.1-C21.3: Enterprise Multi-Tenancy — Critical gaps (entire domain missing)
-- Risk R06: CA/Enterprise market inaccessible — High risk
-
-### Technical Debt Addressed
-
-- ARC-011: No bounded context separation for enterprise
-- AD-002: No authorization model
-
-### What NOT to Build in M8
-
-- Full billing/subscription (M10)
-- Complete security compliance (M9)
-- White-label embedding (M10)
-- External API gateway (M10)
+| Capability | Current | Target |
+|-----------|---------|--------|
+| C21.1 Tenant Management | 60% | 85% |
+| C21.2 CA Firm Hierarchy | 50% | 80% |
+| C21.3 Client Portfolio | 50% | 80% |
+| C21.4 Firm Dashboard | 30% | 70% |
+| C21.5 Bulk Operations | 0% | 60% |
+| C21.6 Enterprise SSO | 30% | 60% |
+| C21.7 White-Label/Branding | 0% | 50% |
+| C21.8 Billing & Subscription | 0% | 50% |
+| C14.2 Comparative Analytics | 0% | 40% |
+| C14.5 BI & Analytics | 0% | 30% |
+| C14.6 Custom Report Builder | 0% | 30% |
 
 ### Dependencies
 
-- **Depends on:** M7 (knowledge graph — COMPLETE ✅)
-- **Blocks:** M9 (security needs tenant model)
+- P1 (complete ✅) — ITR filing production-ready
+- P2 (complete ✅) — Business taxation
+- M8 (complete ✅) — Multi-tenancy foundation
 
 ### Entry Criteria
 
-- [x] M7 complete (✅)
-- [x] M7 exit criteria satisfied (✅)
-- [x] All 138 tests passing (✅)
-- [ ] Read all governance and architecture docs (you)
+- [x] P1 and P2 complete
+- [x] Multi-tenancy foundation (M8) operational
+- [x] 274 tests passing
+- [x] Golden vectors unchanged
 
-### Key Modules to Create
+### Exit Criteria
 
-```
-src/engine/enterprise/
-├── tenant.py             # Tenant model, TenantRepository
-├── rbac.py               # Role, Permission, RoleHierarchy
-├── client_portfolio.py   # Client-to-CA assignment, bulk operations
-└── firm_dashboard.py     # Firm-level analytics queries
-```
-
-### Key Modules to Modify
-
-- `src/auth/jwt.py` — Add role claims to JWT tokens
-- `src/db/database.py` — Add tenants, roles, permissions tables; add tenant_id to users/filings
-- `src/api/` — Add tenant-scoped middleware
-
-### Architecture Constraints
-
-- Tenant context must propagate through all requests
-- Every database query must filter by tenant_id
-- No cross-tenant data access (enforced at query level)
-- RBAC must use the knowledge graph for domain context
-- FinancialYear awareness must be maintained
-
-### Expected Deliverables
-
-1. Tenant management domain model
-2. RBAC with role hierarchy
-3. CA firm multi-role structure
-4. Client portfolio management basics
-5. Firm dashboard (basic analytics)
-6. Enterprise SSO foundation
-7. M8 Completion Report
-
-### Quality Gates
-
-All 9 gates from `QualityGateFramework.md` apply:
-- G2: Code quality (lint + typecheck)
-- G3: Security (no cross-tenant access, no privilege escalation)
-- G4: Test coverage (must not decrease below current)
-- G5: Regression (138 tests must pass, golden vectors unchanged)
-- G7: Documentation updated
-- G9: Staging deployment verified
-
-### Success Metrics
-
-- Tenant CRUD operations functional
-- Roles assignable with correct permission scoping
-- Client-to-CA assignment works with bulk import
-- Queries are tenant-scoped (verified by test)
-- 138 existing tests + new M8 tests all pass
-- Golden vectors unchanged
-- No breaking API changes
+- [ ] CA firm can manage 100+ clients with role-based staff access
+- [ ] White-label subdomain with firm branding
+- [ ] Usage-based billing with invoice generation
+- [ ] 430+ tests passing
 
 ### Estimated Effort
 
-Roadmap estimate: **10 weeks** for M8. This is the highest-complexity wave in the program due to database schema changes (tenant_id backfill).
+12 weeks (per Product Engineering Roadmap)
 
 ---
 
-## ABSOLUTE RULES
+## Rules
 
-1. **DO NOT SKIP WAVES.** Execute M8. Nothing else.
-2. **DO NOT REDESIGN THE ARCHITECTURE.** The ECM is frozen.
-3. **FOLLOW THE FROZEN MODERNIZATION ROADMAP.** It is your blueprint.
-4. **DO NOT MODIFY FROZEN DOCUMENTS.** ECM, Roadmap, Gap Report, Recovery Report are immutable.
-5. **DO NOT START M9 UNTIL M8 IS COMPLETE.** Each wave gates the next.
-6. **MAINTAIN BACKWARD COMPATIBILITY.** No breaking API changes.
-7. **USE RULEREPOSITORY FOR ALL TAX RULES.** No hardcoded constants.
-8. **USE FINANCIALYEAR EVERYWHERE.** No raw FY strings.
-9. **GOLDEN VECTORS MUST PASS.** Any change altering golden vectors is blocked.
-10. **PRODUCE A COMPLETION REPORT.** `docs/architecture/M8-CompletionReport.md`
+1. Do not skip waves.
+2. Do not redesign the architecture.
+3. Follow the frozen Product Engineering Roadmap exactly.
+4. Do not modify frozen documents.
+5. Maintain backward compatibility.
+6. Use RuleRepository for all tax rules.
+7. Golden vectors must pass.
+8. Produce a completion report: `docs/architecture/P5-CompletionReport.md`
 
 ---
 
-*This is your exact starting point. Read the onboarding guide first, then start M8. Good luck.*
+*Last updated: 2026-07-07*

@@ -1,234 +1,368 @@
-# TaxStox ITR Platform — Engineering Handoff
+# TaxStox Engineering Handoff
 
-> **For:** Prasoon (and all future engineers)
-> **Date:** 2026-07-05
-> **Status:** Modernization Wave 7 of 11 complete. M8 next.
-
----
-
-## 1. Project Overview
-
-TaxStox is an enterprise AI-powered Indian Tax Intelligence Platform. It automates ITR filing: users upload Form 16 + AIS PDFs, answer 0-5 adaptive questions, and download schema-compliant ITR JSON ready for the ITD portal.
-
-**Production:** Live at `taxstox.com` (Next.js frontend on Vercel, FastAPI backend on Render, Neon PostgreSQL).
-
-**Domain:** Indian Income Tax — all ITR types, Finance Act versioning, capital gains, business income, old/new regime optimization.
-
-## 2. Repository Philosophy
-
-This is an **AI Development Operating System (AI-DOS)** governed repository. Every decision is traceable. Every document has a purpose. Architecture is supreme. Code is subordinate.
-
-**Core principle:** AI agents must produce consistent output across months. The governance framework ensures this.
-
-## 3. Architecture Philosophy
-
-1. **Domain-Driven Design** — Code organized by bounded context, not technical layer
-2. **Clean Architecture** — Domain → Application → Infrastructure. Dependencies point inward.
-3. **Rule-Engine Separation** — Tax rules are versioned data, not code. `RuleRepository` is the single source of truth.
-4. **FinancialYear Everywhere** — No raw strings. `FinancialYear` value object is mandatory.
-5. **Immutable Results** — Computation outputs are frozen dataclasses. Audit trails are append-only.
-6. **Golden Vector Verification** — Known inputs → expected outputs. Any change that alters golden vectors is blocked.
-
-## 4. Governance Hierarchy (Permanent)
-
-```
-1. docs/governance/00-Constitution.md          ← SUPREME (10 principles, 10 invariants)
-2. docs/governance/01-Chief-Architect.md       ← ADR process, module boundaries
-3. docs/architecture/ENTERPRISE_CAPABILITY_MODEL*.md ← FROZEN target (148 capabilities)
-4. docs/architecture/ARCHITECTURE_RECOVERY_REPORT.md ← Current state
-5. docs/architecture/EnterpriseGapReport.md    ← Gap analysis
-6. docs/architecture/EnterpriseModernizationRoadmap.md ← Execution blueprint
-7. docs/adr/                                   ← Architecture Decision Records
-8. docs/governance/03-Engineering-Standards.md ← Coding rules
-```
-
-**Higher levels override lower levels. No exceptions.**
-
-## 5. Document Authority Hierarchy
-
-| Level | Documents | Can Be Modified By |
-|-------|-----------|--------------------|
-| 1-3 (Supreme) | Constitution | CTO + Chief Architect + ADR |
-| 4 (Architecture) | Chief Architect, ECM, Recovery, Gap, Roadmap | Chief Architect + ADR |
-| 5-6 (Implementation) | Engineering Standards, Testing Standards, Wave Execution Plans | Tech Lead + Chief Architect |
-| 7 (Decisions) | ADRs | Chief Architect |
-| 8 (Reference) | Design docs, Project Memory | Any contributor |
-
-## 6. Mandatory Reading Order
-
-Every engineer and AI agent MUST read in this order:
-1. `CLAUDE.md` — Agent bootstrap
-2. `docs/governance/00-Constitution.md` — Supreme governance
-3. `docs/governance/01-Chief-Architect.md` — Architecture governance
-4. `docs/architecture/ENTERPRISE_CAPABILITY_MODEL.md` — Target architecture (FROZEN)
-5. `docs/architecture/EnterpriseModernizationRoadmap.md` — Execution blueprint (FROZEN)
-6. `docs/handoff/PRASOON_ONBOARDING.md` — Onboarding guide
-7. `docs/handoff/NEXT_WORK.md` — Exact next work item
-
-## 7. Repository Structure
-
-```
-D:\IT_Returns\
-├── CLAUDE.md                       ← Agent bootstrap — read first
-├── HANDOFF.md                      ← THIS FILE
-│
-├── docs/
-│   ├── governance/                 ← Supreme governance docs
-│   ├── architecture/               ← FROZEN architecture (ECM, roadmap, gap, health, risk)
-│   ├── ai-dos/memory/              ← Project Memory (living docs)
-│   ├── ai-dos/archive/             ← Superseded docs (historical)
-│   ├── adr/history/                ← Architecture Decision Records
-│   ├── recovery/                   ← Navigation index → architecture docs
-│   ├── gap-analysis/               ← Navigation index → architecture docs
-│   ├── domain/                     ← Business rules reference
-│   ├── roadmap/                    ← Placeholder
-│   └── handoff/                    ← Engineer handoff docs
-│
-├── apps/
-│   ├── api/                        ← FastAPI backend (Python 3.12+)
-│   │   ├── src/
-│   │   │   ├── engine/             ← Domain logic (tax computation, rules, audit)
-│   │   │   │   ├── rules/          ← RuleRepository + RuleEvaluator (M1)
-│   │   │   │   ├── audit.py        ← Audit trail (M6)
-│   │   │   │   ├── explain.py      ← Explanation engine (M6)
-│   │   │   │   ├── knowledge_graph.py ← Tax knowledge graph (M7)
-│   │   │   │   └── ...             ← 15+ engine modules
-│   │   │   ├── models/             ← Domain models (Pydantic)
-│   │   │   ├── parsers/            ← Document parsing (Form16, AIS, 26AS)
-│   │   │   ├── builders/           ← ITR JSON generation
-│   │   │   └── api/                ← FastAPI routes
-│   │   └── tests/                  ← 138 tests, all passing
-│   └── web/                        ← Next.js frontend
-│
-├── design/                         ← Design specs + HTML prototypes
-└── .github/workflows/              ← CI pipeline
-```
-
-## 8. Current Modernization Status
-
-| Wave | Name | Status | Date |
-|------|------|--------|------|
-| M0 | Engineering Foundation | ✅ COMPLETE | 2026-07-05 |
-| M1 | Core Domain Foundation | ✅ COMPLETE | 2026-07-05 |
-| M2 | Document Intelligence Enhancement | ✅ COMPLETE | 2026-07-05 |
-| M3 | Income & Deduction Engines | ✅ COMPLETE | 2026-07-05 |
-| M4 | Tax Computation & Optimization | ✅ COMPLETE | 2026-07-05 |
-| M5 | Compliance & ITR Generation | ✅ COMPLETE | 2026-07-05 |
-| M6 | Audit, Explainability & Traceability | ✅ COMPLETE | 2026-07-05 |
-| M7 | AI Knowledge Platform | ✅ COMPLETE | 2026-07-05 |
-| **M8** | **Enterprise Multi-Tenancy** | **← NEXT WAVE** | — |
-| M9 | Security & Privacy | PENDING | — |
-| M10 | Integration & Ecosystem | PENDING | — |
-| M11 | Production Hardening | PENDING | — |
-
-## 9. Architecture Health
-
-| Metric | Score | Trend |
-|--------|-------|-------|
-| Overall | **31→~45** | Improving |
-| Domain Design | 15→25 | Improving |
-| Testability | 10→35 | Improving (138 tests) |
-| Modularity | 45→55 | Improving |
-| AI Readiness | 10→25 | Improving |
-
-## 10. Testing Status
-
-- **138 tests, all passing**
-- 0 failures, 0 skipped
-- Coverage: ~38% (engine modules well-covered, API routes not yet)
-- Golden vectors: 8 vectors, all passing, unchanged through M0-M7
-- CI pipeline: lint (ruff) + typecheck (mypy) + test (pytest) + security (bandit)
-
-## 11. Key Engineering Rules
-
-### Non-Negotiable
-- **FinancialYear is mandatory** — never use raw strings for FY
-- **RuleRepository is the sole rule source** — no hardcoded tax constants
-- **RuleEvaluator performs all rule evaluation** — no duplicated computation
-- **Golden vectors must pass** — any change altering golden vectors is blocked
-- **Backward compatible** — no breaking API changes
-- **Additive preferred** — new modules over modifying existing ones
-- **No circular dependencies** — resolved via dependency inversion
-- **No Finance Act values outside RuleRepository**
-
-### Definition of Done
-- [ ] All tests pass (138 minimum)
-- [ ] Golden vectors unchanged
-- [ ] Lint passes (ruff)
-- [ ] Type checking passes (mypy strict)
-- [ ] Security scan passes (bandit)
-- [ ] No hardcoded tax constants
-- [ ] FinancialYear used everywhere applicable
-- [ ] ADR written if architecture changed
-- [ ] Completion report in `docs/architecture/`
-
-## 12. Quality Gate Process
-
-Every wave exit requires:
-1. **G2: Code Quality** — Lint + type check
-2. **G3: Security** — Bandit scan
-3. **G4: Test Coverage** — No decrease
-4. **G5: Regression** — Golden vectors pass
-5. **G7: Documentation** — Updated
-6. **G9: Deployment** — Staging verified
-
-See `docs/architecture/QualityGateFramework.md` for full details.
-
-## 13. Stop Conditions
-
-**STOP and escalate if:**
-- Constitution is violated
-- Architectural invariant is broken
-- Golden vectors change unexpectedly
-- Circular dependency is introduced
-- Finance Act constant appears outside RuleRepository
-- ECM requires modification
-
-## 14. Common Mistakes to Avoid
-
-1. **Hardcoding a tax rate** — use `config.get_deduction_limit()` or `RuleEvaluator`
-2. **Using raw FY strings** — use `FinancialYear.from_string("FY2025-26")`
-3. **Modifying frozen documents** — ECM, Roadmap, Gap Report are FROZEN
-4. **Skipping waves** — follow the dependency graph exactly
-5. **Starting M9 before M8** — each wave depends on the previous
-6. **Creating circular imports** — use dependency inversion
-7. **Adding business logic to API routes** — keep it in engine/
-
-## 15. Golden Vector Policy
-
-Golden vectors are test cases with known inputs and ITD-verified expected outputs. They are the primary defense against silent tax computation errors.
-
-- **Location:** `tests/test_golden_vectors.py`
-- **Modification:** Only when explicitly correcting a verified defect
-- **Blocking:** Any change that alters golden vector output blocks deployment
-
-## 16. Branch Strategy
-
-- **main** — Production. Deploy on merge.
-- **feature/m{X}-{description}** — Feature branches per wave
-- **No direct commits to main** — PR required, CI must pass
-
-## 17. Commit Conventions
-
-```
-chore(wave): complete M{X} — {brief description}
-feat(engine): add {module} — {capability reference}
-fix(engine): correct {issue} — {evidence}
-docs: update {document}
-```
-
-## 18. Expected Engineering Behaviour
-
-1. Read the governance docs before writing code
-2. Follow the modernization roadmap exactly
-3. Complete one wave before starting the next
-4. Write tests with every new module
-5. Update the completion report
-6. Never modify frozen documents
-7. Maintain backward compatibility
-8. Use the RuleRepository for all tax rules
-9. Produce completion reports after every wave
+> **Purpose:** Single canonical handoff for every engineering session. Repository-centric. Person-independent.
+> **Last Updated:** 2026-07-07
+> **Authority:** This document describes current state. The repository is the authoritative source. If this document contradicts the repository, the repository wins.
 
 ---
 
-*This HANDOFF.md is the primary reference for all future engineers. When in doubt, return here.*
+## 1. Project Status
+
+| Attribute | Value |
+|-----------|-------|
+| Current Wave | **P5 — Enterprise Platform** |
+| Completed Modernization Waves | M0, M1, M2, M3, M4, M5, M6, M7, M8, M9, M10, M11 |
+| Completed Product Waves | P1, P2, P3, P4 |
+| Roadmap Position | Product Engineering Roadmap §P5 |
+| Test Count | 274 passing, 0 failures |
+| Golden Vectors | 9 vectors, all passing, unchanged through all waves |
+| Branch | `main` |
+| Architecture Certification | EAC v1.0 — Certified with Observations |
+| Known Blockers | None |
+
+**Repository evidence overrides this document if newer.** Always inspect `git log`, `docs/architecture/`, and test output before concluding current state.
+
+---
+
+## 2. Authority Hierarchy
+
+Every decision in this repository is governed by a strict hierarchy. Higher levels override lower levels. No exceptions.
+
+```
+1. Constitution                    docs/governance/00-Constitution.md
+2. CLAUDE.md                       Root — agent bootstrap
+3. Governance Documents            docs/governance/
+4. ADRs                            docs/adr/
+5. Enterprise Capability Model     docs/architecture/ENTERPRISE_CAPABILITY_MODEL*.md  [FROZEN]
+6. Architecture Recovery Report    docs/architecture/ARCHITECTURE_RECOVERY_REPORT.md
+7. Enterprise Gap Analysis         docs/architecture/EnterpriseGapReport.md
+8. Enterprise Modernization Roadmap docs/architecture/EnterpriseModernizationRoadmap.md [FROZEN]
+9. Product Engineering Roadmap     docs/architecture/ProductEngineeringRoadmap.md       [FROZEN]
+10. AI-DOS Memory                  docs/ai-dos/memory/
+11. Source Code                    apps/
+12. Git History                    Commits
+```
+
+Nothing may violate this hierarchy. If a lower-level document conflicts with a higher-level document, the higher level wins without exception.
+
+---
+
+## 3. Mandatory Session Bootstrap
+
+Every new engineering session MUST begin by pasting the following prompt into a new session. No other context is required. The bootstrap is self-contained and will reconstruct complete project state from the repository.
+
+```
+You are the Chief Software Engineer and Lead Domain Architect for TaxStox.
+
+This is an existing enterprise project. There is NO conversational memory.
+The GitHub repository is the ONLY authoritative source of project state.
+
+=========================================================
+PRIMARY DIRECTIVE
+=========================================================
+
+Before making ANY recommendation, design decision, implementation
+decision, or roadmap suggestion, reconstruct complete project context
+from the repository.
+
+Do NOT rely on assumptions.
+
+Do NOT ask for architectural context unless evidence is genuinely
+unavailable.
+
+If evidence is unavailable, explicitly state:
+
+"Insufficient evidence."
+
+=========================================================
+AUTHORITY ORDER (STRICT)
+=========================================================
+
+Highest Authority
+1. Constitution
+2. CLAUDE.md
+3. Governance Documents
+4. ADRs
+5. Enterprise Capability Model (FROZEN)
+6. Architecture Recovery Report
+7. Enterprise Gap Analysis
+8. Enterprise Modernization Roadmap (FROZEN)
+9. Product Engineering Roadmap (FROZEN)
+10. AI-DOS Memory
+11. Source Code
+12. Git History
+
+Never violate the authority hierarchy.
+
+=========================================================
+INITIAL BOOTSTRAP (MANDATORY)
+=========================================================
+
+Without writing any code:
+
+1. Read CLAUDE.md completely.
+2. Read the Constitution.
+3. Read every Governance document.
+4. Read every ADR.
+5. Read Enterprise Capability Model.
+6. Read Architecture Recovery Report.
+7. Read Enterprise Gap Analysis.
+8. Read Enterprise Modernization Roadmap.
+9. Read Product Engineering Roadmap.
+10. Read AI-DOS Memory.
+11. Read README.
+12. Read HANDOFF.md.
+13. Read NEXT_WORK.md.
+14. Inspect current repository structure.
+15. Inspect Git status.
+16. Inspect current branch.
+17. Inspect latest commits.
+18. Determine current implementation wave.
+19. Determine completed roadmap waves.
+20. Determine repository health.
+
+=========================================================
+PROJECT UNDERSTANDING REPORT
+=========================================================
+
+Produce ONLY the following report.
+
+1. Current branch
+2. Git cleanliness
+3. Current implementation wave
+4. Completed roadmap waves
+5. Repository health
+6. Documentation health
+7. Test status
+8. Golden vector status
+9. Current blockers (only evidence-backed)
+10. Recommended next action STRICTLY according to the Product
+    Engineering Roadmap.
+
+=========================================================
+IMPORTANT CONSTRAINTS
+=========================================================
+
+Do NOT recommend side work.
+
+Do NOT recommend documentation updates unless they block
+implementation.
+
+Do NOT recommend cleanup merely because it is good practice.
+
+Do NOT recommend commits merely because changes exist.
+
+Do NOT recommend refactoring outside the current roadmap wave.
+
+The next action MUST always be determined from:
+
+Product Engineering Roadmap
+
+AND
+
+Current completed wave.
+
+If the repository contains uncommitted changes that belong to the
+completed wave, they become part of the current project state.
+
+Treat them as implementation state unless explicitly asked for Git
+operations.
+
+=========================================================
+IMPLEMENTATION PROTOCOL
+=========================================================
+
+Never automatically implement anything.
+
+For every wave:
+
+1. Reload repository.
+2. Verify dependencies.
+3. Produce Pre-flight.
+4. Wait.
+
+Implementation begins ONLY after explicit approval.
+
+=========================================================
+WHEN INSTRUCTED: Proceed to P{X}
+=========================================================
+
+Then:
+
+1. Reload repository again.
+2. Verify every dependency.
+3. Produce detailed implementation plan.
+4. Wait for approval.
+
+Only after approval:
+
+Implement exactly one roadmap wave.
+
+Do not implement future waves.
+
+Maintain:
+
+- Clean Architecture
+- DDD
+- SOLID
+- Repository Pattern
+- Aggregate Roots
+- Domain Services
+- Value Objects
+- Dependency Inversion
+- Backward Compatibility
+
+Business rules originate only from RuleRepository.
+
+No duplicated logic.
+
+No hardcoded tax rules.
+
+=========================================================
+WAVE COMPLETION
+=========================================================
+
+At the end of every implementation wave:
+
+1. Run tests.
+2. Verify golden vectors.
+3. Verify backward compatibility.
+4. Produce detailed completion report.
+5. STOP.
+
+Never continue automatically.
+
+Never begin the next wave until explicitly instructed: Proceed to
+P{Next}.
+
+=========================================================
+GIT POLICY
+=========================================================
+
+Git operations are NEVER automatic.
+
+Do not recommend:
+
+- commit
+- push
+- merge
+- cleanup
+- documentation updates
+
+unless explicitly requested for repository maintenance.
+
+Assume Git is managed separately.
+
+=========================================================
+YOUR FIRST TASK
+=========================================================
+
+Do NOT implement anything.
+
+Do NOT suggest side work.
+
+Do NOT recommend repository maintenance.
+
+Reconstruct complete repository context.
+
+Produce the Project Understanding Report.
+
+Then STOP and wait for instructions.
+```
+
+---
+
+## 4. Engineering Workflow
+
+Every engineering session follows this exact workflow. No step may be skipped. Automatic progression from one step to the next is prohibited.
+
+```
+1. BOOTSTRAP
+   Read all mandatory documents in authority order.
+   Reconstruct complete project context from the repository.
+
+2. PROJECT UNDERSTANDING REPORT
+   Produce structured report: branch, cleanliness, current wave,
+   completed waves, health, tests, golden vectors, blockers,
+   recommended next action.
+
+3. REPOSITORY REVIEW
+   For the current wave: deep-dive into every existing module the
+   wave builds upon. Understand current implementation state,
+   interfaces, and patterns.
+
+4. PRE-FLIGHT REPORT
+   Verify every dependency for the current wave.
+   List every new file to create and every existing file to modify.
+   Define test plan with expected test count.
+   Identify risks and stop conditions.
+
+5. APPROVAL
+   Present Pre-flight Report.
+   Wait for explicit approval.
+   Do NOT begin implementation before approval.
+
+6. IMPLEMENTATION
+   Implement exactly one roadmap wave.
+   Follow Clean Architecture, DDD, SOLID.
+   All tax rules from RuleRepository.
+   No hardcoded tax values.
+   No duplicated logic.
+   All new modules in correct layer (domain/engine/infrastructure).
+   Domain layer: zero framework imports.
+
+7. TESTING
+   Write comprehensive tests for every new module.
+   Run full test suite.
+   Verify golden vectors unchanged.
+   Verify no regressions in existing tests.
+
+8. COMPLETION REPORT
+   Document: capabilities completed, files created/modified/removed,
+   test results (before/after), architecture compliance checks,
+   stop conditions verified.
+
+9. STOP
+   Do NOT continue to the next wave.
+   Do NOT suggest the next wave.
+   Do NOT implement anything beyond the current wave.
+```
+
+---
+
+## 5. Completion Requirements
+
+At the end of every roadmap wave, before marking it complete:
+
+| # | Requirement | Verification |
+|---|-------------|-------------|
+| 1 | Run full test suite | `pytest` — all tests pass |
+| 2 | Verify golden vectors | `test_golden_vectors.py` — all vectors identical |
+| 3 | Verify backward compatibility | No breaking API changes |
+| 4 | Check for regression | Existing test count does not decrease |
+| 5 | Produce completion report | `docs/architecture/P{X}-CompletionReport.md` |
+| 6 | Update HANDOFF.md | §1 Project Status — current wave, test count |
+| 7 | Update NEXT_WORK.md | Point to the next wave |
+| 8 | STOP | Do not begin next wave |
+
+**Git operations (commit, push) occur ONLY when explicitly requested.** Do not recommend them automatically.
+
+---
+
+## 6. Repository First Policy
+
+1. **The repository is the only authoritative source of project state.** Every claim about the project must be backed by repository evidence — a file path, a line number, a commit hash, or a test run.
+
+2. **Conversation history is never authoritative.** What was discussed in a previous session may be outdated. What is in the repository is current.
+
+3. **Assumptions are prohibited.** If a fact about the project cannot be verified from the repository, do not state it. Use the exact phrase: **"Insufficient evidence."**
+
+4. **Architecture is frozen.** The Enterprise Capability Model, Enterprise Modernization Roadmap, and Product Engineering Roadmap are FROZEN documents. They define the target architecture and execution order. Do not redesign them. Do not move capabilities between waves. Do not introduce new waves.
+
+5. **The roadmap determines the next action.** After every wave completion, the next wave is determined by the Product Engineering Roadmap dependency graph. Never skip waves. Never combine waves. Never implement future waves.
+
+---
+
+*End of HANDOFF.md*
+
+*This document is the single canonical engineering handoff. Every session begins here. Every session ends by updating §1.*
