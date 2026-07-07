@@ -67,10 +67,37 @@ class ExplanationEngine:
 
     Deterministic. Consumes AuditTrail, produces ComputationNarrative.
     Never performs tax computation — only explains what was computed.
+
+    P4 Enhancement: Provision citations integrated via ProvisionTracer.
+    Template registry for multi-language support.
     """
 
-    def explain(self, trail: AuditTrail) -> ComputationNarrative:
-        """Generate narrative from audit trail events."""
+    def __init__(self) -> None:
+        self._tracer = None  # Lazy
+        self._templates: dict[str, dict[str, str]] = {
+            "en": {},  # English templates (default)
+        }
+
+    @property
+    def tracer(self):
+        if self._tracer is None:
+            from src.engine.provision_tracer import ProvisionTracer
+            self._tracer = ProvisionTracer()
+        return self._tracer
+
+    def register_template(self, lang: str, key: str, template: str) -> None:
+        """Register a localized explanation template."""
+        if lang not in self._templates:
+            self._templates[lang] = {}
+        self._templates[lang][key] = template
+
+    def explain(self, trail: AuditTrail, language: str = "en") -> ComputationNarrative:
+        """Generate narrative from audit trail events.
+
+        Args:
+            trail: The audit trail to explain
+            language: Language code for localization (default: "en")
+        """
         explanations: list[Explanation] = []
         step = 0
         total_tax = ""
@@ -112,80 +139,119 @@ class ExplanationEngine:
             summary=event.description,
         )
 
-    @staticmethod
-    def _explain_income(step: int, e) -> Explanation:
+    def explain_number(
+        self,
+        trail: AuditTrail,
+        value_key: str,
+    ) -> str | None:
+        """Deep-dive explanation of a specific number in the computation.
+
+        Finds the audit event that produced this value and generates
+        a focused explanation with full provision references.
+
+        Args:
+            trail: The audit trail
+            value_key: e.g., "slab_tax", "rebate_87a", "cess"
+
+        Returns:
+            Detailed explanation string or None if not found
+        """
+        for event in trail.events:
+            if value_key in event.output_data:
+                parts = [
+                    f"### How '{value_key}' Was Computed",
+                    f"",
+                    f"**Value:** ₹{event.output_data.get(value_key, 'N/A')}",
+                    f"**Computed at:** {event.event_type.value}",
+                ]
+                if event.rule_reference:
+                    parts.append(f"**Legal Basis:** {event.rule_reference}")
+                    # Try to enrich with provision tracer
+                    prov_ref = self.tracer.lookup(event.rule_reference)
+                    if prov_ref:
+                        parts.append(f"**Description:** {prov_ref.description}")
+                parts.append(f"")
+                parts.append(f"**Input Data:** {event.input_data}")
+                parts.append(f"**Description:** {event.description}")
+                return "\n".join(parts)
+        return None
+
+    def _explain_income(self, step: int, e) -> Explanation:
         income = e.output_data.get("income", "0")
         head = e.output_data.get("income_head", "salary")
+        provision = e.rule_reference or self._lookup_provision(head)
         return Explanation(
             step=step, title=f"Income: {head.title()}",
             summary=f"₹{income} from {head}.",
             detail=e.description,
             amount=income,
-            provision=e.rule_reference,
+            provision=provision,
         )
 
-    @staticmethod
-    def _explain_deduction(step: int, e) -> Explanation:
+    def _explain_deduction(self, step: int, e) -> Explanation:
         section = e.output_data.get("section", "")
         amount = e.output_data.get("amount", "0")
+        provision = e.rule_reference or f"Section {section}"
+        prov_ref = self.tracer.lookup(provision) if provision else None
         return Explanation(
             step=step, title=f"Deduction: {section}",
             summary=f"₹{amount} deducted under Section {section}.",
             detail=e.description,
             amount=amount,
-            provision=e.rule_reference or f"Section {section}",
+            provision=prov_ref.description if prov_ref else provision,
         )
 
-    @staticmethod
-    def _explain_rule(step: int, e) -> Explanation:
+    def _explain_rule(self, step: int, e) -> Explanation:
+        provision = e.rule_reference or ""
+        prov_ref = self.tracer.lookup(provision) if provision else None
         return Explanation(
             step=step, title="Rule Applied",
             summary=e.description,
             detail=f"Input: {e.input_data}, Output: {e.output_data}",
-            provision=e.rule_reference,
+            provision=prov_ref.description if prov_ref else provision,
         )
 
-    @staticmethod
-    def _explain_slab(step: int, e) -> Explanation:
+    def _explain_slab(self, step: int, e) -> Explanation:
+        provision = e.rule_reference or "slab_new"
+        prov_ref = self.tracer.lookup(provision) if provision else None
         return Explanation(
             step=step, title="Slab Tax Applied",
             summary=e.description,
             detail=str(e.output_data),
-            provision=e.rule_reference or "Section 115BAC",
+            provision=prov_ref.description if prov_ref else (e.rule_reference or "Section 115BAC"),
         )
 
-    @staticmethod
-    def _explain_rebate(step: int, e) -> Explanation:
+    def _explain_rebate(self, step: int, e) -> Explanation:
         amount = e.output_data.get("rebate", "0")
+        prov_ref = self.tracer.lookup("87a")
         return Explanation(
             step=step, title="Rebate u/s 87A",
             summary=f"Rebate of ₹{amount} applied." if amount != "0" else "No rebate applicable.",
             amount=amount,
-            provision="Section 87A",
+            provision=prov_ref.description if prov_ref else "Section 87A",
         )
 
-    @staticmethod
-    def _explain_surcharge(step: int, e) -> Explanation:
+    def _explain_surcharge(self, step: int, e) -> Explanation:
         amount = e.output_data.get("surcharge", "0")
+        prov_ref = self.tracer.lookup("surcharge")
         return Explanation(
             step=step, title="Surcharge",
             summary=f"Surcharge of ₹{amount} applied." if amount != "0" else "No surcharge applicable.",
             amount=amount,
-            provision="Finance Act",
+            provision=prov_ref.description if prov_ref else "Finance Act",
         )
 
-    @staticmethod
-    def _explain_cess(step: int, e) -> Explanation:
+    def _explain_cess(self, step: int, e) -> Explanation:
         amount = e.output_data.get("cess", "0")
+        prov_ref = self.tracer.lookup("cess")
         return Explanation(
             step=step, title="Health & Education Cess",
             summary=f"Cess of ₹{amount} (4% of tax + surcharge).",
             amount=amount,
-            provision="Section 2(11) of Finance Act",
+            provision=prov_ref.description if prov_ref else "Section 2(11) of Finance Act",
         )
 
-    @staticmethod
-    def _explain_final(step: int, e) -> Explanation:
+    def _explain_final(self, step: int, e) -> Explanation:
         net_tax = e.output_data.get("net_tax", "0")
         return Explanation(
             step=step, title="Final Tax Liability",
@@ -194,8 +260,7 @@ class ExplanationEngine:
             amount=net_tax,
         )
 
-    @staticmethod
-    def _explain_regime(step: int, e) -> Explanation:
+    def _explain_regime(self, step: int, e) -> Explanation:
         recommended = e.output_data.get("recommended", "")
         savings = e.output_data.get("savings", "0")
         return Explanation(
@@ -204,3 +269,23 @@ class ExplanationEngine:
             detail=e.description,
             amount=savings,
         )
+
+    @staticmethod
+    def _lookup_provision(keyword: str) -> str:
+        """Quick provision lookup from the tracer."""
+        from src.engine.provision_tracer import PROVISION_MAP
+
+        # Try to match keyword to a provision key
+        mapping = {
+            "salary": "salary_171",
+            "house_property": "24b",
+            "capital_gains": "112a",
+            "other_sources": "80tta",
+            "interest": "80tta",
+            "dividend": "80tta",
+        }
+        prov_key = mapping.get(keyword.lower(), "")
+        if prov_key and prov_key in PROVISION_MAP:
+            prov = PROVISION_MAP[prov_key]
+            return f"{prov.section} — {prov.description}"
+        return ""

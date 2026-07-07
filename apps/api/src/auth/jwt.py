@@ -1,5 +1,9 @@
-"""JWT token generation and verification for TaxStox authentication."""
+"""JWT token generation and verification for TaxStox authentication.
 
+M8: Added tenant_id and roles claims for multi-tenancy support.
+"""
+
+import contextvars
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -21,14 +25,36 @@ ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 security = HTTPBearer(auto_error=False)
 
+# M8: Context variable for tenant middleware to access JWT claims
+_current_claims: contextvars.ContextVar[dict] = contextvars.ContextVar(
+    "jwt_claims", default={}
+)
+
 
 # ── Token Functions ──────────────────────────────────────────────────
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    """Create a JWT access token."""
+def create_access_token(
+    data: dict,
+    expires_delta: timedelta | None = None,
+    tenant_id: str | None = None,
+    roles: list[str] | None = None,
+) -> str:
+    """Create a JWT access token.
+
+    M8: Accepts optional tenant_id and roles claims for multi-tenancy.
+    """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS))
-    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    )
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+    })
+    if tenant_id:
+        to_encode["tenant_id"] = tenant_id
+    if roles:
+        to_encode["roles"] = roles
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -42,10 +68,10 @@ def decode_token(token: str) -> dict:
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> dict:
-    """FastAPI dependency: extract and verify the current user from the Bearer token.
+    """FastAPI dependency: extract and verify the current user.
 
-    Returns the token payload dict: {sub: user_id, pan: str, email: str}.
-    Raises 401 if token is missing, expired, or invalid.
+    Returns payload: {sub, pan, email, tenant_id, roles}.
+    M8: Stores claims in context var for tenant middleware access.
     """
     if credentials is None:
         raise HTTPException(
@@ -57,6 +83,7 @@ async def get_current_user(
     token = credentials.credentials
     try:
         payload = decode_token(token)
+        _current_claims.set(payload)
         return payload
     except JWTError:
         raise HTTPException(
@@ -69,7 +96,7 @@ async def get_current_user(
 async def get_optional_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> dict | None:
-    """Like get_current_user but returns None instead of 401 when unauthenticated."""
+    """Like get_current_user but returns None instead of 401."""
     if credentials is None:
         return None
     try:

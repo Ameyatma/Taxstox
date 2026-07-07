@@ -2,6 +2,9 @@
 
 Principle: Only ask questions whose answers CANNOT be derived from Form 16 or AIS.
 Everything auto-detectable is auto-detected. Questions are suppressed when irrelevant.
+
+P4 Enhancement: Integrated InterviewPersonalizationEngine for data-driven
+question suppression. Added generate_minimal() with zero/few-question path.
 """
 
 from decimal import Decimal
@@ -10,10 +13,22 @@ from src.models.form16 import Form16Data, Regime
 from src.models.ais import AISData
 from src.models.tax import ClassifiedCGData
 from src.models.api import Question, QuestionsResponse
+from src.domain.interview.personalization import (
+    InterviewPersonalizationEngine,
+    TaxpayerProfile,
+    personalization_engine,
+)
 
 
 class QuestionEngine:
-    """Generates the minimal question set based on detected data."""
+    """Generates the minimal question set based on detected data.
+
+    P4: Now integrates InterviewPersonalizationEngine to suppress
+    questions that are irrelevant to the taxpayer's specific profile.
+    """
+
+    def __init__(self, personalization: InterviewPersonalizationEngine | None = None) -> None:
+        self._personalization = personalization or personalization_engine
 
     def generate(
         self,
@@ -23,32 +38,36 @@ class QuestionEngine:
         recommended_regime: Regime,
         regime_savings: Decimal,
     ) -> QuestionsResponse:
-        """Generate the question set for the user."""
+        """Generate the full question set for the user.
+
+        Uses personalization to score and optionally suppress questions.
+        """
         questions: list[Question] = []
         income_summary = self._build_income_summary(form16, ais)
+        profile = self._build_profile(form16, ais, recommended_regime)
 
         # Q1: Rent / HRA
-        rent_q = self._build_rent_question(form16, recommended_regime)
+        rent_q = self._build_rent_question(form16, recommended_regime, profile)
         if rent_q:
             questions.append(rent_q)
 
         # Q2: Health Insurance
-        health_q = self._build_health_question(recommended_regime)
+        health_q = self._build_health_question(recommended_regime, profile)
         if health_q:
             questions.append(health_q)
 
         # Q3: Additional 80C investments
-        c80_q = self._build_80c_question(form16, recommended_regime)
+        c80_q = self._build_80c_question(form16, recommended_regime, profile)
         if c80_q:
             questions.append(c80_q)
 
         # Q4: Home Loan
-        home_q = self._build_home_loan_question(ais, form16)
+        home_q = self._build_home_loan_question(ais, form16, profile)
         if home_q:
             questions.append(home_q)
 
         # Q5: Other Income not in AIS
-        other_q = self._build_other_income_question()
+        other_q = self._build_other_income_question(profile)
         if other_q:
             questions.append(other_q)
 
@@ -58,6 +77,69 @@ class QuestionEngine:
             regime_savings=regime_savings,
             income_summary=income_summary,
             questions=questions,
+        )
+
+    def generate_minimal(
+        self,
+        itr_type: str,
+        form16: Form16Data,
+        ais: AISData,
+        recommended_regime: Regime,
+        regime_savings: Decimal,
+        max_questions: int = 3,
+    ) -> QuestionsResponse:
+        """Generate the most minimal question set possible.
+
+        Uses aggressive personalization — suppresses every question
+        that scores < 0.60 relevance. Targets ≤3 questions.
+        """
+        full = self.generate(itr_type, form16, ais, recommended_regime, regime_savings)
+
+        # Score and filter
+        profile = self._build_profile(form16, ais, recommended_regime)
+        candidate_ids = ["rent", "health_insurance", "additional_80c", "home_loan", "other_income"]
+
+        scores = self._personalization.personalize(candidate_ids, profile)
+        suppressed_ids = {s.question_id for s in scores if s.suppress or s.score < 0.60}
+
+        # Filter questions, respecting max
+        filtered: list[Question] = []
+        for q in full.questions:
+            if q.id not in suppressed_ids:
+                filtered.append(q)
+            if len(filtered) >= max_questions:
+                break
+
+        # Build response with filtered questions
+        return QuestionsResponse(
+            itr_type=itr_type,
+            regime_recommended=recommended_regime,
+            regime_savings=regime_savings,
+            income_summary=full.income_summary,
+            questions=filtered,
+        )
+
+    def _build_profile(
+        self,
+        form16: Form16Data,
+        ais: AISData,
+        recommended_regime: Regime,
+    ) -> TaxpayerProfile:
+        """Build a taxpayer profile for personalization from Form 16 and AIS data."""
+        return TaxpayerProfile(
+            has_hra=form16.annexure.hra > 0 if form16.annexure else False,
+            has_epf=form16.part_b.chapter_vi_a.sec80c > 0 if form16.part_b else False,
+            has_home_loan_hint=False,  # Could be derived from AIS SFT codes
+            has_capital_gains=len(ais.equity_mf_sales) > 0 or len(ais.other_unit_sales) > 0,
+            has_interest_income=ais.total_savings_interest > 0 or ais.total_tds_interest > 0,
+            has_dividend_income=False,
+            has_foreign_assets=False,
+            has_business_income=False,
+            regime=recommended_regime.value if hasattr(recommended_regime, 'value') else str(recommended_regime),
+            estimated_income=Decimal(str(form16.part_b.total_gross_salary)) if form16.part_b else Decimal("0"),
+            total_80c_detected=Decimal(str(form16.part_b.chapter_vi_a.sec80c)) if form16.part_b else Decimal("0"),
+            has_form16=True,
+            has_ais=True,
         )
 
     def _build_income_summary(self, form16: Form16Data, ais: AISData) -> dict:
@@ -71,9 +153,15 @@ class QuestionEngine:
         }
 
     def _build_rent_question(
-        self, form16: Form16Data, regime: Regime
+        self, form16: Form16Data, regime: Regime, profile: TaxpayerProfile | None = None
     ) -> Question | None:
         """Q1: Rent payment — only relevant if HRA in Form 16 and Old Regime."""
+        # P4: Use personalization if profile available
+        if profile:
+            score = self._personalization.score_question("rent", profile)
+            if score.suppress:
+                return None
+
         # HRA exemption only available under old regime
         if regime == Regime.NEW:
             return None
@@ -113,8 +201,13 @@ class QuestionEngine:
             ],
         )
 
-    def _build_health_question(self, regime: Regime) -> Question | None:
+    def _build_health_question(self, regime: Regime, profile: TaxpayerProfile | None = None) -> Question | None:
         """Q2: Health Insurance — only under Old Regime (80D)."""
+        if profile:
+            score = self._personalization.score_question("health_insurance", profile)
+            if score.suppress:
+                return None
+
         if regime == Regime.NEW:
             return None
 
@@ -151,9 +244,14 @@ class QuestionEngine:
         )
 
     def _build_80c_question(
-        self, form16: Form16Data, regime: Regime
+        self, form16: Form16Data, regime: Regime, profile: TaxpayerProfile | None = None
     ) -> Question | None:
         """Q3: Additional 80C investments — only under Old Regime."""
+        if profile:
+            score = self._personalization.score_question("additional_80c", profile)
+            if score.suppress:
+                return None
+
         if regime == Regime.NEW:
             return None
 
@@ -213,9 +311,14 @@ class QuestionEngine:
         )
 
     def _build_home_loan_question(
-        self, ais: AISData, form16: Form16Data
+        self, ais: AISData, form16: Form16Data, profile: TaxpayerProfile | None = None
     ) -> Question | None:
         """Q4: Home Loan — check if evidence exists in AIS or Form 16."""
+        if profile:
+            score = self._personalization.score_question("home_loan", profile)
+            if score.suppress:
+                return None
+
         # Auto-detect: any SFT for home loan, or 24(b) in Form 16
         # For now, ask if there are any hints (simplified)
         return Question(
@@ -242,8 +345,13 @@ class QuestionEngine:
             ],
         )
 
-    def _build_other_income_question(self) -> Question:
+    def _build_other_income_question(self, profile: TaxpayerProfile | None = None) -> Question:
         """Q5: Income NOT in AIS — catch-all for unreported income."""
+        if profile:
+            score = self._personalization.score_question("other_income", profile)
+            if score.suppress:
+                return None
+
         return Question(
             id="other_income",
             text="Do you have any income NOT shown in your AIS?",
