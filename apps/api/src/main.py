@@ -16,6 +16,7 @@ from src.api.calculators import router as calculators_router
 from src.api.simulation import router as simulation_router
 from src.api.tax_routes import router as tax_router
 from src.middleware.correlation import CorrelationMiddleware
+from src.middleware.security_headers import SecurityHeadersMiddleware
 from src.utils.logging import setup_logging, get_logger
 
 logger = get_logger(__name__)
@@ -56,9 +57,14 @@ app = FastAPI(
 )
 
 # Correlation ID — must be added before other middleware
+# (innermost middleware = first to process request, last to process response)
 app.add_middleware(CorrelationMiddleware)
 
+# Security headers — add before CORS so headers are on preflight responses
+app.add_middleware(SecurityHeadersMiddleware)
+
 # CORS — allow frontend (local dev + production)
+# (outermost middleware = last to process request, first to process response)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

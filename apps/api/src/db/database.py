@@ -96,6 +96,18 @@ def init_db() -> None:
         _exec_sql(conn, "ALTER TABLE users ADD COLUMN IF NOT EXISTS dob TEXT DEFAULT ''")
         # Allow NULL pan for Google OAuth users who haven't provided PAN yet
         _exec_sql(conn, "ALTER TABLE users ALTER COLUMN pan DROP NOT NULL")
+        # PR1: Password reset tokens
+        _exec_sql(conn, """
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id),
+                token_hash TEXT NOT NULL,
+                expires_at TIMESTAMPTZ NOT NULL,
+                used BOOLEAN NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        _exec_sql(conn, "CREATE INDEX IF NOT EXISTS idx_reset_tokens_user ON password_reset_tokens(user_id, created_at DESC)")
     finally:
         conn.close()
 
@@ -275,6 +287,23 @@ def user_exists(email: str) -> bool:
         row = cur.fetchone()
         cur.close()
         return row is not None
+    finally:
+        conn.close()
+
+
+def update_user_password(user_id: str, new_password: str) -> bool:
+    """Update a user's password. Returns True on success."""
+    conn = get_db()
+    try:
+        hashed = hash_password(new_password)
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET hashed_password = %s WHERE id = %s",
+            (hashed, user_id),
+        )
+        updated = cur.rowcount > 0
+        cur.close()
+        return updated
     finally:
         conn.close()
 

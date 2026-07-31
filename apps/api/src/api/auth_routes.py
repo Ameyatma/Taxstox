@@ -9,6 +9,7 @@ from src.db.database import (
     create_user, authenticate_user, get_user_by_id, get_user_by_email,
     create_user_google, user_exists, update_user_profile, change_user_password,
 )
+from src.engine.gateway.rate_limit_dependency import require_rate_limit
 
 
 class ProfileUpdate(BaseModel):
@@ -31,7 +32,10 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: UserCreate):
+async def register(
+    body: UserCreate,
+    _: None = Depends(require_rate_limit("/auth/register", 5, 60)),
+):
     """Create a new account and return a JWT token."""
     try:
         user = create_user(
@@ -62,7 +66,10 @@ async def register(body: UserCreate):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: UserLogin):
+async def login(
+    body: UserLogin,
+    _: None = Depends(require_rate_limit("/auth/login", 20, 60)),
+):
     """Authenticate with email and password. Returns JWT token."""
     user = authenticate_user(body.email.strip().lower(), body.password)
 
@@ -141,60 +148,41 @@ async def change_password(body: PasswordChange, current_user: dict = Depends(get
 async def google_auth(body: GoogleAuthRequest):
     """Sign in / sign up with Google ID token.
 
-    Decodes the Google JWT token to extract user info (email, name, sub).
-    The token was obtained via Google's secure OAuth popup in the browser,
-    so the user identity is already authenticated by Google.
+    The token is cryptographically verified against Google's JWKS endpoint
+    using the official google-auth library. This validates:
+    - RSA signature (proves Google issued the token)
+    - iss (issuer = accounts.google.com)
+    - aud (audience = our client ID)
+    - exp (expiry)
     """
-    import json
-    import base64
+    import logging
+    logger = logging.getLogger(__name__)
 
     if not body.credential:
         raise HTTPException(status_code=400, detail="Missing Google credential.")
 
-    # Decode the JWT (Google ID token) — it's a 3-part base64 JWT
-    # Format: header.payload.signature
-    # We decode the payload to extract user info. The token is trusted
-    # because it was obtained via Google's secure OAuth popup in the browser.
+    # Verify the ID token cryptographically
+    from src.auth.google_verifier import verify_google_id_token, get_client_id
+
     try:
-        parts = body.credential.split(".")
-        if len(parts) != 3:
-            raise HTTPException(status_code=400, detail="Invalid Google token format.")
+        token_info = verify_google_id_token(body.credential)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail="Invalid Google credential. Please sign in again.")
 
-        # Decode payload (middle part)
-        payload = parts[1]
-        # Add padding if needed
-        padding = 4 - len(payload) % 4
-        if padding != 4:
-            payload += "=" * padding
-        decoded = base64.urlsafe_b64decode(payload)
-        token_info = json.loads(decoded)
+    email = (token_info.get("email") or "").lower()
+    name = token_info.get("name") or token_info.get("given_name") or "Google User"
+    google_id = token_info.get("sub") or ""
 
-        email = (token_info.get("email") or "").lower()
-        name = token_info.get("name") or token_info.get("given_name") or "Google User"
-        google_id = token_info.get("sub") or ""
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not found in Google token.")
 
-        if not email:
-            raise HTTPException(status_code=400, detail="Email not found in Google token. Ensure you granted email permission.")
-
-        # Validate audience matches our client ID
-        aud = token_info.get("aud") or ""
-        expected_aud = "435349196142-bjmgv3b08drd7gag81ps7g5gob407v3j.apps.googleusercontent.com"
-        if aud != expected_aud:
-            raise HTTPException(status_code=400, detail=f"Token audience mismatch. Expected {expected_aud}")
-
-        # Check token hasn't expired
-        exp = token_info.get("exp") or 0
-        import time
-        if exp and exp < time.time():
-            raise HTTPException(status_code=400, detail="Google token has expired. Please sign in again.")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to decode Google token. Please try again.")
-
-    # Find or create user (uses dual-backend DB layer)
+    # Find or create user
     user = create_user_google(email, name, google_id)
+
+    logger.info(
+        "Google OAuth login successful",
+        extra={"user_id": user["id"], "email_masked": f"{email[0]}***@{email.split('@')[1]}" if '@' in email else email[:3] + "***"},
+    )
 
     token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
     return TokenResponse(
@@ -205,24 +193,86 @@ async def google_auth(body: GoogleAuthRequest):
 
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordRequest):
-    """Initiate password reset. Sends a reset token to the registered email.
+    """Initiate password reset. Generates a secure token and stores it.
 
-    Note: Full email delivery requires SendGrid/Mailgun integration.
-    For now, returns a reset token directly (dev mode).
+    Returns an identical response whether or not the email is registered
+    to prevent email enumeration.
+
+    The reset token is stored as a SHA-256 hash with 15-minute expiry.
+    In production, the raw token is emailed via SendGrid/Mailgun.
+    For dev, the token is logged (stub).
     """
-    import uuid
+    import logging
+    logger = logging.getLogger(__name__)
 
     email = body.email.strip().lower()
-    exists = user_exists(email)
+    from src.db.database import get_user_by_email
 
-    # Always return success to prevent email enumeration
-    if not exists:
-        return {"message": "If the email is registered, a reset link has been sent."}
+    user = get_user_by_email(email)
 
-    reset_token = str(uuid.uuid4())[:12]
-    # In production: store token + expiry in DB, email it via SendGrid
-    # For dev: return token directly
-    return {
-        "message": "If the email is registered, a reset link has been sent.",
-        "reset_token": reset_token,  # Dev mode only — remove in production
-    }
+    if user:
+        # Invalidate any existing unused tokens for this user
+        from src.infrastructure.password_reset_repo import PsycopgPasswordResetRepository
+
+        repo = PsycopgPasswordResetRepository()
+        repo.invalidate_user_tokens(user["id"])
+
+        # Generate new token and store hashed version
+        raw_token = repo.create_token(user["id"])
+
+        # In production: email the token via SendGrid/Mailgun
+        # For dev: log it
+        logger.info(
+            "Password reset token generated",
+            extra={
+                "user_id": user["id"],
+                "email_masked": f"{email[0]}***@{email.split('@')[1]}" if '@' in email else "***",
+                "token_expires_in_minutes": PsycopgPasswordResetRepository.TOKEN_TTL_MINUTES,
+            },
+        )
+
+    # Always return the same message
+    return {"message": "If the email is registered, a reset link has been sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(body: dict):
+    """Complete password reset using a valid reset token.
+
+    Body: {"email": "...", "token": "...", "new_password": "..."}
+    """
+    email = (body.get("email") or "").strip().lower()
+    raw_token = (body.get("token") or "").strip()
+    new_password = (body.get("new_password") or "").strip()
+
+    if not email or not raw_token or not new_password:
+        raise HTTPException(status_code=400, detail="Email, token, and new password are required.")
+
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+
+    from src.db.database import get_user_by_email, update_user_password
+
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+
+    from src.infrastructure.password_reset_repo import PsycopgPasswordResetRepository
+    repo = PsycopgPasswordResetRepository()
+
+    if not repo.verify_and_consume(user["id"], raw_token):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+
+    # Update password
+    update_user_password(user["id"], new_password)
+
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("Password reset completed", extra={"user_id": user["id"]})
+
+    # Log the user in by returning a JWT
+    token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(id=user["id"], email=user["email"], pan=user.get("pan", ""), name=user.get("name", "")),
+    )

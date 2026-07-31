@@ -28,6 +28,7 @@ from src.builders.validator import ITRValidator
 from src.engine.itr_selector import ITRSelector
 from src.utils.password_resolver import PasswordResolver
 from src.utils.session import session_manager, Session
+from src.engine.gateway.rate_limit_dependency import require_rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ async def upload_pdfs(
     form16_pdf: Optional[UploadFile] = File(None),
     ais_pdf: Optional[UploadFile] = File(None),
     form16_password: Optional[str] = Form(None),
+    _: None = Depends(require_rate_limit("/upload", 10, 60)),
 ):
     """
     Upload Form 16 and/or AIS PDFs.
@@ -88,12 +90,12 @@ async def upload_pdfs(
             for pwd in passwords_to_try:
                 try:
                     session.form16 = parser.parse(tmp_path, password=pwd)
-                    logger.info(f"PARSED with pwd={pwd}: salary={session.form16.part_b.total_gross_salary}, employer={session.form16.part_a.employer_name}, regime={session.form16.regime}")
+                    logger.info(f"PARSED with pwd=***: salary={session.form16.part_b.total_gross_salary}, employer={session.form16.part_a.employer_name}, regime={session.form16.regime}")
                     form16_parsed = True
                     break
                 except (ValueError, RuntimeError) as e:
                     last_error = str(e)
-                    logger.warning(f"Parse failed with pwd={pwd}: {e}")
+                    logger.warning(f"Parse failed with pwd=***: {e}")
                     continue
 
             if not form16_parsed:
@@ -378,6 +380,7 @@ async def submit_answers(
 async def export_itr_json(
     session_id: str,
     session: Session = Depends(get_session),
+    _: None = Depends(require_rate_limit("/export", 10, 60)),
 ):
     """
     Build the final ITR JSON, validate it, and return it for download.

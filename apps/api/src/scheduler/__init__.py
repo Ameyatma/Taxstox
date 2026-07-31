@@ -91,6 +91,18 @@ async def run_sync() -> None:
         complete_sync_log(sync_id, sources_checked, updates_found, updates_new, error=str(e))
 
 
+async def _purge_expired_tokens():
+    """PR1: Purge expired/used password reset tokens hourly."""
+    try:
+        from src.infrastructure.password_reset_repo import PsycopgPasswordResetRepository
+        repo = PsycopgPasswordResetRepository()
+        count = repo.purge_expired()
+        if count > 0:
+            logger.info("Purged %d expired/used password reset tokens", count)
+    except Exception:
+        logger.error("Failed to purge password reset tokens", exc_info=True)
+
+
 def start_scheduler():
     """Start the APScheduler for periodic tax data syncing."""
     scheduler.add_job(
@@ -102,6 +114,16 @@ def start_scheduler():
         # Jitter to avoid thundering herd
         misfire_grace_time=900,  # 15 min
     )
+    # PR1: Schedule password reset token cleanup (hourly)
+    scheduler.add_job(
+        _purge_expired_tokens,
+        trigger=IntervalTrigger(hours=1),
+        id="password_reset_purge_job",
+        name="Password Reset Token Purge",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
     scheduler.start()
     logger.info("Tax sync scheduler started (every %d hours)", SYNC_INTERVAL_HOURS)
 

@@ -1,32 +1,17 @@
-# TaxStox — ITR Auto-Filing Platform
+# TaxStox — AI-Powered Indian Tax Intelligence Platform
 
-> **2 documents. 5 yes/no questions. 2 minutes. Your ITR, done.**
-
-## 🏛️ Governance & Architecture
-
-> **For AI agents:** Start at [CLAUDE.md](CLAUDE.md) for bootstrap instructions.
-> **Supreme authority:** [docs/governance/00-Constitution.md](docs/governance/00-Constitution.md)
-> **Target architecture:** [docs/architecture/](docs/architecture/) — Enterprise Capability Model (FROZEN)
-> **Current state:** [docs/architecture/ARCHITECTURE_RECOVERY_REPORT.md](docs/architecture/ARCHITECTURE_RECOVERY_REPORT.md)
-> **Gap analysis:** [docs/architecture/EnterpriseGapReport.md](docs/architecture/EnterpriseGapReport.md)
-> **Architecture health:** 31/100 — [docs/architecture/ArchitectureHealthScore.md](docs/architecture/ArchitectureHealthScore.md)
-> **Project memory:** [docs/ai-dos/memory/](docs/ai-dos/memory/)
-> **Navigation:** [docs/architecture/README.md](docs/architecture/README.md) | [docs/governance/README.md](docs/governance/README.md)
+> **Release:** v0.10.0-alpha (Internal Alpha)
+> **2 documents. Minimal questions. Your ITR, done.**
 
 ---
 
-> Born from 4 hours of manual ITR-2 filing with a 30-year CA and 25-year software engineer
-> sitting side-by-side. Every pain point catalogued. Every fix automated.
+## For AI Agents
 
----
+Start at **[CLAUDE.md](CLAUDE.md)** for bootstrap instructions. Every session begins there.
 
-## 🎯 Single Source of Truth
+## For Engineers
 
-> **👉 [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) — Give this file to any AI agent to build the system.**
-
-This README is a quick reference. The master plan contains the complete build specification:
-architecture, folder structure, API contracts, core modules, data privacy rules,
-edge cases, build order, and cost-aware engineering principles.
+Start at **[HANDOFF.md](HANDOFF.md)** for full project status, authority hierarchy, and the mandatory session bootstrap prompt.
 
 ---
 
@@ -36,7 +21,7 @@ edge cases, build order, and cost-aware engineering principles.
 # Backend
 cd apps/api
 pip install -e ".[dev]"
-uvicorn src.main:app --reload
+TAXSTOX_JWT_SECRET="dev-secret" uvicorn src.main:app --reload
 
 # Frontend
 cd apps/web
@@ -45,111 +30,55 @@ npm run dev
 ```
 
 | Service | URL |
-|---|---|
+|----------|-----|
 | Frontend | `http://localhost:3000` |
 | Backend API | `http://localhost:8000` |
 | API Docs | `http://localhost:8000/docs` |
 
 ---
 
-## Architecture (Cost-Aware)
-
-```
-Frontend (Next.js)  ←→  Backend (FastAPI — single process)
-   3 pages               6 modules (Python files, not services)
-                          ├── parsers/   (Form 16 + AIS PDF)
-                          ├── classifier (AIS → ITR schedules)
-                          ├── optimizer  (Old vs New — deterministic math)
-                          ├── questions  (0-5 adaptive yes/no)
-                          ├── builder    (ITR JSON assembly)
-                          └── validator  (25+ cross-checks)
-
-Data: SQLite → PostgreSQL when needed
-Session: In-memory → Redis when needed
-Files: BytesIO (in-memory, never touches disk)
-```
-
-**Principles:** Modular monolith. Zero AI calls for deterministic work.
-No Kubernetes, no Kafka, no Redis, no separate services for MVP.
-Every module CAN become a service later — starts as a Python file.
-
----
-
-## Core Flow
-
-```
-Upload Form 16 + AIS + PAN + DOB
-          │
-          ▼
-  PDF Parser (pikepdf + pdfplumber) — auto-decrypts passwords
-          │
-          ▼
-  Classifier (AIS codes → ITR schedules + CG date ranges)
-          │
-          ▼
-  Regime Optimizer (Old vs New — deterministic math, always picks winner)
-          │
-          ▼
-  Smart Questions (0-5 yes/no, everything else auto-detected)
-          │
-          ▼
-  JSON Builder (ITR-1/2/3/4, all schedules, cross-validated)
-          │
-          ▼
-  Download-ready JSON + 1-page Tax Summary + Portal Instructions
-```
-
----
-
-## The 10 Hard-Learned Rules
-
-| # | Lesson | Implementation |
-|---|---|---|
-| 1 | Form 16 password is usually PAN (lowercase) | Auto-try. Ask only if all fail. |
-| 2 | AIS password = PAN(lower) + DOB(DDMMYYYY) | Auto-compute. Never ask. |
-| 3 | 80CCD(2) locked at ₹0 in portal | Auto-set correct value. |
-| 4 | CG date ranges must sum to BFLA | Auto-compute from dates. |
-| 5 | ISIN `INNOTREQUIRD` ≠ `INNOTAVAILAB` | Use correct enum. |
-| 6 | `SecondaryAdd`="" fails schema | Always "Y" or "N". |
-| 7 | Multiple banks with refund flag | Auto-select first. |
-| 8 | JSON hash prevents post-edit | Valid utility template output. |
-| 9 | 112A Units=0 fails | Auto-compute from sale/price. |
-| 10 | STCG/LTCG date-split into 5 periods | Auto-group from AIS dates. |
-
----
-
-## Technology
-
-| Layer | Stack |
-|---|---|
-| Backend | Python 3.12+ + FastAPI + Pydantic v2 + pikepdf + pdfplumber |
-| Frontend | Next.js 16 + Tailwind CSS 4 + shadcn/ui + Zustand |
-| Database | SQLite (→ PostgreSQL when needed) |
-| Session | In-memory (→ Redis when needed) |
-| Deployment | Render (backend) + Vercel (frontend) |
-
----
-
-## Docs
-
-| File | Purpose |
-|---|---|
-| **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** | **Complete build spec (give to AI agent)** |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Detailed architecture reference |
-| [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Pydantic v2 data model definitions |
-| [docs/ITR_TYPES_QUESTIONS.md](docs/ITR_TYPES_QUESTIONS.md) | Per-ITR question decision trees |
-| [design/DESIGN.md](design/DESIGN.md) | Design tokens (colors, typography, components) |
-
----
-
 ## Project Status
 
-- [x] Architecture & build plan
-- [x] Design system (tokens + HTML prototypes)
-- [x] Data model definitions (Pydantic v2)
-- [x] ITR-type question trees
-- [x] Web frontend (3 pages: upload, questions, summary)
-- [ ] Backend pipeline (parsers → classifier → optimizer → builder → validator)
-- [ ] API integration (wire frontend to backend)
-- [ ] End-to-end testing with real PDFs
-- [ ] Deployment
+| Metric | Value |
+|--------|-------|
+| Release | v0.10.0-alpha |
+| Stage | Internal Alpha |
+| Tests | 407 passing |
+| Golden vectors | 9 |
+| Architecture | EAC Certified v1.0 |
+
+---
+
+## Architecture
+
+```
+apps/api/src/
+├── domain/         13 bounded contexts (pure Python, zero framework imports)
+├── engine/         44 modules (tax computation, AI, enterprise, reporting)
+├── infrastructure/ Adapters (encryption, SSO, billing, notifications, payments)
+├── middleware/     Security headers, correlation, metrics, tenant context
+├── api/            26 REST endpoints (auth, filing pipeline, dashboard, calculators)
+├── auth/           JWT + Google OAuth
+├── builders/       ITR-1 + ITR-2 JSON builders + 28-rule validator
+├── parsers/        Form 16 + AIS PDF parsers + AIS code mapper
+├── models/         Pydantic v2 domain models
+└── db/             PostgreSQL (Neon) via psycopg2
+```
+
+---
+
+## Key Documents
+
+| Document | Purpose |
+|----------|---------|
+| [CLAUDE.md](CLAUDE.md) | AI agent bootstrap |
+| [HANDOFF.md](HANDOFF.md) | Engineering handoff |
+| [docs/governance/00-Constitution.md](docs/governance/00-Constitution.md) | Supreme governance |
+| [docs/architecture/ENTERPRISE_CAPABILITY_MODEL.md](docs/architecture/ENTERPRISE_CAPABILITY_MODEL.md) | FROZEN target (148 capabilities) |
+| [docs/architecture/ProductReadinessReview.md](docs/architecture/ProductReadinessReview.md) | Production readiness assessment |
+| [docs/architecture/ProductionReadinessRemediationRoadmap.md](docs/architecture/ProductionReadinessRemediationRoadmap.md) | Execution plan (PR1-PR6) |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+
+---
+
+*Version v0.10.0-alpha — Internal Alpha*

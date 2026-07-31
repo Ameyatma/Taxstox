@@ -68,7 +68,7 @@ class SessionManager:
 
     def create(self, pan: str, dob: str) -> Session:
         """Create a new filing session."""
-        session_id = str(uuid.uuid4())[:8]
+        session_id = uuid.uuid4().hex
         session = Session(
             session_id=session_id,
             pan=pan.strip().upper(),
