@@ -18,8 +18,10 @@ Checks (40+ validation rules):
 import json
 import re
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional
 
+from src.engine.rules.config import FY2025_26, rule_repository
+from src.models.financial_year import FinancialYear
 from src.models.api import ValidationResult, ValidationReport
 
 
@@ -33,17 +35,14 @@ class ITRValidator:
     IFSC_REGEX = re.compile(r"^[A-Z]{4}0[A-Z0-9]{6}$")
     AADHAAR_REGEX = re.compile(r"^\d{12}$")
 
-    # Deduction limits (FY 2025-26)
-    LIMIT_80C = 150_000
-    LIMIT_80D_SELF = 25_000
-    LIMIT_80D_PARENTS = 50_000
-    LIMIT_80D_SENIOR = 50_000
-    LIMIT_80CCD1B = 50_000
+    # Non-deduction thresholds/rates not modeled in RuleRepository
     LIMIT_80CCD2 = Decimal("0.14")  # 14% of salary for non-Govt
-    LIMIT_112A = 125_000
-    LIMIT_HOME_LOAN_INTEREST = 200_000
     LIMIT_ITR1_INCOME = 5_000_000  # ₹50L
     LIMIT_AGRICULTURAL_ITR1 = 5_000
+
+    def __init__(self, financial_year: Optional[FinancialYear] = None) -> None:
+        # PR3: Deduction limits sourced from RuleRepository (no duplication)
+        self._config = rule_repository.get(financial_year or FY2025_26)
 
     def validate(self, itr_json: dict) -> ValidationReport:
         """Run all validation checks and return a report."""
@@ -263,20 +262,21 @@ class ITRValidator:
                 message="No 112A entries — exemption check skipped.",
             )
 
+        limit_112a = self._config.ltcg_112a_exemption
         total_deduction = Decimal(s112a.get("TotalDeduction", "0"))
-        if total_deduction > 125000:
+        if total_deduction > limit_112a:
             return ValidationResult(
                 check_name="112a_exemption",
                 passed=False,
                 severity="error",
-                message=f"112A exemption ({total_deduction}) exceeds ₹1,25,000 limit.",
-                fix_suggestion="Cap 112A deduction at ₹1,25,000.",
+                message=f"112A exemption ({total_deduction}) exceeds ₹{limit_112a:,.0f} limit.",
+                fix_suggestion=f"Cap 112A deduction at ₹{limit_112a:,.0f}.",
             )
 
         return ValidationResult(
             check_name="112a_exemption",
             passed=True,
-            message=f"112A exemption: ₹{total_deduction:,.0f} (max ₹1,25,000).",
+            message=f"112A exemption: ₹{total_deduction:,.0f} (max ₹{limit_112a:,.0f}).",
         )
 
     def _check_bank_accounts(self, itr_json: dict) -> ValidationResult:
@@ -650,19 +650,20 @@ class ITRValidator:
         via = itr_json.get("ScheduleVIA", {})
         sec80c = via.get("Section80C", {})
 
+        limit_80c = self._config.get_deduction_limit("80C", "old")
         total_80c = Decimal(sec80c.get("Total80C", "0"))
-        if total_80c > self.LIMIT_80C:
+        if total_80c > limit_80c:
             return ValidationResult(
                 check_name="80c_limits",
                 passed=False,
                 severity="error",
-                message=f"80C deduction ₹{total_80c:,.0f} exceeds ₹{self.LIMIT_80C:,} limit.",
-                fix_suggestion=f"Cap 80C at ₹{self.LIMIT_80C:,}.",
+                message=f"80C deduction ₹{total_80c:,.0f} exceeds ₹{limit_80c:,.0f} limit.",
+                fix_suggestion=f"Cap 80C at ₹{limit_80c:,.0f}.",
             )
         return ValidationResult(
             check_name="80c_limits",
             passed=True,
-            message=f"80C deduction ₹{total_80c:,.0f} (limit ₹{self.LIMIT_80C:,}).",
+            message=f"80C deduction ₹{total_80c:,.0f} (limit ₹{limit_80c:,.0f}).",
         )
 
     # ── 80D Limits Enforcement ───────────────────────────────────────
@@ -677,13 +678,15 @@ class ITRValidator:
         parents_senior = sec80d.get("ParentsSeniorCitizen", "N") == "Y"
 
         issues = []
-        limit_self = self.LIMIT_80D_SELF
-        limit_parents = self.LIMIT_80D_SENIOR if parents_senior else self.LIMIT_80D_PARENTS
+        limit_self = self._config.get_deduction_limit("80D_SELF")
+        limit_parents = self._config.get_deduction_limit(
+            "80D_PARENTS_SENIOR" if parents_senior else "80D_PARENTS"
+        )
 
         if self_premium > limit_self:
-            issues.append(f"80D self premium ₹{self_premium:,.0f} exceeds ₹{limit_self:,} limit")
+            issues.append(f"80D self premium ₹{self_premium:,.0f} exceeds ₹{limit_self:,.0f} limit")
         if parents_premium > limit_parents:
-            issues.append(f"80D parents premium ₹{parents_premium:,.0f} exceeds ₹{limit_parents:,} limit")
+            issues.append(f"80D parents premium ₹{parents_premium:,.0f} exceeds ₹{limit_parents:,.0f} limit")
 
         if issues:
             return ValidationResult(
@@ -691,7 +694,7 @@ class ITRValidator:
                 passed=False,
                 severity="error",
                 message="; ".join(issues),
-                fix_suggestion=f"Cap 80D at ₹{limit_self:,} (self) + ₹{limit_parents:,} (parents).",
+                fix_suggestion=f"Cap 80D at ₹{limit_self:,.0f} (self) + ₹{limit_parents:,.0f} (parents).",
             )
         return ValidationResult(
             check_name="80d_limits",
@@ -706,18 +709,19 @@ class ITRValidator:
         via = itr_json.get("ScheduleVIA", {})
         sec80ccd1b = Decimal(via.get("Section80CCD1B", {}).get("Amount", "0"))
 
-        if sec80ccd1b > self.LIMIT_80CCD1B:
+        limit_80ccd1b = self._config.get_deduction_limit("80CCD(1B)")
+        if sec80ccd1b > limit_80ccd1b:
             return ValidationResult(
                 check_name="80ccd_limits",
                 passed=False,
                 severity="error",
-                message=f"80CCD(1B) ₹{sec80ccd1b:,.0f} exceeds ₹{self.LIMIT_80CCD1B:,} limit.",
-                fix_suggestion=f"Cap 80CCD(1B) at ₹{self.LIMIT_80CCD1B:,}.",
+                message=f"80CCD(1B) ₹{sec80ccd1b:,.0f} exceeds ₹{limit_80ccd1b:,.0f} limit.",
+                fix_suggestion=f"Cap 80CCD(1B) at ₹{limit_80ccd1b:,.0f}.",
             )
         return ValidationResult(
             check_name="80ccd_limits",
             passed=True,
-            message=f"80CCD(1B): ₹{sec80ccd1b:,.0f} (limit ₹{self.LIMIT_80CCD1B:,}).",
+            message=f"80CCD(1B): ₹{sec80ccd1b:,.0f} (limit ₹{limit_80ccd1b:,.0f}).",
         )
 
     # ── Home Loan Interest Limit ──────────────────────────────────────
@@ -727,19 +731,20 @@ class ITRValidator:
         hp = itr_json.get("ScheduleHP", {})
         interest = Decimal(hp.get("TotalInterestPayable", "0"))
 
-        if interest > self.LIMIT_HOME_LOAN_INTEREST:
+        limit_24b = self._config.get_deduction_limit("24B_SELF")
+        if interest > limit_24b:
             return ValidationResult(
                 check_name="home_loan_interest",
                 passed=False,
                 severity="warning",
-                message=f"Home loan interest ₹{interest:,.0f} exceeds ₹{self.LIMIT_HOME_LOAN_INTEREST:,} "
+                message=f"Home loan interest ₹{interest:,.0f} exceeds ₹{limit_24b:,.0f} "
                         f"limit for self-occupied property.",
                 fix_suggestion="Excess interest can be carried forward. Verify property type.",
             )
         return ValidationResult(
             check_name="home_loan_interest",
             passed=True,
-            message=f"Home loan interest ₹{interest:,.0f} (limit ₹{self.LIMIT_HOME_LOAN_INTEREST:,}).",
+            message=f"Home loan interest ₹{interest:,.0f} (limit ₹{limit_24b:,.0f}).",
         )
 
     # ── TDS Consistency ───────────────────────────────────────────────

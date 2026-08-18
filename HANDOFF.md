@@ -11,20 +11,20 @@
 
 | Attribute | Value |
 |-----------|-------|
-| Release Version | **v0.10.0-alpha** |
+| Release Version | **v0.11.0-alpha** |
 | Release Stage | **Internal Alpha** |
-| Current Wave | **PR1 complete. PR2 next.** |
-| Current PRRP Wave | PR1 — Security Hardening ✅ |
-| Remaining PRRP Waves | PR2, PR3, PR4, PR5, PR6 |
+| Current Wave | **PR5 complete. PR6 next.** |
+| Current PRRP Wave | PR5 — Operational Readiness ✅ |
+| Remaining PRRP Waves | PR6 |
 | Completed Programs | Enterprise Modernization (M0-M11), Product Engineering (P1-P7) |
-| Test Count | 407 passing, 0 failures, 9 skipped |
+| Test Count | 520 passing, 0 failures, 29 skipped |
 | Golden Vectors | 9 vectors, all passing, unchanged |
 | Branch | `main` |
 | Architecture Certification | EAC v1.0 — Certified with Observations |
-| Production Readiness | Ready for Internal Alpha (PRR, 2026-07-07) |
+| Production Readiness | Ready for Internal Alpha (PRR, 2026-07-07) + PR5 Operational |
 | Known Blockers | None for Internal Alpha |
-| Deferred Items | PRRP-DEFER-001 (JWT httpOnly), PRRP-DEFER-002 (Redis rate limiting) |
-| Next Action | **Proceed to PR2 — Data Protection & Audit** |
+| Deferred Items | PRRP-DEFER-001 (JWT httpOnly — post-PR6) |
+| Next Action | **Proceed to PR6 — CI/Quality Gates & Polish** |
 
 **Repository evidence overrides this document if newer.**
 

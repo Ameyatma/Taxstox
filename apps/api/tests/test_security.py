@@ -79,22 +79,13 @@ class TestDataClassification:
 # ═══════════════════════════════════════════════════════════════
 
 import hashlib
-import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, MagicMock
 
 import pytest
 
-# Skip markers for tests requiring live infrastructure
-_db_required = pytest.mark.skipif(
-    not os.environ.get("DATABASE_URL"),
-    reason="DATABASE_URL not configured — requires PostgreSQL connection",
-)
-_jwt_required = pytest.mark.skipif(
-    not os.environ.get("TAXSTOX_JWT_SECRET"),
-    reason="TAXSTOX_JWT_SECRET not configured",
-)
+from tests._markers import db_required, jwt_required
 
 
 class TestSessionSecurity:
@@ -118,14 +109,13 @@ class TestSessionSecurity:
         assert len(ids) == 100
 
 
-@pytest.mark.skipif(not os.environ.get("DATABASE_URL"), reason="DATABASE_URL not configured")
+@db_required
 class TestPasswordResetToken:
     """PR1.2: Token lifecycle — creation, verification, expiry, single-use.
 
     Requires DATABASE_URL — these tests exercise the real psycopg2 repository.
     """
 
-    @_db_required
     def test_create_token_returns_raw_string(self):
         from src.infrastructure.password_reset_repo import PsycopgPasswordResetRepository
         repo = PsycopgPasswordResetRepository()
@@ -249,7 +239,7 @@ class TestRateLimitEnforcement:
         assert callable(store.reset)
 
 
-@pytest.mark.skipif(not os.environ.get("TAXSTOX_JWT_SECRET"), reason="TAXSTOX_JWT_SECRET not configured")
+@jwt_required
 class TestTokenHandling:
     """PR1.7: JWT edge cases — malformed, expired, tampered."""
 
@@ -332,7 +322,7 @@ class TestGoogleAuthFlow:
 class TestOWASPNegative:
     """OWASP-aligned negative security tests."""
 
-    @_db_required
+    @db_required
     def test_sql_injection_in_login_parameterized(self):
         """SQL injection attempts must be caught by parameterized queries, not produce 500."""
         from src.db.database import get_db
@@ -349,7 +339,7 @@ class TestOWASPNegative:
         finally:
             conn.close()
 
-    @_db_required
+    @db_required
     def test_database_password_reset_tokens_table_exists(self):
         """password_reset_tokens table must exist after init_db."""
         from src.db.database import get_db

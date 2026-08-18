@@ -18,15 +18,12 @@ All computation uses 2 decimal places. Rounding only at final tax (not here).
 from decimal import Decimal
 from typing import Optional
 
+from src.engine.rules.config import FY2025_26, rule_repository
+from src.models.financial_year import FinancialYear
 from src.models.form16 import Form16Data, Form16PartB, Form16Annexure, Section10Exemptions
 
 
-# FY 2025-26 limits
-STD_DEDUCTION_NEW = Decimal("75000")
-STD_DEDUCTION_OLD = Decimal("50000")
-MAX_PROFESSIONAL_TAX = Decimal("2500")
-HRA_METRO_PCT = Decimal("0.50")       # 50% of basic+DA for metro
-HRA_NON_METRO_PCT = Decimal("0.40")   # 40% for non-metro
+# Section 10 exemption amounts (not FY-varying; retained locally)
 CHILD_EDU_LIMIT = Decimal("100")      # per month per child, max 2 children
 HOSTEL_LIMIT = Decimal("300")         # per month per child, max 2 children
 MAX_CHILDREN = 2
@@ -96,6 +93,7 @@ class SalaryComputer:
         metro_city: bool = False,
         is_new_regime: bool = True,
         children_count: int = 0,
+        financial_year: Optional[FinancialYear] = None,
     ) -> SalaryBreakdown:
         """
         Compute salary income with ITD-matching logic.
@@ -114,6 +112,9 @@ class SalaryComputer:
 
         if not form16:
             return result
+
+        # PR3: FY-specific constants from RuleRepository (no hardcoded values)
+        config = rule_repository.get(financial_year or FY2025_26)
 
         pb = form16.part_b
         annex = annexure or form16.annexure
@@ -145,7 +146,7 @@ class SalaryComputer:
                 Decimal("0"),
                 (rent_paid * MONTHS_PER_YEAR) - (result.basic_da * Decimal("0.10"))
             )
-            pct_of_basic = result.basic_da * (HRA_METRO_PCT if metro_city else HRA_NON_METRO_PCT)
+            pct_of_basic = result.basic_da * (config.hra_metro_pct if metro_city else config.hra_non_metro_pct)
             result.hra_exemption = min(actual_hra, rent_minus_10pct, pct_of_basic)
 
         # LTA Exemption: ONLY exempt up to actual travel cost
@@ -180,11 +181,11 @@ class SalaryComputer:
         )
 
         # ── Step 3: Section 16 Deductions ──
-        result.std_deduction = STD_DEDUCTION_NEW if is_new_regime else STD_DEDUCTION_OLD
+        result.std_deduction = config.new_regime.std_deduction if is_new_regime else config.old_regime.std_deduction
 
         # Professional Tax: from Form 16, capped at ₹2,500
         pt_from_f16 = pb.professional_tax_16iii or Decimal("0")
-        result.professional_tax = min(pt_from_f16, MAX_PROFESSIONAL_TAX)
+        result.professional_tax = min(pt_from_f16, config.max_professional_tax)
 
         result.total_salary_deductions = result.std_deduction + result.professional_tax
 

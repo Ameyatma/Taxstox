@@ -41,3 +41,11 @@ target-version = "py312"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "unit: Fast in-memory unit tests with synthetic fixtures",
+    "integration: Integration tests between internal domain components",
+    "api: HTTP endpoint and middleware tests via TestClient / httpx",
+    "e2e: End-to-end tests (including real-data filing flows)",
+    "db_required: Tests requiring a live PostgreSQL database connection (DATABASE_URL)",
+    "jwt_required: Tests requiring TAXSTOX_JWT_SECRET environment variable",
+]

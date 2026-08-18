@@ -13,20 +13,22 @@ ITR-1 eligibility:
 import logging
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional
 
+from src.models.financial_year import FinancialYear
 from src.models.form16 import Form16Data
 from src.models.ais import AISData
 from src.models.tax import UnifiedTaxData
 
 logger = logging.getLogger(__name__)
 
-AY = "2026-27"
-FY = "2025-26"
-
 
 class ITR1Builder:
     """Builds ITR-1 (SAHAJ) JSON from unified tax data."""
+
+    def __init__(self, financial_year: Optional[FinancialYear] = None) -> None:
+        self._fy = financial_year or FinancialYear.from_string("FY2025-26")
+        self._ay = self._fy.assessment_year
 
     def build(self, data: UnifiedTaxData) -> dict:
         result = {
@@ -46,7 +48,7 @@ class ITR1Builder:
     def _build_general_info(self, data: UnifiedTaxData) -> dict:
         form16 = data.form16
         info: dict[str, Any] = {
-            "AssessmentYear": AY,
+            "AssessmentYear": self._ay,
             "ITRType": "1",
             "PAN": data.pan or (form16.part_a.employee_pan if form16 else ""),
             "Name": form16.part_a.employee_name if form16 else "",
@@ -93,11 +95,11 @@ class ITR1Builder:
 
         return {
             "TotalGrossSalary": str(form16.part_b.total_gross_salary),
-            "Allowances": str(form16.part_b.allowances),
-            "Perquisites": str(form16.part_b.perquisites),
-            "ProfitsInLieuOfSalary": str(form16.part_b.profits_in_lieu_of_salary),
-            "DeductionsUS16": str(form16.part_b.deduction_16),
-            "IncomeChargeableUnderHeadSalary": str(form16.part_b.income_chargeable_salary),
+            "Allowances": str(form16.part_b.exemptions_s10.total),
+            "Perquisites": str(form16.part_b.perquisites_172),
+            "ProfitsInLieuOfSalary": str(form16.part_b.profits_lieu_173),
+            "DeductionsUS16": str(form16.part_b.std_deduction_16ia),
+            "IncomeChargeableUnderHeadSalary": str(form16.part_b.income_under_head_salaries),
         }
 
     # ── Schedule HP: House Property (max 1 for ITR-1) ──────────────────
@@ -200,11 +202,13 @@ class ITR1Builder:
         breakdown = self._get_breakdown(data)
 
         salary = Decimal(breakdown.get("income_salary", "0"))
-        hp_income = Decimal(breakdown.get("income_hp", "0"))
+        # Optimizer emits home_loan_loss as a positive magnitude; house property
+        # income is a loss, so negate it when summing income heads.
+        hp_income = -Decimal(breakdown.get("home_loan_loss", "0"))
         os_income = Decimal(breakdown.get("income_interest", "0"))
 
         gross = salary + hp_income + os_income
-        deductions = Decimal(breakdown.get("total_deductions", "0"))
+        deductions = Decimal(breakdown.get("deductions_total", "0"))
         taxable = max(Decimal("0"), gross - deductions)
 
         return {
@@ -242,9 +246,8 @@ class ITR1Builder:
         """Compute slab-wise tax using RuleEvaluator (M1: no hardcoded slabs)."""
         from src.engine.rules.config import rule_repository
         from src.engine.rules.evaluator import RuleEvaluator
-        from src.models.financial_year import FinancialYear
 
-        config = rule_repository.get(FinancialYear.from_string("FY2025-26"))
+        config = rule_repository.get(self._fy)
         regime = config.new_regime if is_new else config.old_regime
         evaluator = RuleEvaluator()
 
@@ -277,9 +280,10 @@ class ITR1Builder:
     def _get_breakdown(self, data: UnifiedTaxData) -> dict:
         """Get regime breakdown from regime result."""
         regime = data.recommended_regime
-        if not regime:
+        result = data.regime_result
+        if not regime or not result:
             return {}
-        return regime.new_breakdown if regime.value == "new" else regime.old_breakdown
+        return result.new_breakdown if regime.value == "new" else result.old_breakdown
 
     def _format_date(self, d: date | str | None) -> str:
         if d is None:

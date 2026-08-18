@@ -18,6 +18,7 @@ from src.models.api import (
     ExportResponse,
 )
 from src.models.tax import UserAnswers
+from src.models.financial_year import FinancialYear
 from src.parsers.form16_parser import Form16Parser
 from src.parsers.ais_parser import AISParser
 from src.engine.classifier import ClassificationEngine
@@ -41,6 +42,37 @@ def get_session(session_id: str) -> Session:
     if not session:
         raise HTTPException(status_code=404, detail="Session not found or expired.")
     return session
+
+
+def _resolve_financial_year(session: Session) -> FinancialYear:
+    """Resolve the single authoritative financial year for a filing.
+
+    The Form 16 'Assessment Year' (e.g. '2026-27') is the authoritative
+    filing-year source — Form 16 is required for processing, and no other
+    uploaded document carries a reliable top-level year. An assessment year
+    maps to the preceding financial year (AY '2026-27' ⇒ FY2025-26).
+
+    There is deliberately NO implicit FY2025-26 fallback: a filing whose
+    assessment year is missing or malformed is rejected, so tax is never
+    silently computed under the wrong year's rules.
+    """
+    if session.financial_year is not None:
+        return session.financial_year
+
+    ay = (session.form16.part_a.assessment_year if session.form16 else "").strip()
+    if not ay:
+        raise HTTPException(
+            status_code=400,
+            detail="Assessment year could not be determined from Form 16. Please re-upload a valid Form 16.",
+        )
+    try:
+        session.financial_year = FinancialYear.from_assessment_year(ay)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid assessment year '{ay}' in Form 16.",
+        ) from exc
+    return session.financial_year
 
 
 # ── Step 1: Upload PDFs ────────────────────────────────────────────
@@ -167,6 +199,10 @@ async def process_and_get_questions(
     if not session.form16:
         raise HTTPException(status_code=400, detail="Form 16 is required for processing.")
 
+    # PR3: Resolve the authoritative financial year from the filing context
+    # (Form 16 assessment year) — never a hardcoded FY2025-26 default.
+    fy = _resolve_financial_year(session)
+
     # Extract complete taxpayer data via data provider abstraction
     # (PDF backend now; ITD API backend when ERI license obtained)
     from src.providers.taxpayer_data import PDFDataProvider
@@ -213,13 +249,24 @@ async def process_and_get_questions(
     other_interest = (session.ais.total_tds_interest if session.ais else Decimal("0")) - savings_interest
     other_interest = max(Decimal("0"), other_interest)  # Prevent negative
 
+    # PR2: Create audit context for computation traceability
+    from src.engine.audit import AuditContext, AuditTrail
+    audit_ctx = AuditContext(fy.label)
+
     session.regime_result = optimizer.optimize(
         form16=session.form16,
         classified_cg=session.classified_cg,
         answers=session.user_answers,
         savings_interest=savings_interest,
         other_interest=other_interest,
+        financial_year=fy,
+        audit_context=audit_ctx,
     )
+
+    # PR2: Store immutable audit trail in session
+    session.audit_trail = audit_ctx.build_trail()
+    session.audit_event_count = audit_ctx.event_count
+    logger.info(f"Audit trail recorded: {audit_ctx.event_count} events")
 
     # Generate questions
     question_engine = QuestionEngine()
@@ -273,6 +320,9 @@ async def submit_answers(
     other_interest = (session.ais.total_tds_interest if session.ais else Decimal("0")) - savings_interest
     other_interest = max(Decimal("0"), other_interest)  # Prevent negative
 
+    # PR3: Resolve the authoritative financial year for this filing
+    fy = _resolve_financial_year(session)
+
     # Detect if user pays rent from answers
     rent_monthly = (
         session.user_answers.rent_per_month
@@ -287,6 +337,7 @@ async def submit_answers(
         other_interest=other_interest,
         rent_paid_monthly=rent_monthly,
         metro_city=session.user_answers.rent_city_metro,
+        financial_year=fy,
     )
 
     r = session.regime_result
@@ -391,16 +442,19 @@ async def export_itr_json(
     unified.regime_result = session.regime_result
     unified.recommended_regime = session.regime_result.recommended
 
+    # PR3: Resolve the authoritative financial year for builders + validator
+    fy = _resolve_financial_year(session)
+
     if itr_form == "ITR-1":
         from src.builders.itr1 import ITR1Builder
-        builder = ITR1Builder()
+        builder = ITR1Builder(financial_year=fy)
         itr_json = builder.build(unified)
     else:
-        builder = ITRJSONBuilder()
+        builder = ITRJSONBuilder(financial_year=fy)
         itr_json = builder.build(unified)
 
     # Validate
-    validator = ITRValidator()
+    validator = ITRValidator(financial_year=fy)
     report = validator.validate(itr_json)
 
     session.itr_json = itr_json
@@ -571,6 +625,36 @@ async def upload_document(
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok", "service": "TaxStox ITR Engine", "version": "0.1.0"}
+
+
+@router.get("/metrics")
+async def metrics_endpoint():
+    """Expose in-process request metrics for monitoring systems (PR5.3)."""
+    from src.middleware.metrics import metrics
+
+    return metrics.to_dict()
+
+
+@router.get("/health/detailed")
+async def health_detailed():
+    """Dependency-level health check (PR5.3).
+
+    Uses the existing ProductionHealthEngine checks (database, rule repository,
+    encryption). Non-critical failures degrade rather than block readiness.
+    """
+    from src.engine.production_health import (
+        ProductionHealthEngine,
+        check_database,
+        check_rule_repository,
+        check_encryption,
+    )
+    import time
+
+    engine = ProductionHealthEngine(start_time=time.time())
+    engine.add_check(check_database)
+    engine.add_check(check_rule_repository)
+    engine.add_check(check_encryption)
+    return engine.assess().to_dict()
 
 
 # ── Helper ──────────────────────────────────────────────────────────

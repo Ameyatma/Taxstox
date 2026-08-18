@@ -23,6 +23,8 @@ from src.models.form16 import (
     TaxComputation,
 )
 
+from src.utils.decimal_utils import to_decimal
+
 logger = logging.getLogger(__name__)
 
 
@@ -169,9 +171,9 @@ class Form16Parser:
             text,
         )
         if total_line_match:
-            data["total_amount_paid"] = self._to_decimal(total_line_match.group(1))
-            data["total_tds_deducted"] = self._to_decimal(total_line_match.group(2))
-            data["total_tds_deposited"] = self._to_decimal(total_line_match.group(3))
+            data["total_amount_paid"] = to_decimal(total_line_match.group(1))
+            data["total_tds_deducted"] = to_decimal(total_line_match.group(2))
+            data["total_tds_deposited"] = to_decimal(total_line_match.group(3))
         else:
             # Fallback: look for Verification line
             tds_verify = re.search(
@@ -179,8 +181,8 @@ class Form16Parser:
                 text, re.IGNORECASE,
             )
             if tds_verify:
-                data["total_tds_deducted"] = self._to_decimal(tds_verify.group(1))
-                data["total_tds_deposited"] = self._to_decimal(tds_verify.group(1))
+                data["total_tds_deducted"] = to_decimal(tds_verify.group(1))
+                data["total_tds_deposited"] = to_decimal(tds_verify.group(1))
 
         data["quarterly_tds"] = self._extract_quarterly_tds(text)
         return Form16PartA(**{k: v for k, v in data.items() if k in Form16PartA.model_fields})
@@ -198,9 +200,9 @@ class Form16Parser:
             quarters.append(QuarterlyTDS(
                 quarter=match.group(1),
                 receipt_number=match.group(2) or "",
-                amount_paid=self._to_decimal(match.group(3)),
-                tds_deducted=self._to_decimal(match.group(4)),
-                tds_deposited=self._to_decimal(match.group(5)),
+                amount_paid=to_decimal(match.group(3)),
+                tds_deducted=to_decimal(match.group(4)),
+                tds_deposited=to_decimal(match.group(5)),
             ))
         return quarters
 
@@ -228,7 +230,7 @@ class Form16Parser:
             text, re.DOTALL,
         )
         if perq_match:
-            data["perquisites_172"] = self._to_decimal(perq_match.group(1))
+            data["perquisites_172"] = to_decimal(perq_match.group(1))
 
         # Section 17(3) — Profits in lieu
         profits_match = re.search(
@@ -236,12 +238,12 @@ class Form16Parser:
             text, re.DOTALL,
         )
         if profits_match:
-            data["profits_lieu_173"] = self._to_decimal(profits_match.group(1))
+            data["profits_lieu_173"] = to_decimal(profits_match.group(1))
 
         # Total gross salary: "(d) Total 1871602.00"
         total_match = re.search(r"\(d\)\s*Total\s*([\d,]+\.\d{2})", text)
         if total_match:
-            data["total_gross_salary"] = self._to_decimal(total_match.group(1))
+            data["total_gross_salary"] = to_decimal(total_match.group(1))
 
         # Standard Deduction: "Standard deduction under section 16(ia) 75000.00"
         std_ded = self._extract_amount(text, r"Standard\s*deduction.*?16\s*\(\s*ia\s*\)\s*")
@@ -259,17 +261,17 @@ class Form16Parser:
             text,
         )
         if inc_sal_match:
-            data["income_under_head_salaries"] = self._to_decimal(inc_sal_match.group(1))
+            data["income_under_head_salaries"] = to_decimal(inc_sal_match.group(1))
 
         # Gross Total Income: "9. Gross total income (6+8) 1796602.00"
         gti_match = re.search(r"Gross\s*total\s*income.*?([\d,]+\.\d{2})", text, re.IGNORECASE)
         if gti_match:
-            data["gross_total_income"] = self._to_decimal(gti_match.group(1))
+            data["gross_total_income"] = to_decimal(gti_match.group(1))
 
         # Taxable Income: "12. Total taxable income (9-11) 1748733.00"
         ti_match = re.search(r"Total\s*taxable\s*income.*?([\d,]+\.\d{2})", text)
         if ti_match:
-            data["taxable_income"] = self._to_decimal(ti_match.group(1))
+            data["taxable_income"] = to_decimal(ti_match.group(1))
 
         # Chapter VI-A
         data["chapter_vi_a"] = self._extract_chapter_via(text)
@@ -301,7 +303,7 @@ class Form16Parser:
             text, re.IGNORECASE,
         )
         if nps_match:
-            deductions.sec80ccd2 = self._to_decimal(nps_match.group(2))
+            deductions.sec80ccd2 = to_decimal(nps_match.group(2))
 
         # 80C: from "(a) 0.00 0.00" pattern near "80C"
         c80_match = re.search(
@@ -309,7 +311,7 @@ class Form16Parser:
             text, re.DOTALL,
         )
         if c80_match:
-            deductions.sec80c = self._to_decimal(c80_match.group(2))
+            deductions.sec80c = to_decimal(c80_match.group(2))
 
         return deductions
 
@@ -381,7 +383,7 @@ class Form16Parser:
             if any(w in name.lower() for w in skip_words):
                 continue
 
-            amount = self._to_decimal(amount_str)
+            amount = to_decimal(amount_str)
             comp = SalaryComponent(name=name, amount=amount)
             annexure.components.append(comp)
 
@@ -421,22 +423,11 @@ class Form16Parser:
     # --- Utility methods ---
 
     @staticmethod
-    def _to_decimal(value_str: str) -> Decimal:
-        """Convert a string like '1,23,456.78' to Decimal."""
-        if not value_str:
-            return Decimal("0")
-        cleaned = value_str.replace(",", "").replace(" ", "").strip()
-        try:
-            return Decimal(cleaned)
-        except Exception:
-            return Decimal("0")
-
-    @staticmethod
     def _extract_amount(text: str, pattern: str) -> Optional[Decimal]:
         """Extract a monetary amount after a pattern match."""
         match = re.search(pattern + r"([\d,]+(?:\.\d{2})?)", text)
         if match:
-            return Form16Parser._to_decimal(match.group(1))
+            return to_decimal(match.group(1))
         return None
 
 

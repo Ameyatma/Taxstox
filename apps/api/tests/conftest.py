@@ -4,6 +4,7 @@ All fixtures use factory functions to create deterministic test data.
 No real PDFs, no external dependencies, no network calls.
 """
 
+import os
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -12,6 +13,44 @@ import pytest
 
 # Ensure backend source is importable
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# PR4.3: The FastAPI app is imported lazily inside the `client` fixture (below)
+# so that this conftest never triggers import-time side effects for the unit
+# suite. `src.main` imports the auth router, whose `src.auth.jwt` module raises
+# at import unless TAXSTOX_JWT_SECRET is set, so we provide a test-only secret
+# before import. The app is constructed WITHOUT its lifespan context manager,
+# which means init_db() / init_tax_tables() / FernetEncryptionService() /
+# start_scheduler() never run — the API tests below do not require a database,
+# a live encryption key, or the background scheduler.
+
+os.environ.setdefault("TAXSTOX_JWT_SECRET", "test-secret-for-api-tests-only-0123456789")
+
+
+@pytest.fixture
+def client():
+    """FastAPI TestClient over the real app, without lifespan/DB startup.
+
+    This is the PR4.3 API test infrastructure. It exercises the genuine
+    application wiring (routers, middleware, dependency injection) through
+    httpx — the System Under Test is the real app object, not a mock. Endpoints
+    that touch PostgreSQL raise a clear RuntimeError from get_db() if hit;
+    tests stay within the in-memory paths (auth register/login create users via
+    get_db and are therefore db_required; middleware/health are not).
+    """
+    from fastapi.testclient import TestClient
+
+    from src.main import app
+
+    # NOTE: instantiate WITHOUT the context manager (`with TestClient(app)`)
+    # so the app's lifespan startup is NOT triggered — that path calls
+    # init_db() / init_tax_tables() / FernetEncryptionService() / start_scheduler,
+    # none of which the in-memory API tests require. This is the deliberate PR4.3
+    # choice: the SUT is the real app wiring, only its startup side effects are
+    # bypassed. Endpoints that hit PostgreSQL still raise a clear RuntimeError
+    # from get_db(); those routes are gated behind db_required.
+    test_client = TestClient(app)
+    yield test_client
+
 
 from tests.factories import (  # noqa: E402
     make_ais_data,

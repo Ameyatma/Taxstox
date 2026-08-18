@@ -28,6 +28,8 @@ from src.parsers.confidence import (
     missing,
 )
 
+from src.utils.decimal_utils import to_decimal
+
 logger = logging.getLogger(__name__)
 
 
@@ -208,10 +210,10 @@ class Form26ASParser:
             # TDS amount
             amounts = self.AMOUNT_PATTERN.findall(context)
             if len(amounts) >= 2:
-                entry.amount_paid = self._to_decimal(amounts[0])
-                entry.tds_deducted = self._to_decimal(amounts[1])
+                entry.amount_paid = to_decimal(amounts[0])
+                entry.tds_deducted = to_decimal(amounts[1])
                 if len(amounts) >= 3:
-                    entry.tds_deposited = self._to_decimal(amounts[2])
+                    entry.tds_deposited = to_decimal(amounts[2])
                 else:
                     entry.tds_deposited = entry.tds_deducted
 
@@ -227,7 +229,7 @@ class Form26ASParser:
             text, re.IGNORECASE,
         )
         if match:
-            return self._to_decimal(match.group(1))
+            return to_decimal(match.group(1))
         return Decimal("0")
 
     def _extract_self_assessment_tax(self, text: str) -> Decimal:
@@ -237,7 +239,7 @@ class Form26ASParser:
             text, re.IGNORECASE,
         )
         if match:
-            return self._to_decimal(match.group(1))
+            return to_decimal(match.group(1))
         return Decimal("0")
 
     def _extract_refund(self, text: str) -> Decimal:
@@ -247,16 +249,8 @@ class Form26ASParser:
             text, re.IGNORECASE,
         )
         if match:
-            return self._to_decimal(match.group(1))
+            return to_decimal(match.group(1))
         return Decimal("0")
-
-    @staticmethod
-    def _to_decimal(value_str: str) -> Decimal:
-        try:
-            return Decimal(value_str.replace(",", "").strip())
-        except Exception:
-            return Decimal("0")
-
 
 def parse_form26as(pdf_path: Path, password: Optional[str] = None) -> tuple[Form26ASData, DocumentExtractionReport]:
     """Convenience function to parse Form 26AS PDF."""

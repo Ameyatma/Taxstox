@@ -92,11 +92,25 @@ class MetricsStore:
 metrics = MetricsStore()
 
 
+import re
+
+_UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+)
+_HEX_SESSION_RE = re.compile(r"(^|/)([0-9a-f]{32})(/|$)")
+_NUMERIC_RE = re.compile(r"/\d+(?=/|$)")
+
+
 def _simplify_path(path: str) -> str:
-    """Replace UUIDs and session IDs with placeholders."""
-    import re
-    path = re.sub(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "{id}", path)
+    """Replace high-cardinality segments with placeholders.
+
+    Covers UUIDs, hex session IDs (32-char), numeric IDs, and the ses_ prefix
+    used by some flows. Keeps metrics cardinality bounded.
+    """
+    path = _UUID_RE.sub("{id}", path)
+    path = _HEX_SESSION_RE.sub(r"\1{session}\3", path)
     path = re.sub(r"ses_[a-z0-9]+", "{session}", path)
+    path = _NUMERIC_RE.sub("/{id}", path)
     return path
 
 

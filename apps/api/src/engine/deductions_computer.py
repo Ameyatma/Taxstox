@@ -20,23 +20,10 @@ FY 2025-26 limits. All values in INR.
 from decimal import Decimal
 from typing import Optional
 
+from src.engine.rules.config import FY2025_26, rule_repository
+from src.models.financial_year import FinancialYear
 from src.models.form16 import Form16Data, ChapterVIADeductions
 from src.models.tax import UserAnswers
-
-
-# ── FY 2025-26 Statutory Limits ──
-
-LIMIT_80C = Decimal("150000")          # Combined 80C + 80CCC + 80CCD(1)
-LIMIT_80CCD1B = Decimal("50000")       # Additional NPS beyond 80C
-LIMIT_80D_SELF = Decimal("25000")      # Self + spouse + children
-LIMIT_80D_SELF_SENIOR = Decimal("50000")  # Self (senior citizen)
-LIMIT_80D_PARENTS = Decimal("25000")   # Parents (non-senior)
-LIMIT_80D_PARENTS_SENIOR = Decimal("50000")  # Parents (senior citizen)
-LIMIT_80TTA = Decimal("10000")         # Savings interest (non-senior)
-LIMIT_80TTB = Decimal("50000")         # Interest (senior citizen 60+)
-LIMIT_80GG = Decimal("60000")          # Rent paid without HRA
-LIMIT_24B_SELF = Decimal("200000")     # Home loan interest (self-occupied)
-LIMIT_24B_LETOUT = Decimal("9999999999")  # Let-out: unlimited
 
 
 class DeductionsBreakdown:
@@ -91,6 +78,7 @@ class DeductionsComputer:
         salary_income: Decimal = Decimal("0"),
         is_new_regime: bool = False,
         is_senior_citizen: bool = False,
+        financial_year: Optional[FinancialYear] = None,
     ) -> DeductionsBreakdown:
         """
         Compute all applicable Chapter VI-A deductions.
@@ -100,6 +88,9 @@ class DeductionsComputer:
         """
         result = DeductionsBreakdown()
         ua = answers or UserAnswers()
+
+        # PR3: All deduction limits from RuleRepository (no hardcoded values)
+        config = rule_repository.get(financial_year or FY2025_26)
 
         # ── 80CCD(2): Employer NPS — available in BOTH regimes ──
         if form16:
@@ -127,21 +118,21 @@ class DeductionsComputer:
                 additional_80c += val
 
         total_80c_input = epf_from_f16 + additional_80c
-        result.sec80c = min(total_80c_input, LIMIT_80C)
+        result.sec80c = min(total_80c_input, config.get_deduction_limit("80C", "old"))
         result.sec80c_components = components_80c
 
         # ── 80CCD(1B): Additional NPS (beyond 80C) ──
         if ua.has_additional_80c and ua.additional_80c_breakup:
             nps_own = ua.additional_80c_breakup.get("nps_own", Decimal("0"))
-            result.sec80ccd1b = min(Decimal(str(nps_own)), LIMIT_80CCD1B)
+            result.sec80ccd1b = min(Decimal(str(nps_own)), config.get_deduction_limit("80CCD(1B)"))
 
         # ── 80D: Health Insurance ──
         if ua.has_health_insurance:
             self_premium = ua.health_premium_self or Decimal("0")
             parents_premium = ua.health_premium_parents or Decimal("0")
 
-            limit_self = LIMIT_80D_SELF_SENIOR if is_senior_citizen else LIMIT_80D_SELF
-            limit_parents = LIMIT_80D_PARENTS_SENIOR if ua.parents_senior_citizen else LIMIT_80D_PARENTS
+            limit_self = config.get_deduction_limit("80D_SELF_SENIOR" if is_senior_citizen else "80D_SELF")
+            limit_parents = config.get_deduction_limit("80D_PARENTS_SENIOR" if ua.parents_senior_citizen else "80D_PARENTS")
 
             ded_self = min(self_premium, limit_self)
             ded_parents = min(parents_premium, limit_parents)
@@ -153,9 +144,9 @@ class DeductionsComputer:
 
         # ── 80TTA / 80TTB: Interest deduction ──
         if is_senior_citizen:
-            result.sec80ttb = min(total_interest, LIMIT_80TTB)
+            result.sec80ttb = min(total_interest, config.get_deduction_limit("80TTB"))
         else:
-            result.sec80tta = min(savings_interest, LIMIT_80TTA)
+            result.sec80tta = min(savings_interest, config.get_deduction_limit("80TTA"))
 
         # ── 80GG: Rent without HRA (ONLY if taxpayer does NOT receive HRA) ──
         hra_received_from_f16 = (
@@ -169,7 +160,7 @@ class DeductionsComputer:
                 option_b = salary_income * Decimal("0.25")
                 option_c = max(Decimal("0"), annual_rent - (salary_income * Decimal("0.10")))
                 result.sec80gg = min(option_a, option_b, option_c)
-                result.sec80gg = min(result.sec80gg, LIMIT_80GG)
+                result.sec80gg = min(result.sec80gg, config.get_deduction_limit("80GG"))
 
         # ── 80E: Education Loan Interest (unlimited, 8 years) ──
         if ua.has_other_income:

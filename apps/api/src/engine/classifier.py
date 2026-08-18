@@ -13,11 +13,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
+from src.engine.rules.config import FY2025_26, rule_repository
+from src.models.financial_year import FinancialYear
 from src.models.tax import CGSaleEntry, ClassifiedCGData, CGDateRanges
 from src.models.ais import AISEquityMFSale, AISOtherUnitSale
-
-# ₹1,25,000 exemption for LTCG under Section 112A
-LTCG_112A_EXEMPTION = Decimal("125000")
 
 # ISIN prefixes that indicate equity
 EQUITY_ISIN_PREFIXES = ("INF", "INE")
@@ -165,14 +164,19 @@ class ClassificationEngine:
 
         return ranges
 
-    def apply_112a_exemption(self, data: ClassifiedCGData) -> ClassifiedCGData:
+    def apply_112a_exemption(
+        self,
+        data: ClassifiedCGData,
+        financial_year: Optional[FinancialYear] = None,
+    ) -> ClassifiedCGData:
         """
         Apply the ₹1.25L LTCG exemption under Section 112A.
 
         Exemption is applied to the oldest gains first (FIFO within the year),
         or proportionally across all 112A entries.
         """
-        remaining_exemption = LTCG_112A_EXEMPTION
+        config = rule_repository.get(financial_year or FY2025_26)
+        remaining_exemption = config.ltcg_112a_exemption
 
         # Sort by date (oldest first) for FIFO application
         sorted_entries = sorted(data.schedule_112a, key=lambda e: e.date)
@@ -193,21 +197,27 @@ class ClassificationEngine:
 
         return data
 
-    def get_tax_summary(self, data: ClassifiedCGData) -> dict:
+    def get_tax_summary(
+        self,
+        data: ClassifiedCGData,
+        financial_year: Optional[FinancialYear] = None,
+    ) -> dict:
         """Get a summary of capital gains tax liability."""
+        config = rule_repository.get(financial_year or FY2025_26)
+
         # Apply exemption first
-        data = self.apply_112a_exemption(data)
+        data = self.apply_112a_exemption(data, financial_year)
 
         # Compute tax on each category
         ltcg_112a_taxable = sum(
             (e.gain_after_exemption for e in data.schedule_112a), Decimal("0")
         )
-        ltcg_112a_tax = ltcg_112a_taxable * Decimal("0.125")  # 12.5%
+        ltcg_112a_tax = ltcg_112a_taxable * config.equity_ltcg_rate  # 12.5%
 
         stcg_15pct_total = sum(
             (e.gain for e in data.cg_a2_stcg_111a), Decimal("0")
         )
-        stcg_15pct_tax = stcg_15pct_total * Decimal("0.15")  # 15%
+        stcg_15pct_tax = stcg_15pct_total * config.equity_stcg_rate  # 15%
 
         stcg_slab_total = sum(
             (e.gain for e in data.cg_a5_stcg_app_rate), Decimal("0")
@@ -217,11 +227,11 @@ class ClassificationEngine:
         ltcg_other_total = sum(
             (e.gain for e in data.cg_b8_ltcg_other), Decimal("0")
         )
-        ltcg_other_tax = ltcg_other_total * Decimal("0.125")  # 12.5% without indexation
+        ltcg_other_tax = ltcg_other_total * config.non_equity_ltcg_rate  # 12.5% without indexation
 
         return {
             "ltcg_112a_total_gain": sum((e.gain for e in data.schedule_112a), Decimal("0")),
-            "ltcg_112a_exempt": LTCG_112A_EXEMPTION - max(Decimal("0"), LTCG_112A_EXEMPTION - sum((e.gain for e in data.schedule_112a), Decimal("0"))),
+            "ltcg_112a_exempt": config.ltcg_112a_exemption - max(Decimal("0"), config.ltcg_112a_exemption - sum((e.gain for e in data.schedule_112a), Decimal("0"))),
             "ltcg_112a_taxable": ltcg_112a_taxable,
             "ltcg_112a_tax": ltcg_112a_tax,
             "stcg_15pct_total": stcg_15pct_total,

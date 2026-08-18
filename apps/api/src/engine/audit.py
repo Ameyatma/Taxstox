@@ -191,6 +191,8 @@ class AuditContext:
     def __init__(self, financial_year: str) -> None:
         self.correlation_id = str(uuid.uuid4())
         self.financial_year = financial_year
+        # PR2: Internal event accumulator for live computation audit trail
+        self._events: list[AuditEvent] = []
 
     def event(
         self,
@@ -204,7 +206,7 @@ class AuditContext:
         source_document: str = "",
         source_field: str = "",
     ) -> AuditEvent:
-        return AuditEvent.create(
+        event = AuditEvent.create(
             event_type=event_type,
             correlation_id=self.correlation_id,
             financial_year=self.financial_year,
@@ -217,3 +219,19 @@ class AuditContext:
             source_document=source_document,
             source_field=source_field,
         )
+        # PR2: Accumulate events for live audit trail
+        self._events.append(event)
+        return event
+
+    def build_trail(self) -> AuditTrail:
+        """Build an immutable AuditTrail from accumulated events. PR2."""
+        return AuditTrail(
+            correlation_id=self.correlation_id,
+            financial_year=self.financial_year,
+            events=tuple(self._events),
+        )
+
+    @property
+    def event_count(self) -> int:
+        """Number of events accumulated. PR2."""
+        return len(self._events)

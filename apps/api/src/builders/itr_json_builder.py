@@ -12,10 +12,11 @@ import hashlib
 import logging
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional
 
 from src.models.form16 import Form16Data, Regime
 from src.models.ais import AISData
+from src.models.financial_year import FinancialYear
 from src.models.tax import (
     UnifiedTaxData,
     ClassifiedCGData,
@@ -27,13 +28,13 @@ from src.models.tax import (
 
 logger = logging.getLogger(__name__)
 
-# Assessment Year mapping
-AY = "2026-27"
-FY = "2025-26"
-
 
 class ITRJSONBuilder:
     """Builds the complete ITR-2 JSON structure from unified tax data."""
+
+    def __init__(self, financial_year: Optional[FinancialYear] = None) -> None:
+        self._fy = financial_year or FinancialYear.from_string("FY2025-26")
+        self._ay = self._fy.assessment_year
 
     def build(self, data: UnifiedTaxData) -> dict:
         """Build the full ITR JSON ready for upload."""
@@ -59,7 +60,7 @@ class ITRJSONBuilder:
         """Build Part A — General Information."""
         form16 = data.form16
         info: dict[str, Any] = {
-            "AssessmentYear": AY,
+            "AssessmentYear": self._ay,
             "ITRType": "2",
             "PAN": data.pan or (form16.part_a.employee_pan if form16 else ""),
             "Name": form16.part_a.employee_name if form16 else "",
@@ -459,13 +460,20 @@ class ITRJSONBuilder:
         is_new = data.recommended_regime == Regime.NEW
         breakdown = result.new_breakdown if is_new else result.old_breakdown
 
+        # Special-rate tax = 112A (12.5%) + STCG 111A (15%) + LTCG other (12.5%).
+        # The optimizer emits these as separate keys, not "tax_special_rates".
+        special_rates_tax = (
+            Decimal(breakdown.get("tax_112a", "0"))
+            + Decimal(breakdown.get("tax_stcg_15pct", "0"))
+            + Decimal(breakdown.get("tax_ltcg_other", "0"))
+        )
+
         tti = {
             "TotalIncome": str(breakdown.get("total_income", "0")),
             "TaxOnTotalIncome": str(breakdown.get("tax_slab", "0")),
-            "TaxOnSpecialRates": str(breakdown.get("tax_special_rates", "0")),
+            "TaxOnSpecialRates": str(special_rates_tax),
             "TotalTaxBeforeRebate": str(
-                Decimal(breakdown.get("tax_slab", "0"))
-                + Decimal(breakdown.get("tax_special_rates", "0"))
+                Decimal(breakdown.get("tax_slab", "0")) + special_rates_tax
             ),
             "Rebate87A": str(breakdown.get("rebate_87a", "0")),
             "Surcharge": "0",

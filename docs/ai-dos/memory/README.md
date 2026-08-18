@@ -44,7 +44,8 @@ D:\IT_Returns\
 │       │   ├── FutureIdeas.md
 │       │   ├── InterviewLogic.md
 │       │   ├── KnownIssues.md
-│       │   └── TaxRules.md
+│       │   ├── TaxRules.md
+│       │   └── feedback-false-positive-pr4.md  ← CRITICAL: never declare complete without running verification
 │       │
 │       └── archive/                           ← SUPERSEDED documents
 │           ├── Architecture-v0.1.md

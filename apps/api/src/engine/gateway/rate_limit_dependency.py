@@ -17,8 +17,15 @@ from src.engine.gateway.rate_limiter import InMemoryRateLimitStore
 
 logger = logging.getLogger(__name__)
 
-# Singleton rate limit store. Replaced with RedisRateLimitStore in PR5.
-_rate_limit_store: RateLimitStore = InMemoryRateLimitStore()
+# Singleton rate limit store. Uses Redis-backed store in production (PR5),
+# transparently falling back to in-memory when Redis is unavailable.
+try:
+    from src.engine.gateway.redis_rate_limiter import RedisRateLimitStore
+
+    _rate_limit_store: RateLimitStore = RedisRateLimitStore()
+except Exception as e:  # pragma: no cover — defensive init guard
+    logger.warning("Redis rate limiter unavailable, using in-memory: %s", e)
+    _rate_limit_store = InMemoryRateLimitStore()
 
 
 def get_rate_limit_store() -> RateLimitStore:

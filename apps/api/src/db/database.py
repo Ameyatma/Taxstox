@@ -184,16 +184,41 @@ def init_tax_tables() -> None:
 
 # ── User CRUD ────────────────────────────────────────────────────────
 
+def _encrypt_pan(pan: str) -> str:
+    """Encrypt PAN at the application layer before storing in DB."""
+    if not pan:
+        return ""
+    from src.domain.security.encryption import DataClassification
+    from src.infrastructure.encryption import FernetEncryptionService
+    svc = FernetEncryptionService()
+    result = svc.encrypt(pan, DataClassification.RESTRICTED)
+    # Base64-encode ciphertext for TEXT column storage
+    import base64
+    return base64.b64encode(result.ciphertext).decode("utf-8")
+
+
+def _decrypt_pan(ciphertext_b64: str) -> str:
+    """Decrypt PAN when reading from DB."""
+    if not ciphertext_b64:
+        return ""
+    import base64
+    from src.infrastructure.encryption import FernetEncryptionService
+    svc = FernetEncryptionService()
+    ciphertext = base64.b64decode(ciphertext_b64)
+    return svc.decrypt(ciphertext, key_id="")
+
+
 def create_user(email: str, pan: str, name: str, password: str, dob: str = "") -> dict:
     conn = get_db()
     try:
         user_id = _uid()
         hashed = hash_password(password)
         now = _now_iso()
+        encrypted_pan = _encrypt_pan(pan)
         _exec_sql(conn,
             "INSERT INTO users (id, email, pan, name, hashed_password, dob, created_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (user_id, email, pan, name, hashed, dob, now),
+            (user_id, email, encrypted_pan, name, hashed, dob, now),
         )
         return {"id": user_id, "email": email, "pan": pan, "name": name, "dob": dob}
     except pg_errors.UniqueViolation as e:
@@ -222,7 +247,7 @@ def authenticate_user(email: str, password: str) -> dict | None:
         d = dict(row)
         if not verify_password(password, d["hashed_password"]):
             return None
-        return {"id": d["id"], "email": d["email"], "pan": d.get("pan") or "", "name": d["name"]}
+        return {"id": d["id"], "email": d["email"], "pan": _decrypt_pan(d.get("pan") or ""), "name": d["name"]}
     finally:
         conn.close()
 
@@ -235,7 +260,13 @@ def get_user_by_id(user_id: str) -> dict | None:
             "SELECT id, email, pan, name, dob, created_at FROM users WHERE id = %s",
             (user_id,),
         )
-        return _row_to_dict(cur.fetchone())
+        row = cur.fetchone()
+        cur.close()
+        if row is None:
+            return None
+        d = dict(row)
+        d["pan"] = _decrypt_pan(d.get("pan") or "")
+        return d
     finally:
         conn.close()
 
@@ -248,7 +279,13 @@ def get_user_by_email(email: str) -> dict | None:
             "SELECT id, email, pan, name FROM users WHERE email = %s",
             (email,),
         )
-        return _row_to_dict(cur.fetchone())
+        row = cur.fetchone()
+        cur.close()
+        if row is None:
+            return None
+        d = dict(row)
+        d["pan"] = _decrypt_pan(d.get("pan") or "")
+        return d
     finally:
         conn.close()
 

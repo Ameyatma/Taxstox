@@ -17,6 +17,8 @@ from src.api.simulation import router as simulation_router
 from src.api.tax_routes import router as tax_router
 from src.middleware.correlation import CorrelationMiddleware
 from src.middleware.security_headers import SecurityHeadersMiddleware
+from src.middleware.tenant_context import TenantContextMiddleware
+from src.middleware.metrics import MetricsMiddleware
 from src.utils.logging import setup_logging, get_logger
 
 logger = get_logger(__name__)
@@ -34,6 +36,15 @@ async def lifespan(app: FastAPI):
     init_db()
     init_tax_tables()
     logger.info("Database initialized")
+
+    # PR2: Enforce encryption key at startup — fail fast if missing
+    try:
+        from src.infrastructure.encryption import FernetEncryptionService
+        FernetEncryptionService()
+        logger.info("Encryption service initialized — TAXSTOX_ENCRYPTION_KEY verified")
+    except RuntimeError as e:
+        logger.critical("ENCRYPTION KEY MISSING: %s", str(e))
+        raise
 
     # Start the tax sync scheduler
     from src.scheduler import start_scheduler
@@ -59,6 +70,17 @@ app = FastAPI(
 # Correlation ID — must be added before other middleware
 # (innermost middleware = first to process request, last to process response)
 app.add_middleware(CorrelationMiddleware)
+
+# Metrics — record every request (latency, status, error rate). Placed directly
+# outside CorrelationMiddleware so it measures the full handler path.
+app.add_middleware(MetricsMiddleware)
+
+# Tenant context — resolves tenant_id per request (X-Tenant-ID header or JWT claim).
+# Registered, no mandatory tenant behavior: request.state.tenant_id is set to None
+# when neither header nor claim is present (public endpoints / individual taxpayers).
+# Note: the JWT tenant_id claim is set by the `get_current_user` route dependency,
+# which runs after middleware dispatch — so at dispatch time only the header resolves.
+app.add_middleware(TenantContextMiddleware)
 
 # Security headers — add before CORS so headers are on preflight responses
 app.add_middleware(SecurityHeadersMiddleware)

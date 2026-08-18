@@ -13,7 +13,7 @@ Verifies:
 from datetime import date
 from decimal import Decimal
 
-from src.engine.classifier import ClassificationEngine, classify_capital_gains, LTCG_112A_EXEMPTION
+from src.engine.classifier import ClassificationEngine, classify_capital_gains
 from src.models.ais import AISEquityMFSale, AISOtherUnitSale
 
 

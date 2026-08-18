@@ -68,6 +68,28 @@ class FinancialYear:
         raise ValueError(f"Invalid financial year format: '{fy_str}'. Expected 'FY2025-26'.")
 
     @classmethod
+    def from_assessment_year(cls, ay_str: str) -> FinancialYear:
+        """Parse an assessment year string into its financial year.
+
+        An assessment year trails its financial year by one year: assessment
+        year '2026-27' corresponds to FY2025-26. Accepts both '2026-27' and
+        '2026-2027' forms.
+        """
+        ay_str = ay_str.strip()
+        match = re.match(r"^(\d{4})-(\d{2,4})$", ay_str)
+        if not match:
+            raise ValueError(
+                f"Invalid assessment year format: '{ay_str}'. Expected '2026-27'."
+            )
+        ay_start = int(match.group(1))
+        ay_end = match.group(2)
+        if len(ay_end) == 4 and int(ay_end) != ay_start + 1:
+            raise ValueError(
+                f"Invalid assessment year: '{ay_str}'. End year must be start year + 1."
+            )
+        return cls(start_year=ay_start - 1, end_year=ay_start)
+
+    @classmethod
     def from_date(cls, d: date) -> FinancialYear:
         """Determine the financial year for a given date."""
         if d.month >= 4:

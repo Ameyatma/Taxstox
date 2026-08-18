@@ -26,6 +26,8 @@ from src.models.ais import (
     AISAnnexureIISalary,
 )
 
+from src.utils.decimal_utils import to_decimal
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,17 +36,6 @@ def _clean_cell(cell: Optional[str]) -> str:
     if not cell:
         return ""
     return " ".join(cell.split())
-
-
-def _to_decimal(value_str: Optional[str]) -> Decimal:
-    """Convert a string like '1,23,456.78' to Decimal."""
-    if not value_str:
-        return Decimal("0")
-    cleaned = value_str.replace(",", "").replace(" ", "").strip()
-    try:
-        return Decimal(cleaned)
-    except Exception:
-        return Decimal("0")
 
 
 def _parse_date(date_str: Optional[str]) -> Optional[date]:
@@ -236,7 +227,7 @@ class AISParser:
         # Extract total from summary row
         for cell in summary_row:
             try:
-                _to_decimal(cell)
+                to_decimal(cell)
             except Exception:
                 pass
 
@@ -258,7 +249,7 @@ class AISParser:
             for cell in row:
                 c = cell.strip()
                 if re.match(r"^[\d,]+$", c) or re.match(r"^[\d,]+\.[\d]{2}$", c):
-                    amounts.append(_to_decimal(c))
+                    amounts.append(to_decimal(c))
 
             if len(amounts) >= 2:
                 entries.append(AISTDSEntry(
@@ -292,7 +283,7 @@ class AISParser:
         # Extract interest amount from summary row — last numeric value before end
         summary_interest = Decimal("0")
         for cell in reversed(summary_row):
-            val = _to_decimal(cell)
+            val = to_decimal(cell)
             if val > 0:
                 summary_interest = val
                 break
@@ -315,7 +306,7 @@ class AISParser:
                 if len(row) >= 5:
                     reported_on = _parse_date(row[1]) if len(row) > 1 else None
                     account_no = row[2].strip() if len(row) > 2 else ""
-                    interest = _to_decimal(row[4]) if len(row) > 4 else interest
+                    interest = to_decimal(row[4]) if len(row) > 4 else interest
                 break
 
         if summary_interest > 0 or interest > 0:
@@ -377,11 +368,11 @@ class AISParser:
         amc_name = row[1] if len(row) > 1 else ""
         security_name = row[date_idx + 2] if date_idx >= 0 and len(row) > date_idx + 2 else ""
         asset_type = row[type_idx].strip() if type_idx >= 0 and len(row) > type_idx else ""
-        quantity = _to_decimal(row[qty_idx]) if qty_idx >= 0 and len(row) > qty_idx else Decimal("0")
-        sale_price = _to_decimal(row[price_idx]) if price_idx >= 0 and len(row) > price_idx else Decimal("0")
-        sale_consideration = _to_decimal(row[cons_idx]) if cons_idx >= 0 and len(row) > cons_idx else Decimal("0")
-        stt_paid = _to_decimal(row[stt_idx]) if stt_idx >= 0 and len(row) > stt_idx else Decimal("0")
-        cost_of_acquisition = _to_decimal(row[cost_idx]) if cost_idx >= 0 and len(row) > cost_idx else Decimal("0")
+        quantity = to_decimal(row[qty_idx]) if qty_idx >= 0 and len(row) > qty_idx else Decimal("0")
+        sale_price = to_decimal(row[price_idx]) if price_idx >= 0 and len(row) > price_idx else Decimal("0")
+        sale_consideration = to_decimal(row[cons_idx]) if cons_idx >= 0 and len(row) > cons_idx else Decimal("0")
+        stt_paid = to_decimal(row[stt_idx]) if stt_idx >= 0 and len(row) > stt_idx else Decimal("0")
+        cost_of_acquisition = to_decimal(row[cost_idx]) if cost_idx >= 0 and len(row) > cost_idx else Decimal("0")
 
         if "long" in asset_type.lower():
             term = "Long term"
@@ -417,10 +408,10 @@ class AISParser:
         date_of_sale = _parse_date(row[1]) if len(row) > 1 else None
         security_name = row[3] if len(row) > 3 else ""
         asset_type = row[8].strip() if len(row) > 8 else ""
-        quantity = _to_decimal(row[10]) if len(row) > 10 else Decimal("0")
-        sale_price = _to_decimal(row[11]) if len(row) > 11 else Decimal("0")
-        sale_consideration = _to_decimal(row[12]) if len(row) > 12 else Decimal("0")
-        cost_of_acquisition = _to_decimal(row[13]) if len(row) > 13 else Decimal("0")
+        quantity = to_decimal(row[10]) if len(row) > 10 else Decimal("0")
+        sale_price = to_decimal(row[11]) if len(row) > 11 else Decimal("0")
+        sale_consideration = to_decimal(row[12]) if len(row) > 12 else Decimal("0")
+        cost_of_acquisition = to_decimal(row[13]) if len(row) > 13 else Decimal("0")
 
         term = ""
         if "long" in asset_type.lower():
@@ -466,7 +457,7 @@ class AISParser:
                 for cell in row:
                     c = cell.strip()
                     if re.match(r"^[\d,]+$", c) or re.match(r"^[\d,]+\.[\d]{2}$", c):
-                        amounts.append(_to_decimal(c))
+                        amounts.append(to_decimal(c))
                 # Second-to-last is client ID, market purchase and sales are amounts
                 if len(amounts) >= 2:
                     market_purchase = amounts[0] if len(amounts) >= 1 else Decimal("0")
@@ -495,7 +486,7 @@ class AISParser:
                 for cell in detail_row:
                     c = cell.strip()
                     if re.match(r"^[\d,]+$", c) or re.match(r"^[\d,]+\.[\d]{2}$", c):
-                        amounts.append(_to_decimal(c))
+                        amounts.append(to_decimal(c))
                 if len(amounts) >= 1:
                     return AISAnnexureIISalary(
                         gross_salary_171=amounts[0] if len(amounts) >= 1 else Decimal("0"),
@@ -533,7 +524,7 @@ class AISParser:
         for cell in row:
             c = cell.strip()
             if re.match(r"^[\d,]+$", c):
-                amount = _to_decimal(c)
+                amount = to_decimal(c)
             if re.match(r"\d{2}/\d{2}/\d{4}", c):
                 date_of_payment = _parse_date(c)
 

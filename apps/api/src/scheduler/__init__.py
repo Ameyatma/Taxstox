@@ -104,7 +104,15 @@ async def _purge_expired_tokens():
 
 
 def start_scheduler():
-    """Start the APScheduler for periodic tax data syncing."""
+    """Start the APScheduler for periodic tax data syncing.
+
+    Idempotent: calling this more than once (e.g. lifespan re-entry, tests)
+    is a no-op once the scheduler is already running.
+    """
+    if scheduler.running:
+        logger.info("Tax sync scheduler already running — skipping start")
+        return
+
     scheduler.add_job(
         run_sync,
         trigger=IntervalTrigger(hours=SYNC_INTERVAL_HOURS),
@@ -127,25 +135,21 @@ def start_scheduler():
     scheduler.start()
     logger.info("Tax sync scheduler started (every %d hours)", SYNC_INTERVAL_HOURS)
 
-    # Also run an initial sync after a short delay (let the app finish starting)
-    scheduler.add_job(
-        run_sync,
-        trigger=None,  # Run once after delay
-        id="tax_sync_initial",
-        name="Tax Updates Initial Sync",
-        run_date=None,  # Will be set below
-    )
-    # Schedule initial sync 60 seconds after startup
-    import asyncio as _asyncio
+    # Schedule an initial sync 60 seconds after startup so the app can finish
+    # booting (DB connection pool, etc.) before the first heavy sync.
     try:
-        loop = _asyncio.get_running_loop()
-        loop.call_later(60, lambda: _asyncio.ensure_future(run_sync()))
+        loop = asyncio.get_running_loop()
+        loop.call_later(60, lambda: asyncio.ensure_future(run_sync()))
     except RuntimeError:
         pass  # No running loop yet, skip initial sync
 
 
 def stop_scheduler():
-    """Shut down the scheduler gracefully."""
+    """Shut down the scheduler gracefully.
+
+    A background job failure never crashes the API: run_sync / _purge_expired_tokens
+    each wrap their work in try/except and log errors instead of propagating.
+    """
     if scheduler.running:
         scheduler.shutdown(wait=False)
         logger.info("Tax sync scheduler stopped.")
