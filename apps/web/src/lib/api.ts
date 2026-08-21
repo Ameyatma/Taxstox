@@ -1,6 +1,31 @@
 /** TaxStox API client — communicates with the FastAPI backend. */
 
+// Single source of truth for the backend base URL. Every fetch in the app
+// must route through here so the API origin is configured in exactly one place.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+/** Resolve the backend base URL. Use this for any direct fetch so we never
+ *  duplicate the `NEXT_PUBLIC_API_URL || localhost` fallback across files. */
+export function getApiBase(): string {
+  return API_BASE;
+}
+
+/** Optional handler for 401 Unauthorized responses from authenticated endpoints.
+ *  AuthProvider sets this to clear token and redirect to /auth. */
+export let onUnauthorized: (() => void) | null = null;
+
+/** Register a global handler invoked when any API call receives a 401.
+ *  AuthProvider sets this to clear token and redirect to /auth. */
+export function setOnUnauthorized(fn: (() => void) | null) {
+  onUnauthorized = fn;
+}
+
+// Shared token removal — keeps api.ts independent of auth.tsx internals.
+function clearToken() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("taxstox_token");
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -62,6 +87,11 @@ export async function fetchMe(): Promise<AuthUser> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     headers: { ...getAuthHeaders() },
   });
+  if (res.status === 401) {
+    clearToken();
+    if (onUnauthorized) onUnauthorized();
+    throw new Error("Session expired");
+  }
   if (!res.ok) throw new Error("Not authenticated");
   return res.json();
 }
@@ -139,6 +169,12 @@ export async function uploadPDFs(
     body: formData,
   });
 
+  if (res.status === 401) {
+    clearToken();
+    if (onUnauthorized) onUnauthorized();
+    throw new Error("Session expired");
+  }
+
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.detail || "Upload failed");
@@ -151,6 +187,12 @@ export async function processPDFs(sessionId: string): Promise<QuestionsResponseD
   const res = await fetch(`${API_BASE}/process/${sessionId}`, {
     method: "POST",
   });
+
+  if (res.status === 401) {
+    clearToken();
+    if (onUnauthorized) onUnauthorized();
+    throw new Error("Session expired");
+  }
 
   if (!res.ok) {
     const err = await res.json();
@@ -170,6 +212,12 @@ export async function submitAnswers(
     body: JSON.stringify({ session_id: sessionId, answers }),
   });
 
+  if (res.status === 401) {
+    clearToken();
+    if (onUnauthorized) onUnauthorized();
+    throw new Error("Session expired");
+  }
+
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.detail || "Failed to compute tax");
@@ -182,6 +230,12 @@ export async function exportITR(sessionId: string): Promise<ExportData> {
   const res = await fetch(`${API_BASE}/export/${sessionId}`, {
     method: "POST",
   });
+
+  if (res.status === 401) {
+    clearToken();
+    if (onUnauthorized) onUnauthorized();
+    throw new Error("Session expired");
+  }
 
   if (!res.ok) {
     const err = await res.json();

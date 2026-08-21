@@ -82,9 +82,14 @@ function QuestionsContent() {
           </div>
           <h2 className="text-xl font-semibold text-[#0b1c30]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Processing Error</h2>
           <p className="text-sm text-[#434652]">{error || "Could not load questions."}</p>
-          <button onClick={() => router.push("/")} className="px-6 py-3 bg-[#003366] text-white rounded-lg font-semibold" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
-            Start Over
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => { setError(""); setLoading(true); loadQuestions(); }} className="px-6 py-3 bg-[#003366] text-white rounded-lg font-semibold" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+              Try Again
+            </button>
+            <button onClick={() => router.push("/")} className="px-6 py-3 bg-white border border-[#c3c6d4] text-[#0b1c30] rounded-lg font-semibold hover:bg-[#F8FAFC] transition-all" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>
+              Start Over
+            </button>
+          </div>
         </div>
       </div>
     );

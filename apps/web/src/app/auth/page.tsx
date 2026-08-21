@@ -4,6 +4,7 @@ import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { getApiBase } from "@/lib/api";
 
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
@@ -162,7 +163,7 @@ function AuthContent() {
   // Send the Google ID token to our backend
   const sendGoogleToken = async (idToken: string) => {
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const base = getApiBase();
       const res = await fetch(`${base}/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

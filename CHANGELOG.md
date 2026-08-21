@@ -4,6 +4,54 @@ All notable changes to the TaxStox platform.
 
 ---
 
+## v0.12.0-beta (2026-08-21)
+
+### Frontend Remediation & Beta Acceptance (PR6)
+
+The production-readiness remediation program (PR1-PR6) is now complete. With the
+backend operationally ready (PR5), this wave closes the gap to a coherent, usable,
+secure beta by hardening the frontend.
+
+**Authentication & Session UX (PR6.1)**
+- Single source of truth for the API base URL: added `getApiBase()` in `lib/api.ts`;
+  all pages now route through it instead of duplicating the `NEXT_PUBLIC_API_URL`
+  fallback. Removed 6 duplicated hardcoded fallback strings.
+- Global 401 handler: `lib/api.ts` now clears the stale token and invokes a
+  registered `onUnauthorized` callback on any `401 Unauthorized` response.
+  `AuthProvider` wires `onUnauthorized` to clear the session and reset user state,
+  so expired sessions bounce back to the auth screen instead of silently failing.
+  Applied uniformly to `fetchMe`, `uploadPDFs`, `processPDFs`, `submitAnswers`,
+  and `exportITR`.
+
+**Error States & Resilience (PR6.2)**
+- Tax/regime calculators (tools page): added `calcError` state with user-visible
+  error banners and graceful "try again" recovery for all four calculators
+  (regime compare, HRA, capital gains, quick estimate).
+- Questions wizard: added a "Try Again" action to the error state alongside
+  "Start Over", so transient processing failures are recoverable without losing
+  the session.
+
+**Navigation & Flow Robustness (PR6.3)**
+- Summary page: fixed an infinite spinner when the page is opened directly with an
+  empty client cache and no session id. It now shows a "Session not found" card
+  with a Start Over action instead of hanging. When a session id is present but the
+  cache is empty, it redirects back to `/questions?session=...` to rebuild state.
+
+**Responsive & Accessibility (PR6.4)**
+- Dashboard filing-history table wrapped in an horizontal-scroll container so the
+  page no longer overflows on mobile viewports.
+
+**Quality Gates (all green)**
+- TypeScript (`tsc --noEmit`): pass
+- Production build (`next build`): 15 routes, pass
+- Backend test suite: 520 passed, 29 skipped
+- Golden vectors: 9/9 pass (ITD-portal-verified values unchanged)
+
+> Note: JWT storage remains in `localStorage` for PR6 (httpOnly-cookie migration
+> is tracked separately under PRRP-DEFER-001 and is out of scope for the beta).
+
+---
+
 ## v0.11.0-alpha (2026-08-18)
 
 ### Internal Alpha Release

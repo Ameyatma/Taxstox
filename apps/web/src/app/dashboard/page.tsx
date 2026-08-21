@@ -158,23 +158,25 @@ export default function DashboardPage() {
               />
             ) : (
               <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                    <tr className="text-left">
-                      <Th>AY</Th>
-                      <Th>ITR Type</Th>
-                      <Th>Regime</Th>
-                      <Th className="text-right">Gross Income</Th>
-                      <Th>Status</Th>
-                      <Th className="text-right">Action</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filings.map((f) => (
-                      <FilingRow key={f.id} filing={f} />
-                    ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                      <tr className="text-left">
+                        <Th>AY</Th>
+                        <Th>ITR Type</Th>
+                        <Th>Regime</Th>
+                        <Th className="text-right">Gross Income</Th>
+                        <Th>Status</Th>
+                        <Th className="text-right">Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filings.map((f) => (
+                        <FilingRow key={f.id} filing={f} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

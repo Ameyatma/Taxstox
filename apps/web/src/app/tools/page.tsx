@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getApiBase } from "@/lib/api";
 
 type CalcResult = Record<string, unknown> | null;
 
@@ -77,15 +78,28 @@ function RegimeCompareCalculator() {
   const [other, setOther] = useState("0");
   const [result, setResult] = useState<CalcResult>(null);
   const [loading, setLoading] = useState(false);
+  const [calcError, setCalcError] = useState("");
+
+  function resetCalcState() {
+    setResult(null);
+    setCalcError("");
+  }
 
   async function calculate() {
     setLoading(true);
+    setCalcError("");
     const params = new URLSearchParams({ salary, deductions_80c: ded80c, deductions_80d: ded80d, hra_exemption: hra, home_loan_interest: homeInt, nps_employer: npsEmp, other_income: other });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/regime-compare?${params}`);
+      const res = await fetch(`${getApiBase()}/calculator/regime-compare?${params}`);
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       setResult(await res.json());
-    } catch { setResult(null); }
-    setLoading(false);
+    } catch (err) {
+      setCalcError(err instanceof Error && err.message !== "Failed to fetch"
+        ? "Could not reach the calculator service. Please try again."
+        : "Network error. Check your connection and retry.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const resultAny = result as Record<string, unknown> | null;
@@ -105,6 +119,13 @@ function RegimeCompareCalculator() {
       <button onClick={calculate} disabled={loading} className="w-full bg-[#F57C00] text-white py-3 rounded-xl font-semibold hover:bg-[#E67600] transition-all disabled:opacity-50">
         {loading ? "Calculating..." : "Compare Regimes"}
       </button>
+
+      {calcError && (
+        <div className="p-4 rounded-xl bg-[#ffdad6] border border-red-200 flex items-start gap-3 mt-4 animate-in fade-in">
+          <span className="material-symbols-outlined text-[#991B1B] shrink-0 mt-0.5">error</span>
+          <span className="text-sm text-[#93000a]">{calcError}</span>
+        </div>
+      )}
 
       {resultAny && (
         <div className="grid grid-cols-2 gap-4 mt-4 animate-in fade-in">
@@ -150,15 +171,21 @@ function HRACalculator() {
   const [metro, setMetro] = useState(true);
   const [result, setResult] = useState<CalcResult>(null);
   const [loading, setLoading] = useState(false);
+  const [calcError, setCalcError] = useState("");
 
   async function calculate() {
     setLoading(true);
+    setCalcError("");
     const params = new URLSearchParams({ basic_salary: basic, hra_received: hraReceived, rent_paid: rent, metro_city: String(metro) });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/hra?${params}`);
+      const res = await fetch(`${getApiBase()}/calculator/hra?${params}`);
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       setResult(await res.json());
-    } catch { setResult(null); }
-    setLoading(false);
+    } catch {
+      setCalcError("Could not reach the calculator service. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const r = result as Record<string, string | boolean | Record<string, string>> | null;
@@ -180,6 +207,13 @@ function HRACalculator() {
       <button onClick={calculate} disabled={loading} className="w-full bg-[#F57C00] text-white py-3 rounded-xl font-semibold hover:bg-[#E67600] transition-all disabled:opacity-50">
         {loading ? "Calculating..." : "Calculate HRA Exemption"}
       </button>
+
+      {calcError && (
+        <div className="p-4 rounded-xl bg-[#ffdad6] border border-red-200 flex items-start gap-3 mt-4 animate-in fade-in">
+          <span className="material-symbols-outlined text-[#991B1B] shrink-0 mt-0.5">error</span>
+          <span className="text-sm text-[#93000a]">{calcError}</span>
+        </div>
+      )}
 
       {r && (
         <div className="p-4 bg-[#eff4ff] rounded-lg space-y-3 animate-in fade-in">
@@ -210,15 +244,21 @@ function CGTaxCalculator() {
   const [amount, setAmount] = useState("200000");
   const [result, setResult] = useState<CalcResult>(null);
   const [loading, setLoading] = useState(false);
+  const [calcError, setCalcError] = useState("");
 
   async function calculate() {
     setLoading(true);
+    setCalcError("");
     const params = new URLSearchParams({ gain_type: gainType, gain_amount: amount });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/capital-gains?${params}`);
+      const res = await fetch(`${getApiBase()}/calculator/capital-gains?${params}`);
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       setResult(await res.json());
-    } catch { setResult(null); }
-    setLoading(false);
+    } catch {
+      setCalcError("Could not reach the calculator service. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const r = result as Record<string, string> | null;
@@ -242,6 +282,13 @@ function CGTaxCalculator() {
       <button onClick={calculate} disabled={loading} className="w-full bg-[#F57C00] text-white py-3 rounded-xl font-semibold hover:bg-[#E67600] transition-all disabled:opacity-50">
         {loading ? "Calculating..." : "Calculate Tax"}
       </button>
+
+      {calcError && (
+        <div className="p-4 rounded-xl bg-[#ffdad6] border border-red-200 flex items-start gap-3 mt-4 animate-in fade-in">
+          <span className="material-symbols-outlined text-[#991B1B] shrink-0 mt-0.5">error</span>
+          <span className="text-sm text-[#93000a]">{calcError}</span>
+        </div>
+      )}
 
       {r && (
         <div className="p-4 bg-[#eff4ff] rounded-lg space-y-3 animate-in fade-in">
@@ -271,15 +318,21 @@ function QuickEstimateCalculator() {
   const [regime, setRegime] = useState("new");
   const [result, setResult] = useState<CalcResult>(null);
   const [loading, setLoading] = useState(false);
+  const [calcError, setCalcError] = useState("");
 
   async function calculate() {
     setLoading(true);
+    setCalcError("");
     const params = new URLSearchParams({ annual_income: income, regime });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/calculator/quick-estimate?${params}`);
+      const res = await fetch(`${getApiBase()}/calculator/quick-estimate?${params}`);
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       setResult(await res.json());
-    } catch { setResult(null); }
-    setLoading(false);
+    } catch {
+      setCalcError("Could not reach the calculator service. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const r = result as Record<string, string> | null;
@@ -305,6 +358,12 @@ function QuickEstimateCalculator() {
         {loading ? "Calculating..." : "Estimate Tax"}
       </button>
 
+      {calcError && (
+        <div className="p-4 rounded-xl bg-[#ffdad6] border border-red-200 flex items-start gap-3 mt-4 animate-in fade-in">
+          <span className="material-symbols-outlined text-[#991B1B] shrink-0 mt-0.5">error</span>
+          <span className="text-sm text-[#93000a]">{calcError}</span>
+        </div>
+      )}
       {r && (
         <div className="p-4 bg-[#eff4ff] rounded-lg space-y-3 animate-in fade-in">
           <div className="grid grid-cols-2 gap-2 text-sm">

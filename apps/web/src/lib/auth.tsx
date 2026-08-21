@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { loginUser, registerUser, fetchMe, type AuthUser } from "@/lib/api";
+import { loginUser, registerUser, fetchMe, setOnUnauthorized, type AuthUser } from "@/lib/api";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -42,6 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // On mount: try to restore session from stored token
   useEffect(() => {
+    // Register global 401 handler so any API call that gets Unauthorized
+    // clears the stale token and bounces the user back to the auth screen.
+    setOnUnauthorized(() => {
+      clearToken();
+      setUser(null);
+    });
+
     const token = getToken();
     if (token) {
       fetchMe()
@@ -51,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setLoading(false);
     }
+
+    return () => setOnUnauthorized(null);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {

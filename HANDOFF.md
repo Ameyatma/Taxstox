@@ -1,8 +1,8 @@
 # TaxStox Engineering Handoff
 
-> **Release:** v0.10.0-alpha (Internal Alpha)
+> **Release:** v0.12.0-beta (Internal Beta)
 > **Purpose:** Single canonical handoff for every engineering session. Repository-centric. Person-independent.
-> **Last Updated:** 2026-08-01
+> **Last Updated:** 2026-08-21
 > **Authority:** This document describes current state. The repository is the authoritative source. If this document contradicts the repository, the repository wins.
 
 ---
@@ -11,20 +11,20 @@
 
 | Attribute | Value |
 |-----------|-------|
-| Release Version | **v0.11.0-alpha** |
-| Release Stage | **Internal Alpha** |
-| Current Wave | **PR5 complete. PR6 next.** |
-| Current PRRP Wave | PR5 — Operational Readiness ✅ |
-| Remaining PRRP Waves | PR6 |
+| Release Version | **v0.12.0-beta** |
+| Release Stage | **Internal Beta** |
+| Current Wave | **PR6 complete — Frontend Remediation & Beta Acceptance.** |
+| Current PRRP Wave | PR6 — Frontend Remediation & Beta Acceptance ✅ |
+| Remaining PRRP Waves | None — PRRP program (PR1-PR6) complete |
 | Completed Programs | Enterprise Modernization (M0-M11), Product Engineering (P1-P7) |
 | Test Count | 520 passing, 0 failures, 29 skipped |
 | Golden Vectors | 9 vectors, all passing, unchanged |
 | Branch | `main` |
 | Architecture Certification | EAC v1.0 — Certified with Observations |
-| Production Readiness | Ready for Internal Alpha (PRR, 2026-07-07) + PR5 Operational |
-| Known Blockers | None for Internal Alpha |
+| Production Readiness | Ready for Internal Alpha (PRR, 2026-07-07) + PR5 Operational + PR6 Frontend Beta |
+| Known Blockers | None for Internal Beta |
 | Deferred Items | PRRP-DEFER-001 (JWT httpOnly — post-PR6) |
-| Next Action | **Proceed to PR6 — CI/Quality Gates & Polish** |
+| Next Action | **Beta release candidate. Validate end-to-end beta flow; schedule JWT httpOnly migration (PRRP-DEFER-001).** |
 
 **Repository evidence overrides this document if newer.**
 

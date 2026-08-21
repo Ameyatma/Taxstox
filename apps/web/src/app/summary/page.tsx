@@ -16,10 +16,20 @@ function SummaryContent() {
   const [error, setError] = useState("");
   const [downloaded, setDownloaded] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     const cached = getState().taxSummary;
-    if (cached) setSummary(cached as unknown as TaxSummaryData);
+    if (cached) {
+      setSummary(cached as unknown as TaxSummaryData);
+    } else if (!sessionId) {
+      // No session at all — nothing to show.
+      setMissing(true);
+    } else {
+      // Session exists but the in-memory summary was lost (e.g. page reload).
+      // Redirect back to the questionnaire so the computation can be re-run.
+      router.replace(`/questions?session=${sessionId}`);
+    }
   }, []);
 
   async function handleExport() {
@@ -47,6 +57,20 @@ function SummaryContent() {
 
   // ── Loading ──
   if (!summary) {
+    if (missing) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+          <div className="text-center space-y-4 max-w-md px-6">
+            <div className="w-16 h-16 rounded-full bg-[#ffdad6] mx-auto flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#991B1B] text-3xl">error</span>
+            </div>
+            <h2 className="text-xl font-semibold text-[#0b1c30]" style={{ fontFamily: "var(--font-hanken-grotesk)" }}>Session not found</h2>
+            <p className="text-sm text-[#434652]">We couldn&apos;t find your tax computation. Please start a new filing.</p>
+            <button onClick={() => router.push("/")} className="px-6 py-3 bg-[#003366] text-white rounded-lg font-semibold">Start Over</button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="text-center space-y-4">

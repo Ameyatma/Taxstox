@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { fetchMe, type AuthUser } from "@/lib/api";
+import { fetchMe, getApiBase, type AuthUser } from "@/lib/api";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function SettingsPage() {
     setSaving(true); setMessage(""); setError("");
     try {
       const token = localStorage.getItem("taxstox_token");
-      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const base = getApiBase();
       const res = await fetch(`${base}/auth/profile`, {
         method: "PUT",
         headers: {
@@ -80,7 +80,7 @@ export default function SettingsPage() {
     setSaving(true); setMessage(""); setError("");
     try {
       const token = localStorage.getItem("taxstox_token");
-      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const base = getApiBase();
       const res = await fetch(`${base}/auth/change-password`, {
         method: "POST",
         headers: {
