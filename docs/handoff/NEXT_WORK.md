@@ -1,7 +1,7 @@
 # Next Work
 
-> **Release:** v0.10.0-alpha
-> **Current wave:** PR1 complete. **Next wave:** PR2 — Data Protection & Audit.
+> **Release:** v0.12.0-beta
+> **Current wave:** PR6 complete — Frontend Remediation & Beta Acceptance
 > **Program:** Production Readiness Remediation Program
 
 ---
@@ -13,43 +13,50 @@
 ✅ P1-P7   Product Engineering Program
 ✅ PRR     Product Readiness Review
 ✅ PR1     Security Hardening
+✅ PR2     Data Protection & Audit
+✅ PR3     Financial Year Propagation
+✅ PR4     Test Infrastructure & API Coverage
+✅ PR5     Operational Readiness
+✅ PR6     Frontend Remediation & Beta Acceptance
 ────────────────────────────────────
->>> PR2   Data Protection & Audit   ← NEXT WAVE
-⬜ PR3    Architecture Remediation
-⬜ PR4    Test Infrastructure
-⬜ PR5    Operational Readiness
-⬜ PR6    Frontend Remediation & Beta Acceptance
+>>> PRRP-DEFER-001   JWT httpOnly cookie migration   ← NEXT WORK
 ```
 
 ---
 
-## PR2: Data Protection & Audit
+## PRRP-DEFER-001: JWT httpOnly cookie migration
 
 ### Objective
 
-Encrypt PAN at rest. Wire the audit trail into the live computation pipeline. Enforce encryption key at startup.
+Migrate JWT storage from localStorage to httpOnly cookies to mitigate XSS risks, implement refresh token rotation, and adopt server-side Google OAuth flow.
 
 ### Entry Criteria
 
-- [x] PR1 complete
-- [x] 407 tests passing
-- [x] Golden vectors unchanged
+- [x] PR6 complete
+- [x] 520 tests passing, 0 failures, 29 skipped
+- [x] Golden vectors unchanged (9 vectors, all passing)
 
 ### Exit Criteria
 
-- [ ] PAN stored encrypted in database — verified by direct DB query
-- [ ] Encryption key validated at startup — app refuses to start without TAXSTOX_ENCRYPTION_KEY
-- [ ] AuditTrail populated for every computation — POST /process response includes audit event count
-- [ ] ExplanationEngine.explain() produces narrative from live audit trail
-- [ ] All 407+ tests pass
+- [ ] JWT no longer stored in `localStorage` or accessible to JavaScript
+- [ ] Refresh tokens rotated on use
+- [ ] `/auth/refresh` endpoint functional
+- [ ] Google OAuth uses server-side redirect flow
+- [ ] All 520+ tests pass
 - [ ] Golden vectors unchanged
 
 ### Success Metrics
 
-- PAN ciphertext confirmed in users table
-- Audit event count > 0 for every computation
-- Explanation text produced for every filing
+- JWT cookie found in response headers with `HttpOnly` and `SameSite=Strict` flags
+- Refresh token rotation verified via successful refresh after access token expiration
+- Google OAuth flow redirects to backend endpoint instead of popup
+- No `localStorage.setItem("taxstox_token", ...)` calls remaining in frontend
 
 ---
 
-*Last updated: 2026-08-01*
+*Last updated: 2026-10-05*
+
+## Session Log — 2026-10-05
+- Validated beta release candidate (520 tests passed, 0 failures, 29 skipped, 9 golden vectors passed)
+- Updated NEXT_WORK.md to reflect PR6 completion and schedule PRRP-DEFER-001
+- Updated HANDOFF.md to reflect validation completion and schedule

@@ -1,7 +1,7 @@
 # Completed Features Memory
 
-> **Last Updated:** 2026-08-01
-> **Release:** v0.10.0-alpha
+> **Last Updated:** 2026-10-05
+> **Release:** v0.12.0-beta
 
 ---
 
@@ -42,14 +42,16 @@ All 7 product waves complete. Cumulative: 390 tests, 9 golden vectors.
 
 ## Production Readiness Remediation Program (PRRP)
 
+All 6 waves complete.
+
 | Wave | Name | Status |
 |------|------|--------|
 | PR1 | Security Hardening | COMPLETE |
-| PR2 | Data Protection & Audit | PENDING |
-| PR3 | Architecture Remediation | PENDING |
-| PR4 | Test Infrastructure | PENDING |
-| PR5 | Operational Readiness | PENDING |
-| PR6 | Frontend Remediation & Beta Acceptance | PENDING |
+| PR2 | Data Protection & Audit | COMPLETE |
+| PR3 | Financial Year Propagation | COMPLETE |
+| PR4 | Test Infrastructure & API Coverage | COMPLETE |
+| PR5 | Operational Readiness | COMPLETE |
+| PR6 | Frontend Remediation & Beta Acceptance | COMPLETE |
 
 ---
 
@@ -58,3 +60,6 @@ All 7 product waves complete. Cumulative: 390 tests, 9 golden vectors.
 | Version | Date | Stage | Tests |
 |---------|------|-------|-------|
 | v0.10.0-alpha | 2026-08-01 | Internal Alpha | 407 |
+| v0.12.0-beta | 2026-10-05 | Internal Beta | 520 |
+
+---

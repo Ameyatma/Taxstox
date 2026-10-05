@@ -47,6 +47,13 @@ secure beta by hardening the frontend.
 - Backend test suite: 520 passed, 29 skipped
 - Golden vectors: 9/9 pass (ITD-portal-verified values unchanged)
 
+### Beta Release Candidate Validation (PR6 Validation)
+- Backend test suite: 520 passed, 0 failures, 29 skipped
+- Golden vector tests: 9 passed
+- Frontend build: skipped (Node.js not available in validation environment)
+- Documentation updated: NEXT_WORK.md, HANDOFF.md, CompletedFeatures.md, Decisions.md
+- AI-DOS memory updated: session logs and session summary created
+
 > Note: JWT storage remains in `localStorage` for PR6 (httpOnly-cookie migration
 > is tracked separately under PRRP-DEFER-001 and is out of scope for the beta).
 
@@ -145,9 +152,3 @@ See `docs/architecture/PRRP-DeferredItems.md`
 Closed Beta (PR6 complete, estimated ~6 weeks)
 
 ---
-
-## Pre-v0.10.0
-
-- Enterprise Modernization M0-M7: Core domain foundation, document intelligence, income/deduction engines, tax computation, compliance, audit/explainability, AI knowledge platform
-- Initial MVP: JWT auth, SQLite DB, dashboard, calculators, broker import, 21 API endpoints
-- Production deployment: Render + Vercel + Neon PostgreSQL

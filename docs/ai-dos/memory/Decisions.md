@@ -1,6 +1,6 @@
 # Decisions Memory
 
-> **Last Updated:** 2026-08-01
+> **Last Updated:** 2026-10-05
 
 ---
 
@@ -21,3 +21,4 @@
 | DEC-0019 | 2026-08-01 | Rate limiting: storage-agnostic Protocol pattern | ACTIVE |
 | DEC-0020 | 2026-08-01 | JWT localStorage → httpOnly cookie migration deferred (PRRP-DEFER-001) | ACTIVE |
 | DEC-0021 | 2026-08-01 | v0.10.0-alpha released — Internal Alpha | ACTIVE |
+| DEC-0022 | 2026-10-05 | Beta release candidate validated (520 tests passed, 0 failures, 29 skipped, 9 golden vectors passed); JWT httpOnly migration (PRRP-DEFER-001) scheduled for post-PR6 | ACTIVE |
