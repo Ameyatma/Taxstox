@@ -1,35 +1,33 @@
 """FastAPI routes for TaxStox ITR Auto-Filing."""
 
-import tempfile
 import logging
+import tempfile
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from decimal import Decimal
-from typing import Optional
+from typing import Annotated
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from src.models.api import (
-    UploadRequest,
-    UploadResponse,
-    QuestionsResponse,
-    AnswersSubmitRequest,
-    TaxSummaryResponse,
-    ExportResponse,
-)
-from src.models.tax import UserAnswers
-from src.models.financial_year import FinancialYear
-from src.parsers.form16_parser import Form16Parser
-from src.parsers.ais_parser import AISParser
-from src.engine.classifier import ClassificationEngine
-from src.engine.regime_optimizer_v2 import RegimeOptimizerV2
-from src.engine.questions import QuestionEngine
 from src.builders.itr_json_builder import ITRJSONBuilder
 from src.builders.validator import ITRValidator
-from src.engine.itr_selector import ITRSelector
-from src.utils.password_resolver import PasswordResolver
-from src.utils.session import session_manager, Session
+from src.engine.classifier import ClassificationEngine
 from src.engine.gateway.rate_limit_dependency import require_rate_limit
+from src.engine.itr_selector import ITRSelector
+from src.engine.questions import QuestionEngine
+from src.engine.regime_optimizer_v2 import RegimeOptimizerV2
+from src.models.api import (
+    AnswersSubmitRequest,
+    ExportResponse,
+    QuestionsResponse,
+    TaxSummaryResponse,
+    UploadResponse,
+)
+from src.models.financial_year import FinancialYear
+from src.models.tax import UserAnswers
+from src.parsers.ais_parser import AISParser
+from src.parsers.form16_parser import Form16Parser
+from src.utils.password_resolver import PasswordResolver
+from src.utils.session import Session, session_manager
 
 logger = logging.getLogger(__name__)
 
@@ -79,11 +77,11 @@ def _resolve_financial_year(session: Session) -> FinancialYear:
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_pdfs(
-    pan: str = Form(...),
-    dob: str = Form(...),
-    form16_pdf: Optional[UploadFile] = File(None),
-    ais_pdf: Optional[UploadFile] = File(None),
-    form16_password: Optional[str] = Form(None),
+    pan: Annotated[str, Form(...)],
+    dob: Annotated[str, Form(...)],
+    form16_pdf: Annotated[UploadFile | None, File()] = None,
+    ais_pdf: Annotated[UploadFile | None, File()] = None,
+    form16_password: Annotated[str | None, Form()] = None,
     _: None = Depends(require_rate_limit("/upload", 10, 60)),
 ):
     """
@@ -118,7 +116,6 @@ async def upload_pdfs(
                 passwords_to_try.append(form16_password.strip())
             passwords_to_try.extend(PasswordResolver.get_form16_candidates(pan))
 
-            last_error = None
             for pwd in passwords_to_try:
                 try:
                     session.form16 = parser.parse(tmp_path, password=pwd)
@@ -126,7 +123,6 @@ async def upload_pdfs(
                     form16_parsed = True
                     break
                 except (ValueError, RuntimeError) as e:
-                    last_error = str(e)
                     logger.warning(f"Parse failed with pwd=***: {e}")
                     continue
 
@@ -147,9 +143,9 @@ async def upload_pdfs(
         try:
             ais_password = PasswordResolver.get_ais_password(pan, dob)
             ais_parser = AISParser()
-            session.ais = ais_parser.parse(tmp_path, pan, dob)
+            session.ais = ais_parser.parse(tmp_path, pan, dob, ais_password)
             ais_parsed = True
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"AIS parsing failed: {e}")
             # AIS might be corrupted or password might be wrong
             # Don't block — user can still proceed with Form 16 only
@@ -190,7 +186,7 @@ async def upload_pdfs(
 @router.post("/process/{session_id}", response_model=QuestionsResponse)
 async def process_and_get_questions(
     session_id: str,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """
     Run classification + regime optimization, then return smart questions.
@@ -226,8 +222,8 @@ async def process_and_get_questions(
     house_count = 1 if session.form16 else 0  # Default to 1; user answers may override
 
     # Compute approximate total income for ITR selection
-    cg_income = session.classified_cg.total_cg if session.classified_cg else Decimal("0")
-    salary_income = session.form16.part_b.total_gross_salary if session.form16 else Decimal("0")
+    cg_income = session.classified_cg.total_cg if session.classified_cg else Decimal(0)
+    salary_income = session.form16.part_b.total_gross_salary if session.form16 else Decimal(0)
     approx_total = salary_income + cg_income
 
     itr_selection = selector.select(
@@ -244,13 +240,13 @@ async def process_and_get_questions(
 
     # Optimize regime using v2 ITD-portal-matching computation
     optimizer = RegimeOptimizerV2()
-    savings_interest = session.ais.total_savings_interest if session.ais else Decimal("0")
+    savings_interest = session.ais.total_savings_interest if session.ais else Decimal(0)
     # AIS TDS interest typically includes FD interest + savings interest
-    other_interest = (session.ais.total_tds_interest if session.ais else Decimal("0")) - savings_interest
-    other_interest = max(Decimal("0"), other_interest)  # Prevent negative
+    other_interest = (session.ais.total_tds_interest if session.ais else Decimal(0)) - savings_interest
+    other_interest = max(Decimal(0), other_interest)  # Prevent negative
 
     # PR2: Create audit context for computation traceability
-    from src.engine.audit import AuditContext, AuditTrail
+    from src.engine.audit import AuditContext
     audit_ctx = AuditContext(fy.label)
 
     session.regime_result = optimizer.optimize(
@@ -290,7 +286,7 @@ async def process_and_get_questions(
 async def submit_answers(
     session_id: str,
     request: AnswersSubmitRequest,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """
     Submit user's yes/no answers, recompute tax, return the 1-page summary.
@@ -316,9 +312,9 @@ async def submit_answers(
 
     # Recompute regime with answers using v2 ITD-portal-matching computation
     optimizer = RegimeOptimizerV2()
-    savings_interest = session.ais.total_savings_interest if session.ais else Decimal("0")
-    other_interest = (session.ais.total_tds_interest if session.ais else Decimal("0")) - savings_interest
-    other_interest = max(Decimal("0"), other_interest)  # Prevent negative
+    savings_interest = session.ais.total_savings_interest if session.ais else Decimal(0)
+    other_interest = (session.ais.total_tds_interest if session.ais else Decimal(0)) - savings_interest
+    other_interest = max(Decimal(0), other_interest)  # Prevent negative
 
     # PR3: Resolve the authoritative financial year for this filing
     fy = _resolve_financial_year(session)
@@ -326,7 +322,7 @@ async def submit_answers(
     # Detect if user pays rent from answers
     rent_monthly = (
         session.user_answers.rent_per_month
-        if session.user_answers.pays_rent else Decimal("0")
+        if session.user_answers.pays_rent else Decimal(0)
     )
 
     session.regime_result = optimizer.optimize(
@@ -410,12 +406,12 @@ async def submit_answers(
         taxable_income=Decimal(breakdown.get("total_income", "0")),
         tax_breakdown=tax_breakdown_flat,
         payments={
-            "TDS by Employer (Form 16)": session.form16.part_a.total_tds_deducted if session.form16 else Decimal("0"),
-            "TDS from AIS (Other)": session.ais.total_non_salary_tds if session.ais else Decimal("0"),
+            "TDS by Employer (Form 16)": session.form16.part_a.total_tds_deducted if session.form16 else Decimal(0),
+            "TDS from AIS (Other)": session.ais.total_non_salary_tds if session.ais else Decimal(0),
         },
         balance_payable=Decimal(breakdown.get("net_tax", "0"))
-        - (session.form16.part_a.total_tds_deducted if session.form16 else Decimal("0"))
-        - (session.ais.total_non_salary_tds if session.ais else Decimal("0")),
+        - (session.form16.part_a.total_tds_deducted if session.form16 else Decimal(0))
+        - (session.ais.total_non_salary_tds if session.ais else Decimal(0)),
         regime=session.regime_result.recommended,
         regime_savings=session.regime_result.savings,
         filing_deadline=date(2026, 7, 31),
@@ -430,7 +426,7 @@ async def submit_answers(
 @router.post("/export/{session_id}", response_model=ExportResponse)
 async def export_itr_json(
     session_id: str,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
     _: None = Depends(require_rate_limit("/export", 10, 60)),
 ):
     """
@@ -485,16 +481,16 @@ async def export_itr_json(
 @router.post("/upload/broker-statement/{session_id}")
 async def upload_broker_statement(
     session_id: str,
-    file: UploadFile = File(...),
-    broker: str = Form("zerodha"),
-    session: Session = Depends(get_session),
+    file: Annotated[UploadFile, File()],
+    session: Annotated[Session, Depends(get_session)],
+    broker: Annotated[str, Form()] = "zerodha",
 ):
     """
     Upload a broker trade statement (Zerodha CSV, CAMS PDF, etc.)
     and auto-classify capital gains into the session.
     """
-    from src.parsers.broker_statements.zerodha import parse_zerodha_tradebook, parse_zerodha_tax_pnl
     from src.parsers.broker_statements.generic import parse_broker_statement
+    from src.parsers.broker_statements.zerodha import parse_zerodha_tax_pnl, parse_zerodha_tradebook
 
     content = await file.read()
 
@@ -503,7 +499,7 @@ async def upload_broker_statement(
         if broker_lower == "zerodha":
             try:
                 entries = parse_zerodha_tax_pnl(content, file.filename or "")
-            except Exception:
+            except (ValueError, RuntimeError):
                 entries = parse_zerodha_tradebook(content, file.filename or "")
         elif broker_lower in ("groww", "upstox", "angel_one", "angel", "upstox"):
             entries = parse_broker_statement(content, file.filename or "", broker_lower)
@@ -537,7 +533,7 @@ async def upload_broker_statement(
                     sale_price_per_unit=e.sale_price,
                     sale_consideration=e.consideration,
                     cost_of_acquisition=e.cost,
-                    stt_paid=Decimal("1") if e.stt_paid else Decimal("0"),
+                    stt_paid=Decimal(1) if e.stt_paid else Decimal(0),
                     term=e.term or "Short",
                 ))
             else:
@@ -575,7 +571,7 @@ async def upload_broker_statement(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.exception("Broker statement parsing failed")
-        raise HTTPException(status_code=500, detail=f"Failed to parse statement: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse statement: {e!s}")
 
 
 # ── Document Upload ──────────────────────────────────────────────────
@@ -583,9 +579,9 @@ async def upload_broker_statement(
 @router.post("/upload/document/{session_id}")
 async def upload_document(
     session_id: str,
-    file: UploadFile = File(...),
-    doc_type: str = Form(...),
-    session: Session = Depends(get_session),
+    file: Annotated[UploadFile, File()],
+    doc_type: Annotated[str, Form()],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """
     Upload an investment proof document for deduction tracking.
@@ -642,13 +638,14 @@ async def health_detailed():
     Uses the existing ProductionHealthEngine checks (database, rule repository,
     encryption). Non-critical failures degrade rather than block readiness.
     """
+    import time
+
     from src.engine.production_health import (
         ProductionHealthEngine,
         check_database,
-        check_rule_repository,
         check_encryption,
+        check_rule_repository,
     )
-    import time
 
     engine = ProductionHealthEngine(start_time=time.time())
     engine.add_check(check_database)
@@ -675,6 +672,7 @@ def _extract_80c_breakup(answers: dict) -> dict[str, Decimal]:
         if val:
             try:
                 breakup[label] = Decimal(str(val))
-            except Exception:
+            except (ValueError, InvalidOperation):
+                # Invalid decimal value, skip this 80C component
                 pass
     return breakup

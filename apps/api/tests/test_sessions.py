@@ -13,7 +13,7 @@ drives the RedisSessionBackend deterministically. Verifies:
 import pickle
 import time
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -92,7 +92,7 @@ def test_in_memory_expiry():
     mgr = SessionManager(backend=backend)
     s = mgr.create("PANX0001X", "01011990")
     # Simulate idle beyond TTL
-    s.last_accessed = datetime.now() - timedelta(minutes=31)
+    s.last_accessed = datetime.now(UTC) - timedelta(minutes=31)
     backend.put(s, timedelta(minutes=30))
     assert mgr.get(s.session_id) is None
 

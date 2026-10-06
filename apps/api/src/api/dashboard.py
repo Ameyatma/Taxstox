@@ -1,25 +1,27 @@
 """Dashboard API — filing history, stats, user overview."""
 
-from datetime import date
-from decimal import Decimal
+from datetime import UTC, date, datetime
+from decimal import Decimal, InvalidOperation
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from src.auth.jwt import get_current_user, get_optional_user
-from src.db.database import get_user_filings, create_filing
+
+from src.auth.jwt import get_current_user
+from src.db.database import create_filing, get_user_filings
 
 router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
 
 
 @router.get("/dashboard")
-async def get_dashboard(current_user: dict = Depends(get_current_user)):
+async def get_dashboard(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get aggregated dashboard data for the authenticated user."""
     user_id = current_user["sub"]
     filings = get_user_filings(user_id)
 
     # Compute stats
     total_filings = len(filings)
-    total_refunds = Decimal("0")
-    total_tax_saved = Decimal("0")
+    total_refunds = Decimal(0)
+    total_tax_saved = Decimal(0)
     filed_count = 0
     draft_count = 0
 
@@ -32,11 +34,12 @@ async def get_dashboard(current_user: dict = Depends(get_current_user)):
         if f.get("tax_paid"):
             try:
                 total_refunds += Decimal(f["tax_paid"])
-            except Exception:
+            except (ValueError, InvalidOperation):
+                # Invalid tax_paid value, skip this filing's tax_paid
                 pass
 
     # Days until filing deadline (July 31)
-    today = date.today()
+    today = datetime.now(UTC).date()
     deadline = date(today.year, 7, 31)
     if today > deadline:
         deadline = date(today.year + 1, 7, 31)
@@ -75,16 +78,16 @@ async def get_dashboard(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/filings")
-async def list_filings(current_user: dict = Depends(get_current_user)):
+async def list_filings(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get all filings for the authenticated user."""
     return get_user_filings(current_user["sub"])
 
 
 @router.post("/filings")
 async def new_filing(
+    current_user: Annotated[dict, Depends(get_current_user)],
     assessment_year: str = "2026-27",
     itr_type: str = "ITR-2",
-    current_user: dict = Depends(get_current_user),
 ):
     """Create a new filing record."""
     filing_id = create_filing(current_user["sub"], assessment_year, itr_type)
