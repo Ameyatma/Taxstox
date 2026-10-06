@@ -86,6 +86,6 @@ async def new_filing(
     assessment_year: str = "2026-27",
     itr_type: str = "ITR-2",
 ):
-    """ Amiga create a new filing record."""
+    """Create a new filing record."""
     filing_id = create_filing(current_user["sub"], assessment_year, itr_type)
     return {"filing_id": filing_id, "assessment_year": assessment_year, "itr_type": itr_type}
