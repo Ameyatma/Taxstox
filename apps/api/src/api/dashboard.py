@@ -10,8 +10,6 @@ from src.auth.jwt import get_current_user
 from src.db.database import create_filing, get_user_filings
 
 router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
-
-
 @router.get("/dashboard")
 async def get_dashboard(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get aggregated dashboard data for the authenticated user."""
@@ -75,14 +73,10 @@ async def get_dashboard(current_user: Annotated[dict, Depends(get_current_user)]
         "tax_calendar": tax_calendar,
         "user_name": current_user.get("email", ""),
     }
-
-
 @router.get("/filings")
 async def list_filings(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get all filings for the authenticated user."""
     return get_user_filings(current_user["sub"])
-
-
 @router.post("/filings")
 async def new_filing(
     current_user: Annotated[dict, Depends(get_current_user)],
