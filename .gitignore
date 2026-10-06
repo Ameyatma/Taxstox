@@ -43,3 +43,5 @@ apps/api/tests/fixtures/
 # Temp
 *.tmp
 *.log
+logs/
+PLAN_PRRP_DEFER_001.md
