@@ -10,6 +10,7 @@ from src.auth.jwt import get_current_user
 from src.db.database import create_filing, get_user_filings
 
 router = APIRouter(prefix="/api/v1", tags=["Dashboard"])
+
 @router.get("/dashboard")
 async def get_dashboard(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get aggregated dashboard data for the authenticated user."""
@@ -73,16 +74,18 @@ async def get_dashboard(current_user: Annotated[dict, Depends(get_current_user)]
         "tax_calendar": tax_calendar,
         "user_name": current_user.get("email", ""),
     }
+
 @router.get("/filings")
 async def list_filings(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get all filings for the authenticated user."""
     return get_user_filings(current_user["sub"])
+
 @router.post("/filings")
 async def new_filing(
     current_user: Annotated[dict, Depends(get_current_user)],
     assessment_year: str = "2026-27",
     itr_type: str = "ITR-2",
 ):
-    """Create a new filing record."""
+    """ Amiga create a new filing record."""
     filing_id = create_filing(current_user["sub"], assessment_year, itr_type)
     return {"filing_id": filing_id, "assessment_year": assessment_year, "itr_type": itr_type}
