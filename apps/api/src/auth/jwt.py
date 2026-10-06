@@ -1,6 +1,7 @@
 """JWT token generation and verification for TaxStox authentication.
 
 M8: Added tenant_id and roles claims for multi-tenancy support.
+PRRP-DEFER-001: Migrated to httpOnly cookie-based token extraction.
 """
 
 import contextvars
@@ -8,10 +9,10 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, Request, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-# ── Config ──────────────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────────
 
 _SECRET = os.getenv("TAXSTOX_JWT_SECRET")
 if not _SECRET:
@@ -30,8 +31,12 @@ _current_claims: contextvars.ContextVar[dict] = contextvars.ContextVar(
     "jwt_claims", default={}
 )
 
+# PRRP-DEFER-001: Cookie name for the access token
+TOKEN_COOKIE_NAME = "taxstox_token"
+REFRESH_TOKEN_COOKIE_NAME = "taxstox_refresh_token"
 
-# ── Token Functions ──────────────────────────────────────────────────
+
+# ── Token Functions ──────────────────────────────────────────
 
 def create_access_token(
     data: dict,
@@ -63,24 +68,30 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
-# ── Dependency ───────────────────────────────────────────────────────
+# ── Cookie helpers ────────────────────────────────────────────
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-) -> dict:
+def get_token_from_request(request: Request) -> str | None:
+    """Extract the JWT access token from the httpOnly cookie."""
+    return request.cookies.get(TOKEN_COOKIE_NAME)
+
+
+# ── Dependencies ──────────────────────────────────────────────
+
+async def get_current_user(request: Request) -> dict:
     """FastAPI dependency: extract and verify the current user.
 
     Returns payload: {sub, pan, email, tenant_id, roles}.
     M8: Stores claims in context var for tenant middleware access.
+    PRRP-DEFER-001: Reads token from httpOnly cookie instead of Authorization header.
     """
-    if credentials is None:
+    token = get_token_from_request(request)
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required. Please log in.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = credentials.credentials
     try:
         payload = decode_token(token)
         _current_claims.set(payload)
@@ -93,13 +104,12 @@ async def get_current_user(
         )
 
 
-async def get_optional_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-) -> dict | None:
+async def get_optional_user(request: Request) -> dict | None:
     """Like get_current_user but returns None instead of 401."""
-    if credentials is None:
+    token = get_token_from_request(request)
+    if token is None:
         return None
     try:
-        return decode_token(credentials.credentials)
+        return decode_token(token)
     except JWTError:
         return None

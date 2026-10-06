@@ -53,9 +53,9 @@ secure beta by hardening the frontend.
 - Frontend build: skipped (Node.js not available in validation environment)
 - Documentation updated: NEXT_WORK.md, HANDOFF.md, CompletedFeatures.md, Decisions.md
 - AI-DOS memory updated: session logs and session summary created
+- Completed JWT httpOnly cookie migration (PRRP-DEFER-001): migrated JWT storage from localStorage to httpOnly cookies, implemented refresh token rotation, added /auth/refresh and /auth/logout endpoints, adopted server-side Google OAuth flow
 
-> Note: JWT storage remains in `localStorage` for PR6 (httpOnly-cookie migration
-> is tracked separately under PRRP-DEFER-001 and is out of scope for the beta).
+> Note: JWT httpOnly cookie migration (PRRP-DEFER-001) is now completed as of 2026-10-06.
 
 ---
 

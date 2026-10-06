@@ -1,6 +1,6 @@
 # Decisions Memory
 
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 
 ---
 
@@ -19,6 +19,6 @@
 | DEC-0017 | 2026-08-01 | PR1: Google OAuth uses google-auth library (not custom JWKS) | ACTIVE |
 | DEC-0018 | 2026-08-01 | Password reset: database-backed with hashed tokens, not in-memory | ACTIVE |
 | DEC-0019 | 2026-08-01 | Rate limiting: storage-agnostic Protocol pattern | ACTIVE |
-| DEC-0020 | 2026-08-01 | JWT localStorage → httpOnly cookie migration deferred (PRRP-DEFER-001) | ACTIVE |
+| DEC-0020 | 2026-08-01 | JWT localStorage → httpOnly cookie migration deferred (PRRP-DEFER-001) | COMPLETE |
 | DEC-0021 | 2026-08-01 | v0.10.0-alpha released — Internal Alpha | ACTIVE |
-| DEC-0022 | 2026-10-05 | Beta release candidate validated (520 tests passed, 0 failures, 29 skipped, 9 golden vectors passed); JWT httpOnly migration (PRRP-DEFER-001) scheduled for post-PR6 | ACTIVE |
+| DEC-0022 | 2026-10-06 | Beta release candidate validated (520 tests passed, 0 failures, 29 skipped, 9 golden vectors passed); JWT httpOnly migration (PRRP-DEFER-001) completed | ACTIVE |

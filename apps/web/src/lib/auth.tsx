@@ -12,24 +12,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, pan: string, name: string, dob?: string) => Promise<void>;
   signInWithToken: (token: string, user: AuthUser) => void;
-  signOut: () => void;
-}
-
-// ── Token helpers ───────────────────────────────────────────────────
-
-const TOKEN_KEY = "taxstox_token";
-
-function saveToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
+  signOut: () => Promise<void>;
 }
 
 // ── Context ────────────────────────────────────────────────────────
@@ -40,47 +23,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount: try to restore session from stored token
+  // On mount: try to restore session by fetching the user profile
   useEffect(() => {
     // Register global 401 handler so any API call that gets Unauthorized
-    // clears the stale token and bounces the user back to the auth screen.
-    setOnUnauthorized(() => {
-      clearToken();
+    // invokes the logout flow and bounces the user back to the auth screen.
+    setOnUnauthorized(async () => {
       setUser(null);
     });
 
-    const token = getToken();
-    if (token) {
-      fetchMe()
-        .then((u) => setUser(u))
-        .catch(() => clearToken())
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    fetchMe()
+      .then((u) => setUser(u))
+      .catch(() => {
+        // No valid session — do nothing (don't redirect, just stay unauthenticated)
+      })
+      .finally(() => setLoading(false));
 
     return () => setOnUnauthorized(null);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const result = await loginUser(email, password);
-    saveToken(result.access_token);
     setUser(result.user);
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, pan: string, name: string, dob?: string) => {
     const result = await registerUser(email, password, pan, name, dob);
-    saveToken(result.access_token);
     setUser(result.user);
   }, []);
 
-  const signInWithToken = useCallback((token: string, userData: AuthUser) => {
-    saveToken(token);
+  const signInWithToken = useCallback((_token: string, userData: AuthUser) => {
     setUser(userData);
   }, []);
 
-  const signOut = useCallback(() => {
-    clearToken();
+  const signOut = useCallback(async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Ignore logout errors
+    }
     setUser(null);
   }, []);
 

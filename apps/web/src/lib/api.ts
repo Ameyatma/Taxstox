@@ -20,25 +20,21 @@ export function setOnUnauthorized(fn: (() => void) | null) {
   onUnauthorized = fn;
 }
 
-// Shared token removal — keeps api.ts independent of auth.tsx internals.
-function clearToken() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("taxstox_token");
+// Shared 401 handler — clears cookies on the backend via logout endpoint.
+async function handleUnauthorized() {
+  try {
+    await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
+  } catch {
+    // Ignore logout errors
   }
+  if (onUnauthorized) onUnauthorized();
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────
 
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {};
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("taxstox_token");
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-}
+// No localStorage token handling — tokens are managed via httpOnly cookies.
 
-// ── Auth Types ───────────────────────────────────────────────────────
+// ── Auth Types ───────────────────────────────────────────────
 
 export interface AuthUser {
   id: string;
@@ -53,12 +49,28 @@ export interface TokenResponse {
   user: AuthUser;
 }
 
-// ── Auth API ─────────────────────────────────────────────────────────
+// ── Shared fetch wrapper with credentials ────────────────────
+
+async function fetchApi(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const res = await fetch(url, {
+    ...options,
+    credentials: "include",
+  });
+  if (res.status === 401) {
+    await handleUnauthorized();
+  }
+  return res;
+}
+
+// ── Auth API ─────────────────────────────────────────────────
 
 export async function registerUser(
   email: string, password: string, pan: string, name: string, dob?: string
 ): Promise<TokenResponse> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+  const res = await fetchApi(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, pan, name, dob: dob || "" }),
@@ -71,7 +83,7 @@ export async function registerUser(
 }
 
 export async function loginUser(email: string, password: string): Promise<TokenResponse> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetchApi(`${API_BASE}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -84,19 +96,15 @@ export async function loginUser(email: string, password: string): Promise<TokenR
 }
 
 export async function fetchMe(): Promise<AuthUser> {
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: { ...getAuthHeaders() },
-  });
+  const res = await fetchApi(`${API_BASE}/auth/me`);
   if (res.status === 401) {
-    clearToken();
-    if (onUnauthorized) onUnauthorized();
     throw new Error("Session expired");
   }
   if (!res.ok) throw new Error("Not authenticated");
   return res.json();
 }
 
-// ── ITR Types ────────────────────────────────────────────────────────
+// ── ITR Types ────────────────────────────────────────────────
 
 export interface UploadResponseData {
   session_id: string;
@@ -164,14 +172,12 @@ export async function uploadPDFs(
     formData.append("form16_password", form16Password);
   }
 
-  const res = await fetch(`${API_BASE}/upload`, {
+  const res = await fetchApi(`${API_BASE}/upload`, {
     method: "POST",
     body: formData,
   });
 
   if (res.status === 401) {
-    clearToken();
-    if (onUnauthorized) onUnauthorized();
     throw new Error("Session expired");
   }
 
@@ -184,13 +190,11 @@ export async function uploadPDFs(
 }
 
 export async function processPDFs(sessionId: string): Promise<QuestionsResponseData> {
-  const res = await fetch(`${API_BASE}/process/${sessionId}`, {
+  const res = await fetchApi(`${API_BASE}/process/${sessionId}`, {
     method: "POST",
   });
 
   if (res.status === 401) {
-    clearToken();
-    if (onUnauthorized) onUnauthorized();
     throw new Error("Session expired");
   }
 
@@ -206,15 +210,13 @@ export async function submitAnswers(
   sessionId: string,
   answers: Record<string, string>
 ): Promise<TaxSummaryData> {
-  const res = await fetch(`${API_BASE}/answers/${sessionId}`, {
+  const res = await fetchApi(`${API_BASE}/answers/${sessionId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, answers }),
   });
 
   if (res.status === 401) {
-    clearToken();
-    if (onUnauthorized) onUnauthorized();
     throw new Error("Session expired");
   }
 
@@ -227,13 +229,11 @@ export async function submitAnswers(
 }
 
 export async function exportITR(sessionId: string): Promise<ExportData> {
-  const res = await fetch(`${API_BASE}/export/${sessionId}`, {
+  const res = await fetchApi(`${API_BASE}/export/${sessionId}`, {
     method: "POST",
   });
 
   if (res.status === 401) {
-    clearToken();
-    if (onUnauthorized) onUnauthorized();
     throw new Error("Session expired");
   }
 
@@ -245,7 +245,7 @@ export async function exportITR(sessionId: string): Promise<ExportData> {
   return res.json();
 }
 
-// ── Dashboard API ────────────────────────────────────────────────────
+// ── Dashboard API ────────────────────────────────────────────
 
 export interface DashboardStats {
   total_filings: number;
@@ -291,22 +291,18 @@ export interface DashboardData {
 }
 
 export async function fetchDashboard(): Promise<DashboardData> {
-  const res = await fetch(`${API_BASE}/dashboard`, {
-    headers: { ...getAuthHeaders() },
-  });
+  const res = await fetchApi(`${API_BASE}/dashboard`);
   if (!res.ok) throw new Error("Failed to load dashboard");
   return res.json();
 }
 
 export async function fetchFilings(): Promise<FilingRecord[]> {
-  const res = await fetch(`${API_BASE}/filings`, {
-    headers: { ...getAuthHeaders() },
-  });
+  const res = await fetchApi(`${API_BASE}/filings`);
   if (!res.ok) throw new Error("Failed to load filings");
   return res.json();
 }
 
-// ── Tax Updates & Insights API ────────────────────────────────────────
+// ── Tax Updates & Insights API ────────────────────────────────
 
 export interface TaxUpdateItem {
   id: string;
@@ -358,7 +354,7 @@ export interface TaxInsightsData {
 }
 
 export async function fetchTaxInsights(): Promise<TaxInsightsData> {
-  const res = await fetch(`${API_BASE}/tax/insights`);
+  const res = await fetchApi(`${API_BASE}/tax/insights`);
   if (!res.ok) throw new Error("Failed to load tax insights");
   return res.json();
 }

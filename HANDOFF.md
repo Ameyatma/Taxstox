@@ -2,7 +2,7 @@
 
 > **Release:** v0.12.0-beta (Internal Beta)
 > **Purpose:** Single canonical handoff for every engineering session. Repository-centric. Person-independent.
-> **Last Updated:** 2026-08-21
+> **Last Updated:** 2026-10-06
 > **Authority:** This document describes current state. The repository is the authoritative source. If this document contradicts the repository, the repository wins.
 
 ---
@@ -23,8 +23,8 @@
 | Architecture Certification | EAC v1.0 — Certified with Observations |
 | Production Readiness | Ready for Internal Alpha (PRR, 2026-07-07) + PR5 Operational + PR6 Frontend Beta |
 | Known Blockers | None for Internal Beta |
-| Deferred Items | PRRP-DEFER-001 (JWT httpOnly — post-PR6) |
-| Next Action | **Beta release candidate validated. Awaiting approval for release; JWT httpOnly migration (PRRP-DEFER-001) scheduled for post-PR6.** |
+| Deferred Items | None |
+| Next Action | **Beta release candidate validated. Awaiting approval for release; JWT httpOnly migration (PRRP-DEFER-001) completed.** |
 
 **Repository evidence overrides this document if newer.**
 
@@ -321,6 +321,15 @@ STOP and escalate if:
 - Frozen document requires modification
 
 ---
+
+## Session Log — 2026-10-06
+- Completed PRRP-DEFER-001: JWT httpOnly cookie migration
+- Updated auth routes to use httpOnly cookies for access and refresh tokens
+- Added refresh token rotation and repository
+- Updated frontend to use credentials: 'include' and removed localStorage token handling
+- Added /auth/logout, /auth/refresh, and server-side Google OAuth flow
+- All auth API tests pass (8/8)
+- Updated HANDOFF.md to reflect completion
 
 ## Session Log — 2026-10-05
 - Validated beta release candidate (520 tests passed, 0 failures, 29 skipped, 9 golden vectors passed)

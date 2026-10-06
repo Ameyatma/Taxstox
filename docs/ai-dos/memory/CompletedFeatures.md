@@ -1,6 +1,6 @@
 # Completed Features Memory
 
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Release:** v0.12.0-beta
 
 ---
@@ -63,3 +63,5 @@ All 6 waves complete.
 | v0.12.0-beta | 2026-10-05 | Internal Beta | 520 |
 
 ---
+
+> Note: v0.12.0-beta includes completion of PRRP-DEFER-001 (JWT httpOnly cookie migration) as of 2026-10-06.
