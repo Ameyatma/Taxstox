@@ -48,6 +48,13 @@ class GoogleAuthRequest(BaseModel):
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
+def _get_frontend_redirect_uri() -> str:
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+    # Strip scheme (http:// or https://) and any trailing slash
+    host = frontend_url.replace("https://", "").replace("http://", "").rstrip("/")
+    return f"https://{host}/api/v1/auth/google/callback"
+
+
 def _set_token_cookies(response: Response, access_token: str, refresh_token: str | None = None) -> Response:
     """Set JWT tokens as httpOnly cookies."""
     response.set_cookie(
@@ -403,9 +410,7 @@ async def google_login(request: Request):
     if not client_id:
         raise HTTPException(status_code=500, detail="Google OAuth is not configured.")
 
-    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-    host = request.headers.get("host")
-    redirect_uri = f"{proto}://{host}/api/v1/auth/google/callback"
+    redirect_uri = _get_frontend_redirect_uri()
 
     state = os.urandom(16).hex()
     params = urllib.parse.urlencode({
@@ -445,9 +450,7 @@ async def google_callback(request: Request, response: Response):
     print(f"DEBUG OAUTH: Client Secret present? {bool(client_secret)}")
 
     # Exchange code for tokens
-    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-    host = request.headers.get("host")
-    redirect_uri = f"{proto}://{host}/api/v1/auth/google/callback"
+    redirect_uri = _get_frontend_redirect_uri()
     token_url = "https://oauth2.googleapis.com/token"
     token_data = {
         "code": code,

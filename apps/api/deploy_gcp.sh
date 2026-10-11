@@ -13,7 +13,7 @@ PROJECT_ID=$(gcloud config get-value project)
 REGION="asia-south1" # Mumbai region for lowest latency
 REPO_NAME="taxstox-repo"
 IMAGE_NAME="asia-south1-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/taxstox-api:latest"
-FRONTEND_URL="https://taxstox.co"
+FRONTEND_URL="https://taxstox.com"
 ENVIRONMENT="production"
 
 echo "🚀 Building Docker image and pushing to GCP Artifact Registry..."
