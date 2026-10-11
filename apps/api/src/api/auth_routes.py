@@ -403,7 +403,9 @@ async def google_login(request: Request):
     if not client_id:
         raise HTTPException(status_code=500, detail="Google OAuth is not configured.")
 
-    redirect_uri = f"{request.url.scheme}://{request.headers.get('host')}/api/v1/auth/google/callback"
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host")
+    redirect_uri = f"{proto}://{host}/api/v1/auth/google/callback"
 
     state = os.urandom(16).hex()
     params = urllib.parse.urlencode({
@@ -439,7 +441,9 @@ async def google_callback(request: Request, response: Response):
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 
     # Exchange code for tokens
-    redirect_uri = f"{request.url.scheme}://{request.headers.get('host')}/api/v1/auth/google/callback"
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host")
+    redirect_uri = f"{proto}://{host}/api/v1/auth/google/callback"
     token_url = "https://oauth2.googleapis.com/token"
     token_data = {
         "code": code,
