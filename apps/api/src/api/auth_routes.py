@@ -440,6 +440,10 @@ async def google_callback(request: Request, response: Response):
     client_id = get_client_id()
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 
+    # Safe credential presence logging (never print secret values)
+    print(f"DEBUG OAUTH: Client ID present? {bool(client_id)}")
+    print(f"DEBUG OAUTH: Client Secret present? {bool(client_secret)}")
+
     # Exchange code for tokens
     proto = request.headers.get("x-forwarded-proto", request.url.scheme)
     host = request.headers.get("host")
