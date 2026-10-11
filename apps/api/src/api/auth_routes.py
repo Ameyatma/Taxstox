@@ -495,13 +495,20 @@ async def google_callback(request: Request, response: Response):
         extra={"user_id": user["id"], "email_masked": f"{email[0]}***@{email.split('@')[1]}" if '@' in email else email[:3] + "***"},
     )
 
-    # Create tokens
+    
     access_token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
     repo = RefreshTokenRepository()
     refresh_token_raw, _ = repo.create_token(user["id"])
 
-    # Redirect to frontend with the auth cookies set on the redirect itself.
-    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-    resp = RedirectResponse(url=f"{frontend_url}/dashboard", status_code=302)
-    _set_token_cookies(resp, access_token, refresh_token_raw)
-    return resp
+    # Handoff to the frontend handoff page so the session cookie is set on the
+    # frontend origin (taxstox.com) instead of the Cloud Run origin. The
+    # frontend handoff page absorbs the tokens, sets its own cookies, and
+    # redirects to the requested dashboard.
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    handoff_url = f"{frontend_url}/auth/google-callback"
+    query = urllib.parse.urlencode({
+        "access_token": access_token,
+        "refresh_token": refresh_token_raw,
+        "redirect": "/dashboard",
+    })
+    return RedirectResponse(url=f"{handoff_url}?{query}", status_code=302)
