@@ -403,8 +403,6 @@ async def google_login(request: Request):
     if not client_id:
         raise HTTPException(status_code=500, detail="Google OAuth is not configured.")
 
-    redirect_uri = f"{request.base_url.replace('http://', 'https://', 1).rstrip('/')}/auth/google/callback"
-    # For development, keep the original scheme
     redirect_uri = f"{request.url.scheme}://{request.headers.get('host')}/api/v1/auth/google/callback"
 
     state = os.urandom(16).hex()
