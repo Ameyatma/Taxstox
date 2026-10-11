@@ -457,7 +457,8 @@ async def google_callback(request: Request, response: Response):
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(token_url, data=token_data)
     if token_resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Failed to exchange Google code for tokens.")
+        detail = f"Failed to exchange Google code for tokens: {token_resp.text}"
+        raise HTTPException(status_code=401, detail=detail)
 
     tokens = token_resp.json()
     id_token_str = tokens.get("id_token")
