@@ -58,6 +58,8 @@
 }
 
 :root {
+  --font-hanken-grotesk: "Hanken Grotesk Variable", sans-serif;
+  --font-jetbrains-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
   --background: #F8FAFC;
   --foreground: #0b1c30;
   --card: #ffffff;

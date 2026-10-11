@@ -1,26 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Inter, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import Header from "@/components/Header";
 import Providers from "@/components/Providers";
 import "./globals.css";
+import "@fontsource-variable/hanken-grotesk";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
-});
-
-const hankenGrotesk = Hanken_Grotesk({
-  variable: "--font-hanken-grotesk",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["500"],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased light`}
+      className={`${inter.variable} h-full antialiased light`}
     >
       <body className="min-h-full flex flex-col bg-[#F8FAFC]">
         <Providers>
@@ -49,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="max-w-3xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-3">
             <span
               className="font-bold text-[#003366] tracking-wide uppercase"
-              style={{ fontFamily: "var(--font-hanken-grotesk)" }}
+              style={{ fontFamily: "'Hanken Grotesk Variable', sans-serif" }}
             >
               TaxStox
             </span>
