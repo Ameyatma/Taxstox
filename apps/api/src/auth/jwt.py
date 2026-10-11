@@ -9,10 +9,10 @@ import os
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request, status
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
-# ── Config ──────────────────────────────────────────────────
+# ── Config ──────────────────────────────────────────────
 
 _SECRET = os.getenv("TAXSTOX_JWT_SECRET")
 if not _SECRET:
@@ -75,6 +75,19 @@ def get_token_from_request(request: Request) -> str | None:
     return request.cookies.get(TOKEN_COOKIE_NAME)
 
 
+def get_token_from_header(request: Request) -> str | None:
+    """Extract the JWT access token from the Authorization header."""
+    authorization = request.headers.get("Authorization")
+    if authorization:
+        try:
+            scheme, token = authorization.split()
+            if scheme.lower() == "bearer":
+                return token
+        except ValueError:
+            pass
+    return None
+
+
 # ── Dependencies ──────────────────────────────────────────────
 
 async def get_current_user(request: Request) -> dict:
@@ -82,9 +95,11 @@ async def get_current_user(request: Request) -> dict:
 
     Returns payload: {sub, pan, email, tenant_id, roles}.
     M8: Stores claims in context var for tenant middleware access.
-    PRRP-DEFER-001: Reads token from httpOnly cookie instead of Authorization header.
+    PRRP-DEFER-001: Reads token from httpOnly cookie OR Authorization header.
     """
     token = get_token_from_request(request)
+    if token is None:
+        token = get_token_from_header(request)
     if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,6 +122,8 @@ async def get_current_user(request: Request) -> dict:
 async def get_optional_user(request: Request) -> dict | None:
     """Like get_current_user but returns None instead of 401."""
     token = get_token_from_request(request)
+    if token is None:
+        token = get_token_from_header(request)
     if token is None:
         return None
     try:

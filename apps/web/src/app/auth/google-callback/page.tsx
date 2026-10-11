@@ -1,19 +1,38 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 /**
  * Google OAuth callback page.
  *
- * Google redirects here after the user consents in the popup.
- * The ID token is in the URL fragment (#id_token=...).
- *
- * This page extracts the token and sends it back to the parent window
- * via postMessage, then closes itself.
+ * Handles two flows:
+ * 1. Popup-based flow: Google redirects here with ID token in URL fragment (#id_token=...)
+ *    - Extracts token and sends via postMessage to opener window
+ * 2. Server-side flow: Backend redirects here with access_token and refresh_token in query string
+ *    - Stores tokens in localStorage and redirects to dashboard
  */
 export default function GoogleCallbackPage() {
+  const router = useRouter();
+
   useEffect(() => {
-    // Extract id_token from URL hash
+    // Check for server-side flow tokens in query string
+    const searchParams = new URLSearchParams(window.location.search);
+    const accessToken = searchParams.get("access_token");
+    const refreshToken = searchParams.get("refresh_token");
+    const redirect = searchParams.get("redirect") || "/dashboard";
+
+    if (accessToken && refreshToken) {
+      // Server-side flow: store tokens and redirect
+      localStorage.setItem("taxstox_access_token", accessToken);
+      localStorage.setItem("taxstox_refresh_token", refreshToken);
+      // In a real app, we would set httpOnly cookies via an API endpoint
+      // For now, we rely on localStorage and Authorization header
+      router.push(redirect);
+      return;
+    }
+
+    // Popup-based flow: handle ID token in URL fragment
     const hash = window.location.hash;
     const hasToken = hash.includes("id_token=");
 
@@ -35,12 +54,12 @@ export default function GoogleCallbackPage() {
       } else if (hash.includes("error=")) {
         const error = new URLSearchParams(hash.substring(1)).get("error") || "Google auth failed";
         window.opener.postMessage(
-          { type: "google-signin-error", error },
+          { type: "google-signin-error", error: "No id_token in redirect" },
           window.location.origin
         );
       } else {
         window.opener.postMessage(
-          { type: "google-signin-error", error: "No token or error in redirect URL" },
+          { type: "google-signin-error", error: "No token or error in redirect" },
           window.location.origin
         );
       }
@@ -48,7 +67,7 @@ export default function GoogleCallbackPage() {
       setTimeout(() => window.close(), 500);
     } else {
       // Opened directly (not a popup) — redirect to auth page
-      window.location.href = "/auth";
+      router.push("/auth");
     }
   }, []);
 
