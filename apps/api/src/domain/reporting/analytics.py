@@ -51,17 +51,17 @@ class TrendData:
     def latest_value(self) -> Decimal:
         if self.data_points:
             return Decimal(str(self.data_points[-1].get("value", "0")))
-        return Decimal("0")
+        return Decimal(0)
 
     @property
     def percent_change(self) -> Decimal:
         if len(self.data_points) < 2:
-            return Decimal("0")
+            return Decimal(0)
         current = Decimal(str(self.data_points[-1].get("value", "0")))
         previous = Decimal(str(self.data_points[-2].get("value", "0")))
         if previous == 0:
-            return Decimal("0")
-        return ((current - previous) / previous * Decimal("100")).quantize(Decimal("0.1"))
+            return Decimal(0)
+        return ((current - previous) / previous * Decimal(100)).quantize(Decimal("0.1"))
 
 
 @dataclass
@@ -84,7 +84,7 @@ class ComparativeAnalytics:
     clients_by_tag: dict[str, int] = field(default_factory=dict)
 
     # Revenue analytics
-    avg_revenue_per_client: Decimal = Decimal("0")
+    avg_revenue_per_client: Decimal = Decimal(0)
     revenue_by_month: list[dict] = field(default_factory=list)
 
     @property

@@ -206,15 +206,16 @@ async def process_and_get_questions(
     auto_data = data_provider.fetch()
     session.taxpayer_data = auto_data
 
-    # Classify capital gains
-    classifier = ClassificationEngine()
-    equity_sales = session.ais.equity_mf_sales if session.ais else []
-    other_sales = session.ais.other_unit_sales if session.ais else []
-    session.classified_cg = classifier.classify(equity_sales, other_sales)
+    # Classify capital gains only if not already set (e.g., by broker upload)
+    if session.classified_cg is None:
+        classifier = ClassificationEngine()
+        equity_sales = session.ais.equity_mf_sales if session.ais else []
+        other_sales = session.ais.other_unit_sales if session.ais else []
+        session.classified_cg = classifier.classify(equity_sales, other_sales)
 
     # Auto-select ITR form based on detected income sources
     selector = ITRSelector()
-    has_cg = bool(session.classified_cg and session.classified_cg.total_cg > 0)
+    has_cg = session.classified_cg is not None
     has_foreign = any(
         (hasattr(session.ais, field) and getattr(session.ais, field))
         for field in ["foreign_remittance", "foreign_income"]
@@ -476,6 +477,64 @@ async def export_itr_json(
     )
 
 
+# ── GET Export Endpoint for File Download ─────────────────────────────────────
+
+@router.get("/tax/export/{session_id}")
+async def export_itr_json_get(
+    session_id: str,
+    session: Annotated[Session, Depends(get_session)],
+    _: None = Depends(require_rate_limit("/export", 10, 60)),
+):
+    """
+    GET endpoint to download the completed ITR JSON file.
+    Returns 404 if session missing or uncomputed.
+    Implements on-demand JSON generation if session.itr_json is not cached.
+    Returns FastAPI Response with media_type="application/json" and Content-Disposition header.
+    """
+    # Check if session has computed ITR JSON, generate on demand if not cached
+    if not getattr(session, "itr_json", None):
+        # Try to generate JSON on demand if we have regime_result
+        if hasattr(session, "regime_result") and session.regime_result:
+            builder = ITRJSONBuilder()
+            # Use the session's financial_year if available, otherwise default
+            financial_year = getattr(session, "financial_year", None) or FinancialYear.from_string("FY2025-26")
+            session.itr_json = builder.build(session.unified_data)
+        else:
+            raise HTTPException(status_code=400, detail="Tax calculation incomplete. Please run computation before exporting.")
+
+    # Get the ITR form from session or default to ITR-2
+    itr_form = getattr(session, "itr_form", "ITR-2")
+
+    # Extract assessment year safely with fallbacks
+    ay = "2026_27"  # Default fallback
+    if getattr(session, "form16", None) and getattr(session.form16, "part_a", None):
+        ay = session.form16.part_a.assessment_year.replace("-", "_")
+    elif getattr(session, "financial_year", None):
+        # Try to get assessment year from financial_year if available
+        try:
+            ay = session.financial_year.assessment_year.replace("-", "_")
+        except AttributeError:
+            # Fallback if assessment_year property doesn't exist
+            ay = str(session.financial_year).replace("-", "_") if hasattr(session.financial_year, '__str__') else "2026_27"
+
+    pan = getattr(session, "pan", "TAXPAYER") or "TAXPAYER"
+    filename = f"{pan}_{itr_form.replace('-', '')}_AY{ay}.json"
+
+    # Convert JSON to string
+    import json
+    json_str = json.dumps(session.itr_json, indent=None, separators=(',', ':'))
+
+    # Return as downloadable file
+    from fastapi.responses import Response
+    return Response(
+        content=json_str,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+
 # ── Broker Statement Upload ──────────────────────────────────────────
 
 @router.post("/upload/broker-statement/{session_id}")
@@ -574,7 +633,120 @@ async def upload_broker_statement(
         raise HTTPException(status_code=500, detail=f"Failed to parse statement: {e!s}")
 
 
-# ── Document Upload ──────────────────────────────────────────────────
+# ── Broker P&L Upload (Tax Domain) ─────────────────────────────────────────
+# MISSION: SUPER-APP PHASE 6 — REAL BROKER P&L TO SCHEDULE CG INGESTION
+# Step 1: Implement the Broker Upload Endpoint
+
+@router.post("/tax/upload/broker-pl", response_model=UploadResponse)
+async def upload_broker_pl(
+    file: Annotated[UploadFile, File()],
+    session_id: str = Form(...),
+    broker: Annotated[str, Form()] = "zerodha",
+):
+    """
+    Upload a broker P&L statement (CSV/Excel) and auto-classify capital gains into the session.
+    This endpoint replaces the mocked Capital Gains bridge with actual data flow.
+    """
+    from src.parsers.broker_statements.generic import parse_broker_statement
+    from src.parsers.broker_statements.zerodha import parse_zerodha_tax_pnl, parse_zerodha_tradebook
+    from src.engine.classifier import ClassificationEngine
+    from src.models.ais import AISEquityMFSale, AISOtherUnitSale
+
+    session = session_manager.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found or expired.")
+
+    content = await file.read()
+
+    try:
+        broker_lower = broker.lower().strip()
+        if broker_lower == "zerodha":
+            try:
+                entries = parse_zerodha_tax_pnl(content, file.filename or "")
+            except (ValueError, RuntimeError):
+                entries = parse_zerodha_tradebook(content, file.filename or "")
+        elif broker_lower in ("groww", "upstox", "angel_one", "angel", "upstox"):
+            entries = parse_broker_statement(content, file.filename or "", broker_lower)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported broker: {broker}. Supported: zerodha, groww, upstox, angel_one"
+            )
+
+        if not entries:
+            raise HTTPException(status_code=400, detail="No valid sell transactions found in the uploaded file.")
+
+        # Classify the entries
+        engine = ClassificationEngine()
+
+        # Separate equity/non-equity entries and classify
+        equity_sales = []
+        other_sales = []
+
+        # Convert CGSaleEntry to AIS-compatible format for classification
+        for e in entries:
+            if e.asset_class in ("equity", "equity_mf"):
+                equity_sales.append(AISEquityMFSale(
+                    date_of_sale=e.date,
+                    isin=e.isin,
+                    security_name=e.security_name,
+                    quantity=e.quantity,
+                    sale_price_per_unit=e.sale_price,
+                    sale_consideration=e.consideration,
+                    cost_of_acquisition=e.cost,
+                    stt_paid=Decimal(1) if e.stt_paid else Decimal(0),
+                    term=e.term or "Short",
+                ))
+            else:
+                other_sales.append(AISOtherUnitSale(
+                    date_of_sale=e.date,
+                    isin=e.isin,
+                    security_name=e.security_name,
+                    quantity=e.quantity,
+                    sale_price=e.sale_price,
+                    sale_consideration=e.consideration,
+                    cost_of_acquisition=e.cost,
+                    term=e.term or "Short",
+                ))
+
+        # Merge with existing AIS data if any
+        if session.ais:
+            equity_sales = (session.ais.equity_mf_sales or []) + equity_sales
+            other_sales = (session.ais.other_unit_sales or []) + other_sales
+
+        # Classify
+        classified = engine.classify(equity_sales, other_sales)
+        session.classified_cg = classified
+        # Debug print
+        print(f"DEBUG: Classified CG: total_cg={classified.total_cg}, total_stcg={classified.total_stcg}, total_ltcg={classified.total_ltcg}")
+        print(f"DEBUG: Equity sales count: {len(equity_sales)}, Other sales count: {len(other_sales)}")
+        if equity_sales:
+            for idx, sale in enumerate(equity_sales):
+                print(f"DEBUG: Equity sale {idx}: isin={sale.isin}, quantity={sale.quantity}, sale_price_per_unit={sale.sale_price_per_unit}, cost_of_acquisition={sale.cost_of_acquisition}")
+
+        return UploadResponse(
+            session_id=session.session_id,
+            status="classified",
+            data_summary={
+                "entries_found": len(entries),
+                "equity_sales": len(equity_sales),
+                "other_sales": len(other_sales),
+                "total_cg": str(classified.total_cg),
+                "total_stcg": str(classified.total_stcg),
+                "total_ltcg": str(classified.total_ltcg),
+            },
+            password_required=False,
+            password_hint=None,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Broker statement parsing failed")
+        raise HTTPException(status_code=500, detail=f"Failed to parse statement: {e!s}")
+
+
+# ── Document Upload ────────────────────────────────────────────────
 
 @router.post("/upload/document/{session_id}")
 async def upload_document(
@@ -654,7 +826,7 @@ async def health_detailed():
     return engine.assess().to_dict()
 
 
-# ── Helper ──────────────────────────────────────────────────────────
+# ── Helper ────────────────────────────────────────────────────────────
 
 def _extract_80c_breakup(answers: dict) -> dict[str, Decimal]:
     """Extract 80C breakup from answer dict."""

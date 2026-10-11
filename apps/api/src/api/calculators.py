@@ -3,7 +3,6 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Query
-from src.engine.regime_optimizer_v2 import RegimeOptimizerV2 as RegimeOptimizer
 
 router = APIRouter(prefix="/api/v1/calculator", tags=["Calculators"])
 
@@ -11,54 +10,54 @@ router = APIRouter(prefix="/api/v1/calculator", tags=["Calculators"])
 # ── Old Regime slab tax ─────────────────────────────────────────────
 
 def slab_tax_old(income: Decimal) -> Decimal:
-    tax = Decimal("0")
+    tax = Decimal(0)
     r = income
-    if r > Decimal("1000000"):
-        tax += (r - Decimal("1000000")) * Decimal("0.30")
-        r = Decimal("1000000")
-    if r > Decimal("500000"):
-        tax += (r - Decimal("500000")) * Decimal("0.20")
-        r = Decimal("500000")
-    if r > Decimal("250000"):
-        tax += (r - Decimal("250000")) * Decimal("0.05")
+    if r > Decimal(1000000):
+        tax += (r - Decimal(1000000)) * Decimal("0.30")
+        r = Decimal(1000000)
+    if r > Decimal(500000):
+        tax += (r - Decimal(500000)) * Decimal("0.20")
+        r = Decimal(500000)
+    if r > Decimal(250000):
+        tax += (r - Decimal(250000)) * Decimal("0.05")
     # Rebate 87A
-    if income <= Decimal("500000"):
-        tax = min(tax, Decimal("12500"))
-        tax = max(Decimal("0"), tax - Decimal("12500"))
-    return tax.quantize(Decimal("1"))
+    if income <= Decimal(500000):
+        tax = min(tax, Decimal(12500))
+        tax = max(Decimal(0), tax - Decimal(12500))
+    return tax.quantize(Decimal(1))
 
 
 # ── New Regime slab tax ─────────────────────────────────────────────
 
 def slab_tax_new(income: Decimal) -> Decimal:
-    tax = Decimal("0")
+    tax = Decimal(0)
     r = income
-    if r > Decimal("2400000"):
-        tax += (r - Decimal("2400000")) * Decimal("0.30")
-        r = Decimal("2400000")
-    if r > Decimal("2000000"):
-        tax += (r - Decimal("2000000")) * Decimal("0.25")
-        r = Decimal("2000000")
-    if r > Decimal("1600000"):
-        tax += (r - Decimal("1600000")) * Decimal("0.20")
-        r = Decimal("1600000")
-    if r > Decimal("1200000"):
-        tax += (r - Decimal("1200000")) * Decimal("0.15")
-        r = Decimal("1200000")
-    if r > Decimal("800000"):
-        tax += (r - Decimal("800000")) * Decimal("0.10")
-        r = Decimal("800000")
-    if r > Decimal("400000"):
-        tax += (r - Decimal("400000")) * Decimal("0.05")
+    if r > Decimal(2400000):
+        tax += (r - Decimal(2400000)) * Decimal("0.30")
+        r = Decimal(2400000)
+    if r > Decimal(2000000):
+        tax += (r - Decimal(2000000)) * Decimal("0.25")
+        r = Decimal(2000000)
+    if r > Decimal(1600000):
+        tax += (r - Decimal(1600000)) * Decimal("0.20")
+        r = Decimal(1600000)
+    if r > Decimal(1200000):
+        tax += (r - Decimal(1200000)) * Decimal("0.15")
+        r = Decimal(1200000)
+    if r > Decimal(800000):
+        tax += (r - Decimal(800000)) * Decimal("0.10")
+        r = Decimal(800000)
+    if r > Decimal(400000):
+        tax += (r - Decimal(400000)) * Decimal("0.05")
     # Rebate 87A (new regime)
-    if income <= Decimal("700000"):
-        rebate = min(tax, Decimal("60000"))
-        tax = max(Decimal("0"), tax - rebate)
-    return tax.quantize(Decimal("1"))
+    if income <= Decimal(700000):
+        rebate = min(tax, Decimal(60000))
+        tax = max(Decimal(0), tax - rebate)
+    return tax.quantize(Decimal(1))
 
 
 def add_cess(tax: Decimal) -> Decimal:
-    return (tax * Decimal("4") / Decimal("100")).quantize(Decimal("1"))
+    return (tax * Decimal(4) / Decimal(100)).quantize(Decimal(1))
 
 
 # ── Regime Comparison ───────────────────────────────────────────────
@@ -83,25 +82,25 @@ async def regime_compare(
     other = Decimal(str(other_income))
 
     # ── Old Regime ──
-    std_old = Decimal("50000")
-    prof_tax = Decimal("2500")
+    std_old = Decimal(50000)
+    prof_tax = Decimal(2500)
 
-    income_salary_old = max(Decimal("0"), gross - hra - std_old - prof_tax)
+    income_salary_old = max(Decimal(0), gross - hra - std_old - prof_tax)
     # Home loan loss
-    home_loss = min(home_int, Decimal("200000"))
+    home_loss = min(home_int, Decimal(200000))
     # Deductions
-    total_ded_old = min(ded_80c, Decimal("150000")) + ded_80d + nps_emp
+    total_ded_old = min(ded_80c, Decimal(150000)) + ded_80d + nps_emp
     # Taxable
-    taxable_old = max(Decimal("0"), income_salary_old + other - home_loss - total_ded_old)
+    taxable_old = max(Decimal(0), income_salary_old + other - home_loss - total_ded_old)
 
     tax_old_slab = slab_tax_old(taxable_old)
     cess_old = add_cess(tax_old_slab)
     total_old = tax_old_slab + cess_old
 
     # ── New Regime ──
-    std_new = Decimal("75000")
-    income_salary_new = max(Decimal("0"), gross - std_new)
-    taxable_new = max(Decimal("0"), income_salary_new + other - nps_emp)
+    std_new = Decimal(75000)
+    income_salary_new = max(Decimal(0), gross - std_new)
+    taxable_new = max(Decimal(0), income_salary_new + other - nps_emp)
 
     tax_new_slab = slab_tax_new(taxable_new)
     cess_new = add_cess(tax_new_slab)
@@ -148,9 +147,9 @@ async def hra_calculator(
     hra = Decimal(str(hra_received))
     rent = Decimal(str(rent_paid))
 
-    annual_basic = basic * Decimal("12")
-    annual_hra = hra * Decimal("12")
-    annual_rent = rent * Decimal("12")
+    annual_basic = basic * Decimal(12)
+    annual_hra = hra * Decimal(12)
+    annual_rent = rent * Decimal(12)
 
     # HRA exemption = Minimum of:
     # 1. Actual HRA received
@@ -160,7 +159,7 @@ async def hra_calculator(
     option2 = annual_rent - (annual_basic * Decimal("0.10"))
     option3 = annual_basic * (Decimal("0.50") if metro_city else Decimal("0.40"))
 
-    exemption = max(Decimal("0"), min(option1, max(Decimal("0"), option2), option3))
+    exemption = max(Decimal(0), min(option1, max(Decimal(0), option2), option3))
 
     return {
         "annual_basic": str(annual_basic),
@@ -169,11 +168,11 @@ async def hra_calculator(
         "metro_city": metro_city,
         "calculation": {
             "actual_hra_received": str(option1),
-            "rent_minus_10pct_basic": str(max(Decimal("0"), option2)),
+            "rent_minus_10pct_basic": str(max(Decimal(0), option2)),
             "pct_of_basic": f"{'50' if metro_city else '40'}% of basic = {option3}",
         },
         "hra_exemption": str(exemption),
-        "taxable_hra": str(max(Decimal("0"), annual_hra - exemption)),
+        "taxable_hra": str(max(Decimal(0), annual_hra - exemption)),
     }
 
 
@@ -188,21 +187,21 @@ async def capital_gains_calculator(
     gain = Decimal(str(gain_amount))
 
     rates = {
-        "ltcg_equity": {"rate": Decimal("0.125"), "exemption": Decimal("125000"), "label": "LTCG on Equity (112A) @ 12.5%"},
-        "stcg_equity": {"rate": Decimal("0.15"), "exemption": Decimal("0"), "label": "STCG on Equity (111A) @ 15%"},
-        "ltcg_other": {"rate": Decimal("0.125"), "exemption": Decimal("0"), "label": "LTCG on Other Assets @ 12.5%"},
-        "stcg_other": {"rate": Decimal("0"), "exemption": Decimal("0"), "label": "STCG on Other Assets @ Slab Rate"},
+        "ltcg_equity": {"rate": Decimal("0.125"), "exemption": Decimal(125000), "label": "LTCG on Equity (112A) @ 12.5%"},
+        "stcg_equity": {"rate": Decimal("0.15"), "exemption": Decimal(0), "label": "STCG on Equity (111A) @ 15%"},
+        "ltcg_other": {"rate": Decimal("0.125"), "exemption": Decimal(0), "label": "LTCG on Other Assets @ 12.5%"},
+        "stcg_other": {"rate": Decimal(0), "exemption": Decimal(0), "label": "STCG on Other Assets @ Slab Rate"},
     }
 
     info = rates.get(gain_type, rates["ltcg_equity"])
 
     if gain_type == "stcg_other":
         taxable = gain
-        tax = Decimal("0")  # Added to slab income
+        tax = Decimal(0)  # Added to slab income
         note = "STCG on other assets is taxed at your applicable slab rate."
     else:
         exemption = min(gain, info["exemption"])
-        taxable = max(Decimal("0"), gain - exemption)
+        taxable = max(Decimal(0), gain - exemption)
         tax = taxable * info["rate"]
         note = None
 
@@ -229,11 +228,11 @@ async def quick_estimate(
 
     if regime == "old":
         # Apply standard deduction ₹50,000
-        taxable = max(Decimal("0"), income - Decimal("50000"))
+        taxable = max(Decimal(0), income - Decimal(50000))
         tax = slab_tax_old(taxable)
     else:
         # Apply standard deduction ₹75,000
-        taxable = max(Decimal("0"), income - Decimal("75000"))
+        taxable = max(Decimal(0), income - Decimal(75000))
         tax = slab_tax_new(taxable)
 
     cess = add_cess(tax)
@@ -246,5 +245,5 @@ async def quick_estimate(
         "tax": str(tax),
         "cess": str(cess),
         "total_tax": str(total),
-        "monthly_equivalent": str((total / Decimal("12")).quantize(Decimal("1"))),
+        "monthly_equivalent": str((total / Decimal(12)).quantize(Decimal(1))),
     }

@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from src.engine.knowledge_graph import (
-    KnowledgeGraph,
     EdgeType,
+    KnowledgeGraph,
     tax_knowledge_graph,
 )
 

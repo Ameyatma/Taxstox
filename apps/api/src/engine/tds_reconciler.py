@@ -11,11 +11,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
 
-from src.models.form16 import Form16Data
 from src.models.ais import AISData
-from src.parsers.form26as_parser import Form26ASData, Form26ASTDSEntry
+from src.models.form16 import Form16Data
+from src.parsers.form26as_parser import Form26ASData
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +25,10 @@ class ReconciliationFinding:
     severity: str           # "match", "warning", "error"
     category: str           # "tds_salary", "tds_other", "advance_tax", "refund"
     description: str
-    form16_value: Optional[Decimal] = None
-    ais_value: Optional[Decimal] = None
-    form26as_value: Optional[Decimal] = None
-    difference: Decimal = Decimal("0")
+    form16_value: Decimal | None = None
+    ais_value: Decimal | None = None
+    form26as_value: Decimal | None = None
+    difference: Decimal = Decimal(0)
     recommendation: str = ""
 
 
@@ -37,14 +36,14 @@ class ReconciliationFinding:
 class ReconciliationReport:
     """Complete TDS reconciliation across all sources."""
     findings: list[ReconciliationFinding] = field(default_factory=list)
-    form16_tds: Decimal = Decimal("0")
-    ais_tds_salary: Decimal = Decimal("0")
-    ais_tds_other: Decimal = Decimal("0")
-    form26as_tds: Decimal = Decimal("0")
-    form26as_advance_tax: Decimal = Decimal("0")
-    form26as_self_assessment: Decimal = Decimal("0")
-    total_credit_available: Decimal = Decimal("0")
-    total_credit_claimed: Decimal = Decimal("0")
+    form16_tds: Decimal = Decimal(0)
+    ais_tds_salary: Decimal = Decimal(0)
+    ais_tds_other: Decimal = Decimal(0)
+    form26as_tds: Decimal = Decimal(0)
+    form26as_advance_tax: Decimal = Decimal(0)
+    form26as_self_assessment: Decimal = Decimal(0)
+    total_credit_available: Decimal = Decimal(0)
+    total_credit_claimed: Decimal = Decimal(0)
     matches: int = 0
     warnings: int = 0
     errors: int = 0
@@ -75,9 +74,9 @@ class TDSReconciler:
 
     def reconcile(
         self,
-        form16: Optional[Form16Data] = None,
-        ais: Optional[AISData] = None,
-        form26as: Optional[Form26ASData] = None,
+        form16: Form16Data | None = None,
+        ais: AISData | None = None,
+        form26as: Form26ASData | None = None,
     ) -> ReconciliationReport:
         """Run full reconciliation across all available sources."""
         report = ReconciliationReport()
@@ -90,10 +89,10 @@ class TDSReconciler:
         # ── AIS TDS ──
         if ais:
             report.ais_tds_salary = sum(
-                (e.tds_deducted for e in ais.salary_tds), Decimal("0")
+                (e.tds_deducted for e in ais.salary_tds), Decimal(0)
             )
             report.ais_tds_other = sum(
-                (e.tds_deducted for e in ais.other_tds), Decimal("0")
+                (e.tds_deducted for e in ais.other_tds), Decimal(0)
             )
 
         # ── Form 26AS TDS ──
@@ -131,7 +130,7 @@ class TDSReconciler:
         """Compare Form 16 salary TDS against AIS TDS-192 entries."""
         diff = abs(report.form16_tds - report.ais_tds_salary)
 
-        if diff <= Decimal("1"):
+        if diff <= Decimal(1):
             report.findings.append(ReconciliationFinding(
                 severity="match",
                 category="tds_salary",
@@ -139,7 +138,7 @@ class TDSReconciler:
                 form16_value=report.form16_tds,
                 ais_value=report.ais_tds_salary,
             ))
-        elif diff <= Decimal("100"):
+        elif diff <= Decimal(100):
             report.findings.append(ReconciliationFinding(
                 severity="warning",
                 category="tds_salary",
@@ -165,7 +164,7 @@ class TDSReconciler:
         ais_total = report.ais_tds_salary + report.ais_tds_other
         diff = abs(ais_total - report.form26as_tds)
 
-        if diff <= Decimal("1"):
+        if diff <= Decimal(1):
             report.findings.append(ReconciliationFinding(
                 severity="match",
                 category="tds_other",

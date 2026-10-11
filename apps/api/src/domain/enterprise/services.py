@@ -8,19 +8,16 @@ Traceability: C21.1, C21.2, C21.3
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from dataclasses import dataclass
 from uuid import UUID, uuid4
 
 from src.domain.enterprise.tenant import (
-    Tenant,
-    TenantStatus,
-    TenantRepository,
     ClientAssignment,
     Permission,
     ResourceAction,
     Role,
+    Tenant,
+    TenantRepository,
 )
 
 
@@ -46,7 +43,7 @@ class TenantOnboardingService:
         self,
         name: str,
         slug: str,
-        admin_user_id: Optional[UUID] = None,
+        admin_user_id: UUID | None = None,
     ) -> OnboardingResult:
         """Create a new tenant with default CA firm role structure.
 
@@ -102,7 +99,7 @@ class ClientAssignmentService:
         tenant: Tenant,
         client_user_id: UUID,
         assigned_by: UUID,
-    ) -> Optional[ClientAssignment]:
+    ) -> ClientAssignment | None:
         """Assign a taxpayer client to a CA firm tenant."""
         if not tenant.is_active:
             return None

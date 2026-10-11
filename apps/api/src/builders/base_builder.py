@@ -10,12 +10,11 @@ Traceability: AD-002 (No base class for builders — resolved)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
-from decimal import Decimal
-from typing import Any, Optional
+from datetime import UTC, date
+from typing import Any
 
 from src.models.financial_year import FinancialYear
-from src.models.form16 import Form16Data, Regime
+from src.models.form16 import Regime
 
 
 @dataclass
@@ -41,7 +40,7 @@ class BaseITRBuilder:
     schema-compliant ITR JSON for their specific form type.
     """
 
-    def __init__(self, fy: Optional[FinancialYear] = None) -> None:
+    def __init__(self, fy: FinancialYear | None = None) -> None:
         self._fy = fy or FinancialYear.from_string("FY2025-26")
         self._ay = self._fy.assessment_year
 
@@ -55,12 +54,12 @@ class BaseITRBuilder:
         return f"{pan[:3]}**{pan[5:]}"
 
     @staticmethod
-    def _format_date(d: Optional[date]) -> str:
+    def _format_date(d: date | None) -> str:
         """Format date as DD/MM/YYYY."""
         return d.strftime("%d/%m/%Y") if d else ""
 
     @staticmethod
-    def _regime_code(regime: Optional[Regime]) -> str:
+    def _regime_code(regime: Regime | None) -> str:
         """Map regime to ITD code: NEW → 'N', OLD → 'O'."""
         if regime is None:
             return "N"
@@ -72,7 +71,7 @@ class BaseITRBuilder:
         name: str,
         dob_str: str,
         itr_type: str,
-        regime: Optional[Regime] = None,
+        regime: Regime | None = None,
         aadhaar: str = "",
         mobile: str = "",
         email: str = "",
@@ -123,9 +122,9 @@ class BaseITRBuilder:
         validation_summary: str = "",
     ) -> GenerationMetadata:
         """Create generation metadata."""
-        from datetime import datetime, timezone
+        from datetime import datetime
         return GenerationMetadata(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             financial_year=self._fy.label,
             assessment_year=self._ay,
             itr_type=itr_type,

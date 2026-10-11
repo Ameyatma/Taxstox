@@ -70,8 +70,8 @@ class MultiYearProjection:
     def avg_effective_rate(self) -> Decimal:
         total_income = sum(y.projected_income for y in self.years)
         if total_income == 0:
-            return Decimal("0")
-        return (self.total_tax_across_years / total_income * Decimal("100")).quantize(Decimal("0.1"))
+            return Decimal(0)
+        return (self.total_tax_across_years / total_income * Decimal(100)).quantize(Decimal("0.1"))
 
     @property
     def summary(self) -> str:

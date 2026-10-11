@@ -9,9 +9,8 @@ Traceability: C21.2 (CA Firm Hierarchy — 50%→80%, P5)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -52,7 +51,7 @@ class ActivityLogEntry:
     def __post_init__(self) -> None:
         if not self.timestamp:
             object.__setattr__(self, "timestamp",
-                              datetime.now(timezone.utc).isoformat())
+                              datetime.now(UTC).isoformat())
 
     @staticmethod
     def create(
@@ -86,25 +85,25 @@ class ReviewRequest:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def approve(self, reviewer_id: UUID, comments: str = "") -> None:
         self.status = ReviewStatus.APPROVED
         self.reviewer_id = reviewer_id
         self.reviewer_comments = comments
-        self.reviewed_at = datetime.now(timezone.utc).isoformat()
+        self.reviewed_at = datetime.now(UTC).isoformat()
 
     def reject(self, reviewer_id: UUID, comments: str) -> None:
         self.status = ReviewStatus.REJECTED
         self.reviewer_id = reviewer_id
         self.reviewer_comments = comments
-        self.reviewed_at = datetime.now(timezone.utc).isoformat()
+        self.reviewed_at = datetime.now(UTC).isoformat()
 
     def request_changes(self, reviewer_id: UUID, comments: str) -> None:
         self.status = ReviewStatus.CHANGES_REQUESTED
         self.reviewer_id = reviewer_id
         self.reviewer_comments = comments
-        self.reviewed_at = datetime.now(timezone.utc).isoformat()
+        self.reviewed_at = datetime.now(UTC).isoformat()
 
     @property
     def is_resolved(self) -> bool:
@@ -139,7 +138,7 @@ class SupervisionWorkflow:
         self, submitted_by: UUID, submitted_for: UUID,
         reviewer_hierarchy_level: int, submitter_hierarchy_level: int,
         financial_year: str = "",
-    ) -> Optional[ReviewRequest]:
+    ) -> ReviewRequest | None:
         """Submit work for review. Validates hierarchy.
 
         Returns None if submitter is higher or equal to reviewer.
@@ -159,7 +158,7 @@ class SupervisionWorkflow:
             if req.request_id == request_id and req.status == ReviewStatus.PENDING:
                 req.approve(reviewer_id, comments)
                 self._log(reviewer_id, ActivityType.FILING_REVIEWED,
-                         f"Approved filing for client", target_resource=str(request_id))
+                         "Approved filing for client", target_resource=str(request_id))
                 return True
         return False
 

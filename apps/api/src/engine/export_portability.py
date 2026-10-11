@@ -9,6 +9,7 @@ Traceability: C14.4 (Export & Portability — 30%→60%, P6)
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID
@@ -98,11 +99,11 @@ class ExportEngine:
         transfer to another platform or personal archive.
         """
         import json
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         data = {
             "export_type": "data_portability",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "user_id": str(user_id),
             "pan_masked": f"{pan[:3]}**{pan[5:]}",
             "name": name,
@@ -117,7 +118,7 @@ class ExportEngine:
         content = json.dumps(data, indent=2)
         return ExportResult(
             format=ExportFormat.DATA_PORTABILITY,
-            filename=f"taxstox_data_export_{datetime.now(timezone.utc).strftime('%Y%m%d')}.json",
+            filename=f"taxstox_data_export_{datetime.now(UTC).strftime('%Y%m%d')}.json",
             content=content,
             content_type="application/json",
         )

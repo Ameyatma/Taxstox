@@ -1,20 +1,32 @@
 """Authentication API routes — register, login, profile, password management."""
 
-from pydantic import BaseModel, EmailStr
-from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
-from fastapi.responses import JSONResponse, RedirectResponse
-
 import os
-
-from src.models.user import UserCreate, UserLogin, UserResponse, TokenResponse
-from src.auth.jwt import create_access_token, get_current_user, TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, ACCESS_TOKEN_EXPIRE_HOURS
-from src.infrastructure.refresh_token_repo import RefreshTokenRepository
 import urllib.parse
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel
+
+from src.auth.google_verifier import get_client_id, verify_google_id_token
+from src.auth.jwt import (
+    ACCESS_TOKEN_EXPIRE_HOURS,
+    REFRESH_TOKEN_COOKIE_NAME,
+    TOKEN_COOKIE_NAME,
+    create_access_token,
+    get_current_user,
+)
 from src.db.database import (
-    create_user, authenticate_user, get_user_by_id, get_user_by_email,
-    create_user_google, user_exists, update_user_profile, change_user_password,
+    authenticate_user,
+    change_user_password,
+    create_user,
+    create_user_google,
+    get_user_by_id,
+    update_user_profile,
 )
 from src.engine.gateway.rate_limit_dependency import require_rate_limit
+from src.infrastructure.refresh_token_repo import RefreshTokenRepository
+from src.models.user import TokenResponse, UserCreate, UserLogin, UserResponse
 
 
 class ProfileUpdate(BaseModel):
@@ -137,7 +149,7 @@ async def login(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: dict = Depends(get_current_user)):
+async def get_me(current_user: Annotated[dict, Depends(get_current_user)]):
     """Get the currently authenticated user's profile."""
     user = get_user_by_id(current_user["sub"])
     if user is None:
@@ -153,7 +165,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/profile", response_model=UserResponse)
-async def update_profile(body: ProfileUpdate, current_user: dict = Depends(get_current_user)):
+async def update_profile(body: ProfileUpdate, current_user: Annotated[dict, Depends(get_current_user)]):
     """Update the current user's profile (name only)."""
     updated = update_user_profile(current_user["sub"], body.name)
     if updated is None:
@@ -168,7 +180,7 @@ async def update_profile(body: ProfileUpdate, current_user: dict = Depends(get_c
 
 
 @router.post("/change-password")
-async def change_password(body: PasswordChange, current_user: dict = Depends(get_current_user)):
+async def change_password(body: PasswordChange, current_user: Annotated[dict, Depends(get_current_user)]):
     """Change the current user's password."""
     if len(body.new_password) < 8:
         raise HTTPException(
@@ -202,11 +214,10 @@ async def google_auth(body: GoogleAuthRequest):
         raise HTTPException(status_code=400, detail="Missing Google credential.")
 
     # Verify the ID token cryptographically
-    from src.auth.google_verifier import verify_google_id_token, get_client_id
 
     try:
         token_info = verify_google_id_token(body.credential)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(status_code=401, detail="Invalid Google credential. Please sign in again.")
 
     email = (token_info.get("email") or "").lower()
@@ -258,9 +269,6 @@ async def forgot_password(body: ForgotPasswordRequest):
 
         repo = PsycopgPasswordResetRepository()
         repo.invalidate_user_tokens(user["id"])
-
-        # Generate new token and store hashed version
-        raw_token = repo.create_token(user["id"])
 
         # In production: email the token via SendGrid/Mailgun
         # For dev: log it
@@ -390,7 +398,6 @@ async def refresh_token(request: Request, response: Response):
 @router.get("/google/login")
 async def google_login(request: Request):
     """Redirect to Google's OAuth 2.0 authorization endpoint."""
-    from src.auth.google_verifier import get_client_id
 
     client_id = get_client_id()
     if not client_id:
@@ -421,7 +428,6 @@ async def google_callback(request: Request, response: Response):
     logger = logging.getLogger(__name__)
 
     code = request.query_params.get("code")
-    state = request.query_params.get("state")
     error = request.query_params.get("error")
 
     if error:
@@ -430,7 +436,6 @@ async def google_callback(request: Request, response: Response):
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code.")
 
-    from src.auth.google_verifier import get_client_id
 
     client_id = get_client_id()
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
@@ -446,8 +451,9 @@ async def google_callback(request: Request, response: Response):
         "grant_type": "authorization_code",
     }
 
-    import requests as requests_lib
-    token_resp = requests_lib.post(token_url, data=token_data)
+    import httpx
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(token_url, data=token_data)
     if token_resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Failed to exchange Google code for tokens.")
 

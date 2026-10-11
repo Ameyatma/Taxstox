@@ -8,11 +8,10 @@ Traceability: C16.1 (API Gateway — 40%→70%, P7), PR1.3 (storage-agnostic int
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
-from src.domain.gateway.rate_limiter import RateLimitStore
-from src.domain.gateway.api_gateway import RateLimitPolicy, RateLimitWindow
+from src.domain.gateway.api_gateway import RateLimitPolicy
 
 
 class InMemoryRateLimitStore:
@@ -71,14 +70,14 @@ class InMemoryRateLimitStore:
                 "tokens": float(max_requests),
                 "max": max_requests,
                 "refill_rate": max_requests / window_seconds,
-                "last_refill": datetime.now(timezone.utc).timestamp(),
+                "last_refill": datetime.now(UTC).timestamp(),
             }
         return self._buckets[key]
 
     def _refill(
         self, bucket: dict, max_requests: int, window_seconds: int,
     ) -> None:
-        now = datetime.now(timezone.utc).timestamp()
+        now = datetime.now(UTC).timestamp()
         elapsed = now - bucket["last_refill"]
         refill_rate = max_requests / window_seconds
         new_tokens = elapsed * refill_rate

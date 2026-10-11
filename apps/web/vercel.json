@@ -1,9 +1,9 @@
 {
-  "buildCommand": "cd ../.. && npm run build --prefix apps/web",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://api.taxstox.com/api/v1"
+    "NEXT_PUBLIC_API_URL": "https://taxstox-api-435349196142.asia-south1.run.app"
   }
 }

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from xml.etree import ElementTree
 
 import httpx
@@ -92,7 +92,7 @@ class PIBProvider(BaseProvider):
     def _parse_date(date_str: str) -> str:
         """Parse various date formats to ISO YYYY-MM-DD."""
         if not date_str:
-            return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            return datetime.now(UTC).strftime("%Y-%m-%d")
 
         formats = [
             "%a, %d %b %Y %H:%M:%S %z",  # RFC 2822
@@ -110,14 +110,14 @@ class PIBProvider(BaseProvider):
                 continue
 
         # Fallback: return today
-        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return datetime.now(UTC).strftime("%Y-%m-%d")
 
     @staticmethod
     def _is_recent(date_str: str, days: int = 60) -> bool:
         """Check if a date string is within the given number of days from today."""
         try:
-            d = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            now = datetime.now(timezone.utc)
+            d = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
+            now = datetime.now(UTC)
             return (now - d).days <= days
         except ValueError:
             return True  # Include if we can't parse the date

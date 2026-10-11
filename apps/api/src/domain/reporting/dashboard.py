@@ -8,7 +8,7 @@ Traceability: C21.4 (Firm Dashboard — 30%→70%, P5)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID
@@ -31,7 +31,7 @@ class DashboardMetric:
     metric_type: MetricType = MetricType.COUNT
     unit: str = ""                       # "clients", "₹", "%", "days"
     trend: str = "stable"                # "up", "down", "stable"
-    trend_value: Decimal = Decimal("0")  # Change since last period
+    trend_value: Decimal = Decimal(0)  # Change since last period
     comparison_label: str = ""           # "vs last month"
 
     @property
@@ -62,27 +62,27 @@ class FirmDashboard:
 
     # Key Metrics
     total_clients: DashboardMetric = field(default_factory=lambda: DashboardMetric(
-        metric_id="total_clients", label="Total Clients", value=Decimal("0"),
+        metric_id="total_clients", label="Total Clients", value=Decimal(0),
         metric_type=MetricType.COUNT, unit="clients",
     ))
     active_filings: DashboardMetric = field(default_factory=lambda: DashboardMetric(
-        metric_id="active_filings", label="Active Filings", value=Decimal("0"),
+        metric_id="active_filings", label="Active Filings", value=Decimal(0),
         metric_type=MetricType.COUNT, unit="filings",
     ))
     completed_filings: DashboardMetric = field(default_factory=lambda: DashboardMetric(
-        metric_id="completed_filings", label="Completed Filings", value=Decimal("0"),
+        metric_id="completed_filings", label="Completed Filings", value=Decimal(0),
         metric_type=MetricType.COUNT, unit="filings",
     ))
     completion_rate: DashboardMetric = field(default_factory=lambda: DashboardMetric(
-        metric_id="completion_rate", label="Completion Rate", value=Decimal("0"),
+        metric_id="completion_rate", label="Completion Rate", value=Decimal(0),
         metric_type=MetricType.PERCENTAGE, unit="%",
     ))
     revenue_this_month: DashboardMetric = field(default_factory=lambda: DashboardMetric(
-        metric_id="revenue", label="Revenue (30 days)", value=Decimal("0"),
+        metric_id="revenue", label="Revenue (30 days)", value=Decimal(0),
         metric_type=MetricType.AMOUNT, unit="₹",
     ))
     new_clients: DashboardMetric = field(default_factory=lambda: DashboardMetric(
-        metric_id="new_clients", label="New Clients", value=Decimal("0"),
+        metric_id="new_clients", label="New Clients", value=Decimal(0),
         metric_type=MetricType.COUNT, unit="clients",
     ))
 
@@ -107,7 +107,7 @@ class FirmDashboard:
 
     def __post_init__(self) -> None:
         if not self.generated_at:
-            self.generated_at = datetime.now(timezone.utc).isoformat()
+            self.generated_at = datetime.now(UTC).isoformat()
 
     @property
     def all_metrics(self) -> list[DashboardMetric]:

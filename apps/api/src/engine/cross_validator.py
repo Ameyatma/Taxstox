@@ -12,10 +12,9 @@ Produces validation warnings/errors that appear on the summary page.
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
 
-from src.models.form16 import Form16Data
 from src.models.ais import AISData
+from src.models.form16 import Form16Data
 
 
 @dataclass
@@ -25,9 +24,9 @@ class CrossValidationFinding:
     severity: str       # "pass", "warning", "error"
     check_name: str
     message: str
-    form16_value: Optional[Decimal] = None
-    ais_value: Optional[Decimal] = None
-    difference: Optional[Decimal] = None
+    form16_value: Decimal | None = None
+    ais_value: Decimal | None = None
+    difference: Decimal | None = None
     recommendation: str = ""
 
 
@@ -35,10 +34,10 @@ class CrossValidationFinding:
 class CrossValidationReport:
     """Complete reconciliation report."""
     findings: list[CrossValidationFinding] = field(default_factory=list)
-    form16_tds_total: Decimal = Decimal("0")
-    ais_tds_192_total: Decimal = Decimal("0")
-    ais_other_tds_total: Decimal = Decimal("0")
-    total_tds_credit_available: Decimal = Decimal("0")
+    form16_tds_total: Decimal = Decimal(0)
+    ais_tds_192_total: Decimal = Decimal(0)
+    ais_other_tds_total: Decimal = Decimal(0)
+    total_tds_credit_available: Decimal = Decimal(0)
     passes: int = 0
     warnings: int = 0
     errors: int = 0
@@ -76,14 +75,14 @@ class CrossValidationReport:
 class CrossValidator:
     """Validates Form 16 data against AIS/Form 26AS data."""
 
-    TDS_MISMATCH_THRESHOLD = Decimal("500")     # ₹500 — below this, ignore rounding
-    TDS_WARNING_THRESHOLD = Decimal("5000")     # ₹5,000 — warn above this
+    TDS_MISMATCH_THRESHOLD = Decimal(500)     # ₹500 — below this, ignore rounding
+    TDS_WARNING_THRESHOLD = Decimal(5000)     # ₹5,000 — warn above this
     SALARY_MISMATCH_PCT = Decimal("0.02")       # 2% — salary mismatch tolerance
 
     def validate(
         self,
-        form16: Optional[Form16Data] = None,
-        ais: Optional[AISData] = None,
+        form16: Form16Data | None = None,
+        ais: AISData | None = None,
     ) -> CrossValidationReport:
         """Run all cross-validation checks."""
         report = CrossValidationReport()
@@ -105,21 +104,21 @@ class CrossValidator:
             # Sum TDS from salary entries (TDS-192)
             report.ais_tds_192_total = sum(
                 (e.tds_deducted for e in ais.salary_tds),
-                Decimal("0")
+                Decimal(0)
             )
 
             # Sum TDS from all other entries (non-salary)
             report.ais_other_tds_total = sum(
                 (e.tds_deducted for e in ais.other_tds),
-                Decimal("0")
+                Decimal(0)
             ) + ais.total_non_salary_tds
 
             report.total_tds_credit_available = (
                 report.ais_tds_192_total + report.ais_other_tds_total
             )
         else:
-            report.ais_tds_192_total = Decimal("0")
-            report.ais_other_tds_total = Decimal("0")
+            report.ais_tds_192_total = Decimal(0)
+            report.ais_other_tds_total = Decimal(0)
             report.total_tds_credit_available = report.form16_tds_total
             report.findings.append(CrossValidationFinding(
                 passed=True, severity="pass",
@@ -240,7 +239,7 @@ class CrossValidator:
         if ais.annexure_ii_salary and ais.annexure_ii_salary.total_gross_salary > 0:
             ais_salary = ais.annexure_ii_salary.total_gross_salary
             diff = abs(f16_salary - ais_salary)
-            diff_pct = diff / f16_salary if f16_salary > 0 else Decimal("0")
+            diff_pct = diff / f16_salary if f16_salary > 0 else Decimal(0)
 
             if diff_pct <= self.SALARY_MISMATCH_PCT:
                 report.findings.append(CrossValidationFinding(
@@ -270,7 +269,7 @@ class CrossValidator:
 
     def _check_unclaimed_tds(self, report: CrossValidationReport) -> None:
         """Check for TDS credits in AIS that may not be claimed."""
-        if report.ais_other_tds_total > Decimal("1000"):
+        if report.ais_other_tds_total > Decimal(1000):
             report.findings.append(CrossValidationFinding(
                 passed=False, severity="warning",
                 check_name="unclaimed_tds",

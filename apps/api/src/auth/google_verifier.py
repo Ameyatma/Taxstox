@@ -20,8 +20,8 @@ from __future__ import annotations
 import logging
 import os
 
-from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 
 logger = logging.getLogger(__name__)
 

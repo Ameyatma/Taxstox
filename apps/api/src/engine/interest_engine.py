@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from src.models.financial_year import FinancialYear
 
@@ -19,10 +19,10 @@ from src.models.financial_year import FinancialYear
 class InterestResult:
     """Interest and fee computation result."""
 
-    interest_234a: Decimal = Decimal("0")
-    interest_234b: Decimal = Decimal("0")
-    interest_234c: Decimal = Decimal("0")
-    late_filing_fee_234f: Decimal = Decimal("0")
+    interest_234a: Decimal = Decimal(0)
+    interest_234b: Decimal = Decimal(0)
+    interest_234c: Decimal = Decimal(0)
+    late_filing_fee_234f: Decimal = Decimal(0)
 
     @property
     def total(self) -> Decimal:
@@ -83,7 +83,7 @@ class InterestEngine:
             advance_tax_payments: Date-labeled payments for 234C computation
         """
         # Net assessed tax = tax liability - TDS
-        assessed_tax = max(Decimal("0"), tax_liability - tds_credited)
+        assessed_tax = max(Decimal(0), tax_liability - tds_credited)
 
         # Due date based on taxpayer type
         due_date = self._get_due_date(fy, has_business_income)
@@ -120,13 +120,13 @@ class InterestEngine:
     ) -> Decimal:
         """234A: 1% per month on unpaid tax from due date to filing date."""
         if filing_date <= due_date:
-            return Decimal("0")
+            return Decimal(0)
         if assessed_tax <= 0:
-            return Decimal("0")
+            return Decimal(0)
 
         months = self._months_between(due_date, filing_date)
         return (assessed_tax * self.INTEREST_RATE_PER_MONTH * months).quantize(
-            Decimal("1"), rounding=ROUND_HALF_UP,
+            Decimal(1), rounding=ROUND_HALF_UP,
         )
 
     def _compute_234b(
@@ -141,24 +141,24 @@ class InterestEngine:
 
         Senior citizens with no business income are exempt from advance tax.
         """
-        if assessed_tax <= Decimal("10000"):
-            return Decimal("0")
+        if assessed_tax <= Decimal(10000):
+            return Decimal(0)
 
         # Senior citizen exemption
         if is_senior_citizen and not has_business_income:
-            return Decimal("0")
+            return Decimal(0)
 
         total_paid = advance_tax_paid + self_assessment_tax
         threshold = assessed_tax * Decimal("0.90")
 
         if total_paid >= threshold:
-            return Decimal("0")
+            return Decimal(0)
 
         shortfall = assessed_tax - total_paid
         # Interest from April 1 of assessment year to filing date (approximated as 12 months)
         months = 12
         return (shortfall * self.INTEREST_RATE_PER_MONTH * months).quantize(
-            Decimal("1"), rounding=ROUND_HALF_UP,
+            Decimal(1), rounding=ROUND_HALF_UP,
         )
 
     def _compute_234c(
@@ -177,10 +177,10 @@ class InterestEngine:
 
         Each shortfall incurs 1% per month for 3 months.
         """
-        if assessed_tax <= Decimal("10000"):
-            return Decimal("0")
+        if assessed_tax <= Decimal(10000):
+            return Decimal(0)
 
-        total_interest = Decimal("0")
+        total_interest = Decimal(0)
         installments = [
             ("Jun15", Decimal("0.15"), 3),
             ("Sep15", Decimal("0.45"), 3),
@@ -190,14 +190,14 @@ class InterestEngine:
 
         for label, required_pct, months in installments:
             required = assessed_tax * required_pct
-            paid = payments.get(label, Decimal("0"))
+            paid = payments.get(label, Decimal(0))
             if paid < required:
                 shortfall = required - paid
                 total_interest += (
                     shortfall * self.INTEREST_RATE_PER_MONTH * months
                 )
 
-        return total_interest.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return total_interest.quantize(Decimal(1), rounding=ROUND_HALF_UP)
 
     def _compute_234f(
         self, filing_date: date, due_date: date, total_income: Decimal,
@@ -208,16 +208,16 @@ class InterestEngine:
         - Income ≤ ₹5L: ₹1,000 max
         """
         if filing_date <= due_date:
-            return Decimal("0")
+            return Decimal(0)
 
         year_end = date(due_date.year, 12, 31)
 
-        if total_income <= Decimal("500000"):
-            return Decimal("1000")
+        if total_income <= Decimal(500000):
+            return Decimal(1000)
         elif filing_date <= year_end:
-            return Decimal("5000")
+            return Decimal(5000)
         else:
-            return Decimal("10000")
+            return Decimal(10000)
 
     @staticmethod
     def _get_due_date(fy: FinancialYear, has_business_income: bool) -> date:

@@ -8,8 +8,7 @@ Traceability: C11.2 (Tax Provision KB — 40%→70%, P4)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import FrozenSet, Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -54,11 +53,11 @@ class ProvisionKnowledgeBase:
             self._by_category[entry.category] = []
         self._by_category[entry.category].append(entry)
 
-    def get(self, provision_id: str) -> Optional[ProvisionEntry]:
+    def get(self, provision_id: str) -> ProvisionEntry | None:
         """Look up a provision by ID."""
         return self._provisions.get(provision_id)
 
-    def get_by_section(self, section: str) -> Optional[ProvisionEntry]:
+    def get_by_section(self, section: str) -> ProvisionEntry | None:
         """Look up a provision by section number."""
         return self._by_section.get(section)
 

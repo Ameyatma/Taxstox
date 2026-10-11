@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import re
-from uuid import UUID
 
 logger = logging.getLogger(__name__)
 

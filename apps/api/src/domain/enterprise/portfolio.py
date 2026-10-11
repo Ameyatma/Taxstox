@@ -9,9 +9,8 @@ Traceability: C21.3 (Client Portfolio — 50%→80%, P5)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -52,15 +51,15 @@ class ClientFilingStatus:
 
     def __post_init__(self) -> None:
         if not self.last_updated:
-            self.last_updated = datetime.now(timezone.utc).isoformat()
+            self.last_updated = datetime.now(UTC).isoformat()
 
     def advance(self, new_status: FilingStatus) -> None:
         self.status = new_status
-        self.last_updated = datetime.now(timezone.utc).isoformat()
+        self.last_updated = datetime.now(UTC).isoformat()
 
     def assign_to(self, staff_user_id: UUID) -> None:
         self.assigned_to = staff_user_id
-        self.last_updated = datetime.now(timezone.utc).isoformat()
+        self.last_updated = datetime.now(UTC).isoformat()
 
     @property
     def is_complete(self) -> bool:
@@ -70,7 +69,7 @@ class ClientFilingStatus:
     def is_overdue(self) -> bool:
         if not self.due_date or self.is_complete:
             return False
-        return datetime.now(timezone.utc).isoformat()[:10] > self.due_date
+        return datetime.now(UTC).isoformat()[:10] > self.due_date
 
 
 @dataclass(frozen=True)
@@ -91,7 +90,7 @@ class DocumentVaultEntry:
     def __post_init__(self) -> None:
         if not self.uploaded_at:
             object.__setattr__(self, "uploaded_at",
-                              datetime.now(timezone.utc).isoformat())
+                              datetime.now(UTC).isoformat())
 
     @staticmethod
     def create(
@@ -123,7 +122,7 @@ class ClientPortfolio:
 
     def get_client_status(
         self, client_user_id: UUID, financial_year: str,
-    ) -> Optional[ClientFilingStatus]:
+    ) -> ClientFilingStatus | None:
         for fs in self.filing_statuses:
             if fs.client_user_id == client_user_id and fs.financial_year == financial_year:
                 return fs

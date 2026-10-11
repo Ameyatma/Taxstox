@@ -9,10 +9,9 @@ Traceability: C11.3 (Finance Act Change Analyzer — 0%→50%, P4)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
 from enum import Enum
 
-from src.engine.rules.config import TaxYearConfig, SlabBracket, RegimeConfig
+from src.engine.rules.config import RegimeConfig, TaxYearConfig
 from src.models.financial_year import FinancialYear
 
 
@@ -173,7 +172,7 @@ class FinanceActChangeAnalyzer:
                 old_value=f"₹{old_regime.rebate_threshold:,.0f}",
                 new_value=f"₹{new_regime.rebate_threshold:,.0f}",
                 provision_affected="sec_87a",
-                taxpayer_impact=f"More taxpayers eligible for rebate" if new_regime.rebate_threshold > old_regime.rebate_threshold else "Fewer taxpayers eligible for rebate",
+                taxpayer_impact="More taxpayers eligible for rebate" if new_regime.rebate_threshold > old_regime.rebate_threshold else "Fewer taxpayers eligible for rebate",
                 magnitude="major",
             ))
         if old_regime.rebate_max != new_regime.rebate_max:
@@ -296,7 +295,7 @@ class FinanceActChangeAnalyzer:
                 old_value=f"{cf.equity_stcg_rate * 100:.0f}%",
                 new_value=f"{ct.equity_stcg_rate * 100:.0f}%",
                 provision_affected="sec_111a",
-                taxpayer_impact=f"Short-term capital gains tax rate changed",
+                taxpayer_impact="Short-term capital gains tax rate changed",
                 magnitude="major",
             ))
         if cf.equity_ltcg_rate != ct.equity_ltcg_rate:
@@ -306,7 +305,7 @@ class FinanceActChangeAnalyzer:
                 old_value=f"{cf.equity_ltcg_rate * 100:.0f}%",
                 new_value=f"{ct.equity_ltcg_rate * 100:.0f}%",
                 provision_affected="sec_112a",
-                taxpayer_impact=f"Long-term capital gains tax rate changed",
+                taxpayer_impact="Long-term capital gains tax rate changed",
                 magnitude="major",
             ))
 

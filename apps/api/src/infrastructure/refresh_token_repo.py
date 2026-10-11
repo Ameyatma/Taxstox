@@ -3,10 +3,7 @@
 import hashlib
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
-
-import psycopg2
-import psycopg2.extras
+from datetime import UTC, datetime, timedelta
 
 from src.db.database import get_db
 
@@ -33,7 +30,7 @@ class RefreshTokenRepository:
         raw_token = os.urandom(self.TOKEN_BYTES).hex()
         token_hash = self._hash_token(raw_token)
         token_id = str(uuid.uuid4())[:12]
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=self.TTL_HOURS)
+        expires_at = datetime.now(UTC) + timedelta(hours=self.TTL_HOURS)
 
         cur = self.conn.cursor()
         cur.execute(
@@ -63,7 +60,7 @@ class RefreshTokenRepository:
         if row is None:
             return None
         d = dict(row)
-        if d["revoked"] or d["expires_at"] < datetime.now(timezone.utc):
+        if d["revoked"] or d["expires_at"] < datetime.now(UTC):
             return None
         return d
 

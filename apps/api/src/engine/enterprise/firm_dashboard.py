@@ -11,13 +11,13 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import UUID
 
-from src.domain.reporting.dashboard import (
-    FirmDashboard,
-    DashboardMetric,
-    MetricType,
-    DeadlineTracker,
-)
 from src.domain.enterprise.tenant import Tenant, TenantRepository
+from src.domain.reporting.dashboard import (
+    DashboardMetric,
+    DeadlineTracker,
+    FirmDashboard,
+    MetricType,
+)
 
 
 class FirmDashboardEngine:
@@ -78,7 +78,7 @@ class FirmDashboardEngine:
         # Revenue from subscription
         sub = getattr(tenant, 'subscription', None)
         if sub:
-            price = getattr(sub, 'price_per_filing', Decimal("0"))
+            price = getattr(sub, 'price_per_filing', Decimal(0))
             filings = Decimal(str(portfolio.filing_statuses if portfolio else 0))
             rev = (filings * price).quantize(Decimal("0.01"))
             dashboard.revenue_this_month = DashboardMetric(

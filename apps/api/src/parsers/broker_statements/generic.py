@@ -8,14 +8,12 @@ import csv
 import io
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
 from src.models.tax import CGSaleEntry
 
-
 # ── Shared helpers ────────────────────────────────────────────────────
 
-def _find_column(headers: list[str], candidates: list[str]) -> Optional[str]:
+def _find_column(headers: list[str], candidates: list[str]) -> str | None:
     for h in headers:
         h_lower = h.strip().lower()
         for c in candidates:
@@ -113,11 +111,11 @@ def parse_groww_tradebook(content: bytes, filename: str = "") -> list[CGSaleEntr
                 quantity=qty,
                 sale_price=price,
                 consideration=qty * price,
-                cost=Decimal("0"),  # Enrich with buy data or tax P&L
+                cost=Decimal(0),  # Enrich with buy data or tax P&L
                 stt_paid=("NSE" in segment.upper() or "BSE" in segment.upper()),
                 term="",
                 asset_class=_detect_asset_class(segment),
-                gain=Decimal("0"),
+                gain=Decimal(0),
             ))
         except (ValueError, KeyError):
             continue
@@ -164,11 +162,11 @@ def parse_upstox_tradebook(content: bytes, filename: str = "") -> list[CGSaleEnt
                 quantity=qty,
                 sale_price=price,
                 consideration=qty * price,
-                cost=Decimal("0"),
+                cost=Decimal(0),
                 stt_paid=True,
                 term="",
                 asset_class=_detect_asset_class(segment),
-                gain=Decimal("0"),
+                gain=Decimal(0),
             ))
         except (ValueError, KeyError):
             continue
@@ -215,11 +213,11 @@ def parse_angel_one_tradebook(content: bytes, filename: str = "") -> list[CGSale
                 quantity=qty,
                 sale_price=price,
                 consideration=qty * price,
-                cost=Decimal("0"),
+                cost=Decimal(0),
                 stt_paid=True,
                 term="",
                 asset_class=_detect_asset_class(segment),
-                gain=Decimal("0"),
+                gain=Decimal(0),
             ))
         except (ValueError, KeyError):
             continue

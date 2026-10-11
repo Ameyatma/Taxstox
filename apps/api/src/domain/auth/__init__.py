@@ -8,6 +8,7 @@ Traceability: PR1.2 (Forgot Password — production-grade abstraction)
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC
 from typing import Protocol
 from uuid import UUID, uuid4
 
@@ -28,7 +29,7 @@ class PasswordResetToken:
         from datetime import datetime, timezone
         try:
             expires = datetime.fromisoformat(self.expires_at)
-            return datetime.now(timezone.utc) > expires
+            return datetime.now(UTC) > expires
         except (ValueError, TypeError):
             return True
 

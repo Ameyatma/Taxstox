@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 
 class FindingSeverity(str, Enum):
@@ -28,7 +27,7 @@ class ComplianceFinding:
     severity: FindingSeverity
     description: str
     recommendation: str = ""
-    estimated_impact: Decimal = Decimal("0")
+    estimated_impact: Decimal = Decimal(0)
     source_field: str = ""
 
 
@@ -63,8 +62,8 @@ class ComplianceChecker:
         self,
         ais_has_salary_tds: bool = False,
         user_has_salary: bool = False,
-        ais_has_interest: Decimal = Decimal("0"),
-        user_has_interest: Decimal = Decimal("0"),
+        ais_has_interest: Decimal = Decimal(0),
+        user_has_interest: Decimal = Decimal(0),
         ais_has_dividend: bool = False,
         user_has_dividend: bool = False,
         ais_cg_count: int = 0,
@@ -143,10 +142,10 @@ class ComplianceChecker:
 
     def detect_anomalies(
         self,
-        total_income: Decimal = Decimal("0"),
-        previous_year_income: Optional[Decimal] = None,
-        tds_to_tax_ratio: Optional[Decimal] = None,
-        deduction_to_income_ratio: Optional[Decimal] = None,
+        total_income: Decimal = Decimal(0),
+        previous_year_income: Decimal | None = None,
+        tds_to_tax_ratio: Decimal | None = None,
+        deduction_to_income_ratio: Decimal | None = None,
     ) -> ComplianceReport:
         """Detect unusual patterns that may indicate errors or scrutiny risk."""
         report = ComplianceReport()

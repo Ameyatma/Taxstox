@@ -12,11 +12,10 @@ Traceability: C21.1 (Tenant Management), C21.2 (CA Firm Hierarchy),
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, Protocol
+from typing import Protocol
 from uuid import UUID, uuid4
-
 
 # ── Value Objects ─────────────────────────────────────────────────────
 
@@ -89,7 +88,7 @@ class ClientTag:
     def __post_init__(self) -> None:
         if not self.applied_at:
             object.__setattr__(self, "applied_at",
-                              datetime.now(timezone.utc).isoformat())
+                              datetime.now(UTC).isoformat())
 
 
 # ── Tenant Aggregate Root ─────────────────────────────────────────────
@@ -122,7 +121,7 @@ class Tenant:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
         if not self.updated_at:
             self.updated_at = self.created_at
 
@@ -153,7 +152,7 @@ class Tenant:
         self._touch()
         return role
 
-    def get_role(self, role_id: UUID) -> Optional[Role]:
+    def get_role(self, role_id: UUID) -> Role | None:
         for r in self.roles:
             if r.role_id == role_id:
                 return r
@@ -188,7 +187,7 @@ class Tenant:
         self._touch()
 
     def _touch(self) -> None:
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     @property
     def client_count(self) -> int:
@@ -309,7 +308,7 @@ class ClientAssignment:
     def __post_init__(self) -> None:
         if not self.assigned_at:
             object.__setattr__(self, "assigned_at",
-                              datetime.now(timezone.utc).isoformat())
+                              datetime.now(UTC).isoformat())
 
 
 # ── Tenant Repository (Abstract Interface) ────────────────────────────
@@ -317,9 +316,9 @@ class ClientAssignment:
 class TenantRepository(Protocol):
     """Aggregate-oriented repository for Tenant. Implementation in infrastructure."""
 
-    def get(self, tenant_id: UUID) -> Optional[Tenant]: ...
+    def get(self, tenant_id: UUID) -> Tenant | None: ...
 
-    def get_by_slug(self, slug: str) -> Optional[Tenant]: ...
+    def get_by_slug(self, slug: str) -> Tenant | None: ...
 
     def save(self, tenant: Tenant) -> None: ...
 
@@ -334,4 +333,4 @@ class TenantContextProvider(Protocol):
     """Abstract access to current tenant context. Infrastructure provides
     the implementation via TenantContextMiddleware."""
 
-    def current_tenant_id(self) -> Optional[UUID]: ...
+    def current_tenant_id(self) -> UUID | None: ...

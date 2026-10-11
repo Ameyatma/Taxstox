@@ -9,10 +9,9 @@ Traceability: C10.2 (Explanation Engine — 20%→60%),
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from decimal import Decimal
+from dataclasses import dataclass
 
-from src.engine.audit import AuditTrail, AuditEventType
+from src.engine.audit import AuditEventType, AuditTrail
 
 
 @dataclass(frozen=True)
@@ -160,7 +159,7 @@ class ExplanationEngine:
             if value_key in event.output_data:
                 parts = [
                     f"### How '{value_key}' Was Computed",
-                    f"",
+                    "",
                     f"**Value:** ₹{event.output_data.get(value_key, 'N/A')}",
                     f"**Computed at:** {event.event_type.value}",
                 ]
@@ -170,7 +169,7 @@ class ExplanationEngine:
                     prov_ref = self.tracer.lookup(event.rule_reference)
                     if prov_ref:
                         parts.append(f"**Description:** {prov_ref.description}")
-                parts.append(f"")
+                parts.append("")
                 parts.append(f"**Input Data:** {event.input_data}")
                 parts.append(f"**Description:** {event.description}")
                 return "\n".join(parts)

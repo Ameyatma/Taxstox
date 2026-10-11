@@ -11,23 +11,15 @@ from __future__ import annotations
 import io
 import logging
 import re
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
 
 import pdfplumber
 
 from src.parsers.confidence import (
-    ConfidenceLevel,
-    ScoredField,
     DocumentExtractionReport,
-    high,
-    medium,
-    low,
-    missing,
 )
-
 from src.utils.decimal_utils import to_decimal
 
 logger = logging.getLogger(__name__)
@@ -41,11 +33,11 @@ class Form26ASTDSEntry:
         self.deductor_name: str = ""
         self.deductor_tan: str = ""
         self.section: str = ""            # 192, 194A, 194I, etc.
-        self.amount_paid: Decimal = Decimal("0")
-        self.tds_deducted: Decimal = Decimal("0")
-        self.tds_deposited: Decimal = Decimal("0")
+        self.amount_paid: Decimal = Decimal(0)
+        self.tds_deducted: Decimal = Decimal(0)
+        self.tds_deposited: Decimal = Decimal(0)
         self.quarter: str = ""
-        self.date_of_payment: Optional[date] = None
+        self.date_of_payment: date | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -65,10 +57,10 @@ class Form26ASData:
         self.pan: str = ""
         self.assessment_year: str = ""
         self.tds_entries: list[Form26ASTDSEntry] = []
-        self.total_tds: Decimal = Decimal("0")
-        self.advance_tax: Decimal = Decimal("0")
-        self.self_assessment_tax: Decimal = Decimal("0")
-        self.refund_received: Decimal = Decimal("0")
+        self.total_tds: Decimal = Decimal(0)
+        self.advance_tax: Decimal = Decimal(0)
+        self.self_assessment_tax: Decimal = Decimal(0)
+        self.refund_received: Decimal = Decimal(0)
 
     @property
     def total_tax_credit(self) -> Decimal:
@@ -84,7 +76,7 @@ class Form26ASParser:
     AMOUNT_PATTERN = re.compile(r"[\d,]+\.\d{2}")
     DATE_PATTERN = re.compile(r"\d{2}/\d{2}/\d{4}")
 
-    def parse(self, pdf_path: Path, password: Optional[str] = None) -> tuple[Form26ASData, DocumentExtractionReport]:
+    def parse(self, pdf_path: Path, password: str | None = None) -> tuple[Form26ASData, DocumentExtractionReport]:
         """Parse Form 26AS PDF. Returns data + extraction report."""
         data = Form26ASData()
         report = DocumentExtractionReport(document_type="form26as", total_fields=8)
@@ -143,7 +135,7 @@ class Form26ASParser:
 
         return data, report
 
-    def _extract_text(self, pdf_path: Path, password: Optional[str] = None) -> str:
+    def _extract_text(self, pdf_path: Path, password: str | None = None) -> str:
         """Extract text from PDF, optionally decrypting."""
         try:
             with open(pdf_path, "rb") as f:
@@ -230,7 +222,7 @@ class Form26ASParser:
         )
         if match:
             return to_decimal(match.group(1))
-        return Decimal("0")
+        return Decimal(0)
 
     def _extract_self_assessment_tax(self, text: str) -> Decimal:
         """Extract self-assessment tax payments."""
@@ -240,7 +232,7 @@ class Form26ASParser:
         )
         if match:
             return to_decimal(match.group(1))
-        return Decimal("0")
+        return Decimal(0)
 
     def _extract_refund(self, text: str) -> Decimal:
         """Extract refund received."""
@@ -250,9 +242,9 @@ class Form26ASParser:
         )
         if match:
             return to_decimal(match.group(1))
-        return Decimal("0")
+        return Decimal(0)
 
-def parse_form26as(pdf_path: Path, password: Optional[str] = None) -> tuple[Form26ASData, DocumentExtractionReport]:
+def parse_form26as(pdf_path: Path, password: str | None = None) -> tuple[Form26ASData, DocumentExtractionReport]:
     """Convenience function to parse Form 26AS PDF."""
     parser = Form26ASParser()
     return parser.parse(pdf_path, password)

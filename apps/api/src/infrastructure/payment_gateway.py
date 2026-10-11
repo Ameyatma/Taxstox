@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from uuid import UUID
 
 from src.domain.payment.payment_gateway import (
-    PaymentTransaction, PaymentGatewayType, PaymentStatus,
+    PaymentTransaction,
 )
 
 logger = logging.getLogger(__name__)

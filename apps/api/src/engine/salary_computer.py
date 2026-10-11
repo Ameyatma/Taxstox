@@ -16,16 +16,14 @@ All computation uses 2 decimal places. Rounding only at final tax (not here).
 """
 
 from decimal import Decimal
-from typing import Optional
 
 from src.engine.rules.config import FY2025_26, rule_repository
 from src.models.financial_year import FinancialYear
-from src.models.form16 import Form16Data, Form16PartB, Form16Annexure, Section10Exemptions
-
+from src.models.form16 import Form16Annexure, Form16Data
 
 # Section 10 exemption amounts (not FY-varying; retained locally)
-CHILD_EDU_LIMIT = Decimal("100")      # per month per child, max 2 children
-HOSTEL_LIMIT = Decimal("300")         # per month per child, max 2 children
+CHILD_EDU_LIMIT = Decimal(100)      # per month per child, max 2 children
+HOSTEL_LIMIT = Decimal(300)         # per month per child, max 2 children
 MAX_CHILDREN = 2
 MONTHS_PER_YEAR = 12
 
@@ -35,36 +33,36 @@ class SalaryBreakdown:
 
     def __init__(self):
         # ── Gross Salary ──
-        self.salary_171: Decimal = Decimal("0")       # Section 17(1) — basic + allowances
-        self.perquisites_172: Decimal = Decimal("0")  # Section 17(2) — perquisites
-        self.profits_lieu_173: Decimal = Decimal("0") # Section 17(3) — gratuity, leave, etc.
-        self.gross_salary: Decimal = Decimal("0")
+        self.salary_171: Decimal = Decimal(0)       # Section 17(1) — basic + allowances
+        self.perquisites_172: Decimal = Decimal(0)  # Section 17(2) — perquisites
+        self.profits_lieu_173: Decimal = Decimal(0) # Section 17(3) — gratuity, leave, etc.
+        self.gross_salary: Decimal = Decimal(0)
 
         # ── Allowances (Annexure breakdown) ──
-        self.basic_da: Decimal = Decimal("0")
-        self.hra_received: Decimal = Decimal("0")
-        self.lta_received: Decimal = Decimal("0")
-        self.special_allowance: Decimal = Decimal("0")
-        self.other_allowances: Decimal = Decimal("0")
+        self.basic_da: Decimal = Decimal(0)
+        self.hra_received: Decimal = Decimal(0)
+        self.lta_received: Decimal = Decimal(0)
+        self.special_allowance: Decimal = Decimal(0)
+        self.other_allowances: Decimal = Decimal(0)
 
         # ── Section 10 Exemptions ──
-        self.hra_exemption: Decimal = Decimal("0")
-        self.lta_exemption: Decimal = Decimal("0")
-        self.child_edu_exemption: Decimal = Decimal("0")
-        self.hostel_exemption: Decimal = Decimal("0")
-        self.gratuity_exemption: Decimal = Decimal("0")
-        self.leave_encash_exemption: Decimal = Decimal("0")
-        self.other_exemptions: Decimal = Decimal("0")
-        self.total_exemptions: Decimal = Decimal("0")
+        self.hra_exemption: Decimal = Decimal(0)
+        self.lta_exemption: Decimal = Decimal(0)
+        self.child_edu_exemption: Decimal = Decimal(0)
+        self.hostel_exemption: Decimal = Decimal(0)
+        self.gratuity_exemption: Decimal = Decimal(0)
+        self.leave_encash_exemption: Decimal = Decimal(0)
+        self.other_exemptions: Decimal = Decimal(0)
+        self.total_exemptions: Decimal = Decimal(0)
 
         # ── Section 16 Deductions ──
-        self.std_deduction: Decimal = Decimal("0")
-        self.entertainment_allowance: Decimal = Decimal("0")
-        self.professional_tax: Decimal = Decimal("0")
-        self.total_salary_deductions: Decimal = Decimal("0")
+        self.std_deduction: Decimal = Decimal(0)
+        self.entertainment_allowance: Decimal = Decimal(0)
+        self.professional_tax: Decimal = Decimal(0)
+        self.total_salary_deductions: Decimal = Decimal(0)
 
         # ── Result ──
-        self.income_from_salary: Decimal = Decimal("0")
+        self.income_from_salary: Decimal = Decimal(0)
 
     def to_dict(self) -> dict:
         return {
@@ -87,13 +85,13 @@ class SalaryComputer:
 
     def compute(
         self,
-        form16: Optional[Form16Data] = None,
-        annexure: Optional[Form16Annexure] = None,
-        rent_paid: Decimal = Decimal("0"),
+        form16: Form16Data | None = None,
+        annexure: Form16Annexure | None = None,
+        rent_paid: Decimal = Decimal(0),
         metro_city: bool = False,
         is_new_regime: bool = True,
         children_count: int = 0,
-        financial_year: Optional[FinancialYear] = None,
+        financial_year: FinancialYear | None = None,
     ) -> SalaryBreakdown:
         """
         Compute salary income with ITD-matching logic.
@@ -120,19 +118,19 @@ class SalaryComputer:
         annex = annexure or form16.annexure
 
         # ── Step 1: Gross Salary (17(1) + 17(2) + 17(3)) ──
-        result.salary_171 = pb.salary_171 or pb.total_gross_salary or Decimal("0")
-        result.perquisites_172 = pb.perquisites_172 or Decimal("0")
-        result.profits_lieu_173 = pb.profits_lieu_173 or Decimal("0")
+        result.salary_171 = pb.salary_171 or pb.total_gross_salary or Decimal(0)
+        result.perquisites_172 = pb.perquisites_172 or Decimal(0)
+        result.profits_lieu_173 = pb.profits_lieu_173 or Decimal(0)
         result.gross_salary = result.salary_171 + result.perquisites_172 + result.profits_lieu_173
 
         # Extract Annexure components
-        result.basic_da = (annex.basic or Decimal("0")) + (getattr(annex, "da", None) or Decimal("0"))
-        result.hra_received = annex.hra or Decimal("0")
-        result.lta_received = annex.lta or Decimal("0")
-        result.special_allowance = annex.special_allowance or Decimal("0")
+        result.basic_da = (annex.basic or Decimal(0)) + (getattr(annex, "da", None) or Decimal(0))
+        result.hra_received = annex.hra or Decimal(0)
+        result.lta_received = annex.lta or Decimal(0)
+        result.special_allowance = annex.special_allowance or Decimal(0)
         # Other allowances = total 17(1) - (basic + hra + lta + special)
         known = result.basic_da + result.hra_received + result.lta_received + result.special_allowance
-        result.other_allowances = max(Decimal("0"), result.salary_171 - known)
+        result.other_allowances = max(Decimal(0), result.salary_171 - known)
 
         # ── Step 2: Section 10 Exemptions ──
 
@@ -143,7 +141,7 @@ class SalaryComputer:
         if result.hra_received > 0 and rent_paid > 0:
             actual_hra = result.hra_received
             rent_minus_10pct = max(
-                Decimal("0"),
+                Decimal(0),
                 (rent_paid * MONTHS_PER_YEAR) - (result.basic_da * Decimal("0.10"))
             )
             pct_of_basic = result.basic_da * (config.hra_metro_pct if metro_city else config.hra_non_metro_pct)
@@ -153,7 +151,7 @@ class SalaryComputer:
         # Form 16 shows LTA RECEIVED in Annexure. The exempt portion is under
         # Section 10(5) in Part B. Without actual travel proof, NONE is exempt.
         # The employer's Form 16 Section 10 exemption is the authoritative source.
-        result.lta_exemption = exemptions.travel_concession_105 or Decimal("0")
+        result.lta_exemption = exemptions.travel_concession_105 or Decimal(0)
 
         # Child Education Allowance: ₹100/month/child, max 2 children
         if children_count > 0:
@@ -184,14 +182,14 @@ class SalaryComputer:
         result.std_deduction = config.new_regime.std_deduction if is_new_regime else config.old_regime.std_deduction
 
         # Professional Tax: from Form 16, capped at ₹2,500
-        pt_from_f16 = pb.professional_tax_16iii or Decimal("0")
+        pt_from_f16 = pb.professional_tax_16iii or Decimal(0)
         result.professional_tax = min(pt_from_f16, config.max_professional_tax)
 
         result.total_salary_deductions = result.std_deduction + result.professional_tax
 
         # ── Step 4: Income under head "Salaries" ──
         result.income_from_salary = max(
-            Decimal("0"),
+            Decimal(0),
             result.gross_salary - result.total_exemptions - result.total_salary_deductions
         )
 

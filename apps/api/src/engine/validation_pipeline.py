@@ -9,9 +9,9 @@ Traceability: C8.3 (ITR Schema Validation), C8.5 (Regulatory Limit Validation),
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Protocol
 
 
 class Severity(str, Enum):
@@ -158,7 +158,7 @@ def check_deduction_limits(data: dict) -> ValidationResult:
     """V-DED-001: 80C must not exceed ₹1,50,000."""
     from decimal import Decimal
     sec80c = Decimal(str(data.get("sec80c", "0")))
-    limit = Decimal("150000")
+    limit = Decimal(150000)
     if sec80c > limit:
         return ValidationResult(
             rule_id="V-DED-001", rule_name="80C Limit",

@@ -10,22 +10,20 @@ Traceability: C18.1 (Notification Engine), C18.2 (Deadline Reminders),
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from uuid import UUID
 
-from src.domain.notification.notification import (
-    Notification,
-    NotificationChannel,
-    NotificationTemplate,
-    NotificationPriority,
-    NotificationPreference,
-    STANDARD_TEMPLATES,
-)
 from src.domain.notification.deadline_watcher import (
     DeadlineRule,
-    ReminderSchedule,
     DeadlineType,
+    ReminderSchedule,
     get_standard_deadline,
+)
+from src.domain.notification.notification import (
+    STANDARD_TEMPLATES,
+    Notification,
+    NotificationChannel,
+    NotificationPreference,
 )
 
 
@@ -81,7 +79,7 @@ class NotificationEngine:
             return False
         # Quiet hours check
         if preferences.quiet_hours_start and preferences.quiet_hours_end:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             hour = now.hour
             start_h = int(preferences.quiet_hours_start.split(":")[0])
             end_h = int(preferences.quiet_hours_end.split(":")[0])

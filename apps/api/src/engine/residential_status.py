@@ -9,11 +9,8 @@ Traceability: C2.2 (Residential Status — 5%→80%, P1)
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
-from enum import Enum
 from decimal import Decimal
-
-from src.models.financial_year import FinancialYear
+from enum import Enum
 
 
 class ResidentialStatus(str, Enum):
@@ -48,7 +45,7 @@ class ResidentialStatusEngine:
         days_in_india_preceding_4: int,
         days_in_india_preceding_7: int = 0,
         is_citizen_or_pio: bool = False,
-        india_income: Decimal = Decimal("0"),
+        india_income: Decimal = Decimal(0),
         non_resident_in_9_of_10: bool = False,
     ) -> ResidentialStatusResult:
         """Determine residential status from factual inputs.
@@ -71,11 +68,11 @@ class ResidentialStatusEngine:
 
         # Exception: 60 days → 182 days for citizens/PIO with India income > ₹15L
         # who are not liable to tax in any other country
-        if is_citizen_or_pio and india_income > Decimal("1500000"):
+        if is_citizen_or_pio and india_income > Decimal(1500000):
             condition_b = False  # Only 182-day test applies
 
         # Visiting citizen/PIO: 60→120 days if India income ≤ ₹15L
-        if is_citizen_or_pio and india_income <= Decimal("1500000"):
+        if is_citizen_or_pio and india_income <= Decimal(1500000):
             condition_b = days_in_india_fy >= 120 and days_in_india_preceding_4 >= 365
 
         is_resident = condition_a or condition_b
@@ -85,7 +82,7 @@ class ResidentialStatusEngine:
         # Deemed residents bypass the basic 182-day test.
         deemed_resident = (
             is_citizen_or_pio
-            and india_income > Decimal("1500000")
+            and india_income > Decimal(1500000)
             and days_in_india_fy >= 120
         )
 
@@ -110,7 +107,7 @@ class ResidentialStatusEngine:
                 days_in_india_preceding_4=days_in_india_preceding_4,
                 days_in_india_preceding_7=days_in_india_preceding_7,
                 is_citizen_or_pio=is_citizen_or_pio,
-                india_income_exceeds_15l=india_income > Decimal("1500000"),
+                india_income_exceeds_15l=india_income > Decimal(1500000),
                 non_resident_in_9_of_10=non_resident_in_9_of_10,
                 explanation=f"Non-Resident: {days_in_india_fy} days in India during FY "
                             f"(< 182 days, basic conditions not met).",
@@ -140,7 +137,7 @@ class ResidentialStatusEngine:
             days_in_india_preceding_4=days_in_india_preceding_4,
             days_in_india_preceding_7=days_in_india_preceding_7,
             is_citizen_or_pio=is_citizen_or_pio,
-            india_income_exceeds_15l=india_income > Decimal("1500000"),
+            india_income_exceeds_15l=india_income > Decimal(1500000),
             non_resident_in_9_of_10=non_resident_in_9_of_10,
             explanation=explanation,
         )

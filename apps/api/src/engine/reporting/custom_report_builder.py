@@ -7,18 +7,18 @@ Traceability: C14.6 (Custom Report Builder — 0%→30%, P5)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import UUID
 
+from src.domain.enterprise.tenant import Tenant
 from src.domain.reporting.custom_report import (
-    ReportTemplate,
-    ReportSchedule,
     ReportFormat,
     ReportFrequency,
+    ReportSchedule,
+    ReportTemplate,
     build_standard_templates,
 )
-from src.domain.enterprise.tenant import Tenant
 
 
 @dataclass
@@ -37,7 +37,7 @@ class ReportGenerationResult:
 
     def __post_init__(self) -> None:
         if not self.generated_at:
-            self.generated_at = datetime.now(timezone.utc).isoformat()
+            self.generated_at = datetime.now(UTC).isoformat()
 
 
 class CustomReportEngine:
@@ -146,7 +146,7 @@ class CustomReportEngine:
             "template": template.name,
             "tenant": tenant.name,
             "financial_year": financial_year,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "clients": [],
         }
 

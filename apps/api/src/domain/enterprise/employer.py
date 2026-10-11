@@ -5,8 +5,8 @@ Traceability: C16.4 (Employer/Enterprise Integration — 0%→30%, P7)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 
@@ -27,13 +27,13 @@ class EmployerIntegration:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
         if not self.updated_at:
             self.updated_at = self.created_at
 
     def activate(self) -> None:
         self.status = "active"
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     @staticmethod
     def create(

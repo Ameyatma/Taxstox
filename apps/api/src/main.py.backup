@@ -1,0 +1,175 @@
+"""TaxStox Backend — FastAPI Application Entry Point."""
+
+from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env file for local dev (DATABASE_URL, etc.)
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from src.api.auth_routes import router as auth_router
+from src.api.calculators import router as calculators_router
+from src.api.dashboard import router as dashboard_router
+from src.api.routes import router as itr_router
+from src.api.simulation import router as simulation_router
+from src.api.tax_routes import router as tax_router
+# Market domain routers
+from src.domains.market.routers.charts import router as market_charts_router
+from src.domains.market.routers.recommendations import router as market_recommendations_router
+from src.domains.market.routers.users import router as market_users_router
+from src.domains.market.routers.bridge import router as market_bridge_router
+from src.domains.market.routers.asset import router as market_asset_router
+from src.middleware.correlation import CorrelationMiddleware
+from src.middleware.metrics import MetricsMiddleware
+from src.middleware.security_headers import SecurityHeadersMiddleware
+from src.middleware.tenant_context import TenantContextMiddleware
+from src.utils.logging import get_logger, setup_logging
+
+logger = get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan — startup/shutdown."""
+    # Startup: structured logging, DB init, scheduler
+    setup_logging()
+    logger.info("TaxStox backend starting")
+
+    from src.db.database import init_db, init_tax_tables
+    from src.domains.market.storage.database import init_db as init_market_db
+
+    init_db()
+    init_tax_tables()
+    logger.info("Tax domain database initialized")
+
+    # Initialize Market Domain Database
+    try:
+        init_market_db()
+        logger.info("Market Domain Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Error initializing Market Domain DB: {e}")
+        raise  # Fail fast if market database initialization fails
+
+    # PR2: Enforce encryption key at startup — fail fast if missing
+    try:
+        from src.infrastructure.encryption import FernetEncryptionService
+        FernetEncryptionService()
+        logger.info("Encryption service initialized — TAXSTOX_ENCRYPTION_KEY verified")
+    except RuntimeError as e:
+        logger.critical("ENCRYPTION KEY MISSING: %s", str(e))
+        raise
+
+    # Start the tax sync scheduler
+    from src.scheduler import start_scheduler
+
+    start_scheduler()
+    logger.info("Scheduler started")
+
+    yield
+    # Shutdown
+    from src.scheduler import stop_scheduler
+
+    stop_scheduler()
+    logger.info("TaxStox backend stopped")
+
+
+app = FastAPI(
+    title="TaxStox — ITR Auto-Filing Engine",
+    description="Upload Form 16 + AIS. Answer 5 yes/no questions. Download validated ITR JSON.",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+# Correlation ID — must be added before other middleware
+# (innermost middleware = first to process request, last to process response)
+app.add_middleware(CorrelationMiddleware)
+
+# Metrics — record every request (latency, status, error rate). Placed directly
+# outside CorrelationMiddleware so it measures the full handler path.
+app.add_middleware(MetricsMiddleware)
+
+# Tenant context — resolves tenant_id per request (X-Tenant-ID header or JWT claim).
+# Registered, no mandatory tenant behavior: request.state.tenant_id is set to None
+# when neither header nor claim is present (public endpoints / individual taxpayers).
+# Note: the JWT tenant_id claim is set by the `get_current_user` route dependency,
+# which runs after middleware dispatch — so at dispatch time only the header resolves.
+app.add_middleware(TenantContextMiddleware)
+
+# Security headers — add before CORS so headers are on preflight responses
+app.add_middleware(SecurityHeadersMiddleware)
+
+# CORS — allow frontend (local dev + production)
+# (outermost middleware = last to process request, first to process response)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://taxstox.com",
+        "https://www.taxstox.com",
+        "https://taxstox.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(itr_router)
+app.include_router(auth_router)
+app.include_router(dashboard_router)
+app.include_router(calculators_router)
+app.include_router(simulation_router)
+app.include_router(tax_router)
+# Market domain routes
+app.include_router(market_charts_router, prefix="/api/v1/market/stocks", tags=["market-stocks"])
+app.include_router(market_recommendations_router, prefix="/api/v1/market/recommendations", tags=["market-recommendations"])
+app.include_router(market_users_router, prefix="/api/v1/market/users", tags=["market-users"])
+app.include_router(market_bridge_router, prefix="/api/v1/market/bridge", tags=["market-bridge"])
+app.include_router(market_asset_router, prefix="/api/v1/market/asset", tags=["market-asset"])
+
+
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {
+        "name": "TaxStox",
+        "tagline": "File ITR in 2 minutes. Master your stocks.",
+        "docs": "/docs",
+    }
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    """Enhanced health check with dependency status."""
+    import os
+
+    health = {
+        "status": "ok",
+        "service": "TaxStox ITR Engine",
+        "version": "0.1.0",
+    }
+
+    # Database connectivity check
+    try:
+        from src.db.database import get_db
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+        conn.close()
+        health["database"] = "connected"
+    except Exception as e:
+        health["database"] = "disconnected"
+        health["database_error"] = str(e)[:200]
+
+    # JWT secret configured check
+    jwt_secret = os.environ.get("TAXSTOX_JWT_SECRET", "")
+    if jwt_secret and jwt_secret != "taxstox-dev-secret-change-in-production":
+        health["jwt_secret"] = "configured"
+    else:
+        health["jwt_secret"] = "missing_or_default"
+
+    return health

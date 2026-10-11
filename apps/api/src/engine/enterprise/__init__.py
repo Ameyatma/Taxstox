@@ -8,23 +8,23 @@ from src.engine.enterprise.bulk_operations import (
     BulkImportResult,
     ClientImportRow,
 )
-from src.engine.enterprise.firm_dashboard import (
-    FirmDashboardEngine,
-    FirmDashboard,
-    DeadlineTracker,
-)
 from src.engine.enterprise.comparative_analytics import (
     ComparativeAnalyticsEngine,
     CrossClientBenchmark,
+)
+from src.engine.enterprise.firm_dashboard import (
+    DeadlineTracker,
+    FirmDashboard,
+    FirmDashboardEngine,
 )
 
 __all__ = [
     "BulkClientImportEngine",
     "BulkImportResult",
     "ClientImportRow",
-    "FirmDashboardEngine",
-    "FirmDashboard",
-    "DeadlineTracker",
     "ComparativeAnalyticsEngine",
     "CrossClientBenchmark",
+    "DeadlineTracker",
+    "FirmDashboard",
+    "FirmDashboardEngine",
 ]

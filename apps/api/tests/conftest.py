@@ -14,6 +14,9 @@ import pytest
 # Ensure backend source is importable
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Set default DATABASE_URL for testing (SQLite) if not already set
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_phase2.db")
+
 # PR4.3: The FastAPI app is imported lazily inside the `client` fixture (below)
 # so that this conftest never triggers import-time side effects for the unit
 # suite. `src.main` imports the auth router, whose `src.auth.jwt` module raises
@@ -30,13 +33,23 @@ os.environ.setdefault("TAXSTOX_ENCRYPTION_KEY", "-F5KHHwh7IbaUhTpjABbfkNTgHJQkTz
 @pytest.fixture
 def reset_db():
     """Reset the database before each test."""
+    # Initialize both domains' tables (idempotent) so tests have a working DB
+    from src.db.database import init_db as init_tax_db
+    from src.domains.market.storage.database import init_db as init_market_db
+    init_tax_db()
+    init_market_db()
+
     from src.db.database import get_db
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("DELETE FROM password_reset_tokens")
-    cur.execute("DELETE FROM refresh_tokens")
-    cur.execute("DELETE FROM filings")
-    cur.execute("DELETE FROM users")
+    # Try to delete from tables, but don't fail if they don't exist yet
+    tables = ["password_reset_tokens", "refresh_tokens", "filings", "users"]
+    for table in tables:
+        try:
+            cur.execute(f"DELETE FROM {table}")
+        except Exception:
+            # Table might not exist yet, which is OK
+            pass
     cur.close()
     conn.commit()
     conn.close()
@@ -44,10 +57,12 @@ def reset_db():
     # Cleanup after test
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("DELETE FROM password_reset_tokens")
-    cur.execute("DELETE FROM refresh_tokens")
-    cur.execute("DELETE FROM filings")
-    cur.execute("DELETE FROM users")
+    for table in tables:
+        try:
+            cur.execute(f"DELETE FROM {table}")
+        except Exception:
+            # Table might not exist yet, which is OK
+            pass
     cur.close()
     conn.commit()
     conn.close()

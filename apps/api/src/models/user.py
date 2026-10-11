@@ -1,10 +1,9 @@
 """User model for authentication and profile."""
 
-from datetime import datetime
-from typing import Optional
+
+import re
 
 from pydantic import BaseModel, Field, field_validator
-import re
 
 
 class UserCreate(BaseModel):
@@ -42,7 +41,7 @@ class UserResponse(BaseModel):
     email: str
     pan: str
     name: str
-    created_at: Optional[str] = None
+    created_at: str | None = None
 
 
 class UserInDB(BaseModel):

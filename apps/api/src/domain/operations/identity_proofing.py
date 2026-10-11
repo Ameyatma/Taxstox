@@ -6,7 +6,7 @@ Traceability: C17.7 (Identity Proofing — 0%→50%, P7)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -56,15 +56,15 @@ class IdentityVerification:
 
     def verify_pan(self, reference_id: str = "") -> None:
         self.pan_verified = True
-        self.pan_verified_at = datetime.now(timezone.utc).isoformat()
+        self.pan_verified_at = datetime.now(UTC).isoformat()
         self._recompute_trust()
 
     def complete_kyc(self, method: VerificationMethod, reference_id: str = "") -> None:
         self.kyc_status = KYCStatus.VERIFIED
-        self.kyc_completed_at = datetime.now(timezone.utc).isoformat()
+        self.kyc_completed_at = datetime.now(UTC).isoformat()
         self.attempts.append(VerificationAttempt(
             attempt_id=uuid4(), method=method, status=KYCStatus.VERIFIED,
-            attempted_at=datetime.now(timezone.utc).isoformat(),
+            attempted_at=datetime.now(UTC).isoformat(),
             reference_id=reference_id,
         ))
         self._recompute_trust()
@@ -73,7 +73,7 @@ class IdentityVerification:
         self.kyc_status = KYCStatus.REJECTED
         self.attempts.append(VerificationAttempt(
             attempt_id=uuid4(), method=method, status=KYCStatus.REJECTED,
-            attempted_at=datetime.now(timezone.utc).isoformat(),
+            attempted_at=datetime.now(UTC).isoformat(),
             failure_reason=reason,
         ))
 

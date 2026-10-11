@@ -8,16 +8,13 @@ Traceability: C1.3 (RBAC), C21.2 (CA Firm Hierarchy)
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 from src.domain.enterprise.tenant import (
-    Tenant,
-    TenantRepository,
-    Role,
     Permission,
     ResourceAction,
+    Tenant,
+    TenantRepository,
 )
 
 
@@ -91,4 +88,4 @@ class RoleAssignmentService:
         for role in tenant.roles:
             if role.name in role_names:
                 min_level = min(min_level, role.hierarchy_level)
-        return min_level if min_level < 999 else 999
+        return min(999, min_level)

@@ -43,10 +43,10 @@ class ITRSelector:
         business_type: str = "",  # "full_pnl" or "presumptive"
         has_foreign_income: bool = False,
         has_agricultural_income: bool = False,
-        agricultural_income_amount: Decimal = Decimal("0"),
+        agricultural_income_amount: Decimal = Decimal(0),
         has_crypto_vda: bool = False,
         has_other_sources: bool = False,
-        total_income: Decimal = Decimal("0"),
+        total_income: Decimal = Decimal(0),
     ) -> ITRSelectionResult:
         """Select the appropriate ITR form."""
         disqualifiers: list[str] = []

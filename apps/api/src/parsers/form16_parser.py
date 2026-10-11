@@ -1,28 +1,25 @@
 """Form 16 PDF parser — decrypt with pikepdf, extract with pdfplumber."""
 
-import re
 import io
 import logging
-from datetime import date
+import re
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
 
 import pdfplumber
 import pikepdf
 
 from src.models.form16 import (
+    ChapterVIADeductions,
+    Form16Annexure,
     Form16Data,
     Form16PartA,
     Form16PartB,
-    Form16Annexure,
-    SalaryComponent,
     QuarterlyTDS,
+    SalaryComponent,
     Section10Exemptions,
-    ChapterVIADeductions,
     TaxComputation,
 )
-
 from src.utils.decimal_utils import to_decimal
 
 logger = logging.getLogger(__name__)
@@ -70,7 +67,7 @@ class Form16Parser:
                     text_parts.append(page_text)
         return "\n\n".join(text_parts)
 
-    def parse(self, pdf_path: Path, password: Optional[str] = None) -> Form16Data:
+    def parse(self, pdf_path: Path, password: str | None = None) -> Form16Data:
         """Parse a Form 16 PDF, optionally decrypting with password."""
         try:
             # Try opening directly first
@@ -220,10 +217,10 @@ class Form16Parser:
             data["opting_out_115bac"] = opt_out_match.group(1).strip().lower() == "yes"
 
         # Section 17(1) — Salary: "(a) Salary as per provisions contained in section 17(1) 1871602.00"
-        data["salary_171"] = self._extract_amount(text, r"section\s*17\s*\(\s*1\s*\)\s*") or Decimal("0")
+        data["salary_171"] = self._extract_amount(text, r"section\s*17\s*\(\s*1\s*\)\s*") or Decimal(0)
 
         # Section 17(2) — Perquisites
-        data["perquisites_172"] = self._extract_amount(text, r"section\s*17\s*\(\s*2\s*\).*?[\d,]+\.\d{2}") or Decimal("0")
+        data["perquisites_172"] = self._extract_amount(text, r"section\s*17\s*\(\s*2\s*\).*?[\d,]+\.\d{2}") or Decimal(0)
         # Try direct match: "(b) ... 0.00" near 17(2) text
         perq_match = re.search(
             r"under\s*section\s*17\s*\(\s*2\s*\).*?\n.*?([\d,]+\.\d{2})",
@@ -284,8 +281,8 @@ class Form16Parser:
     def _extract_section10_exemptions(self, text: str) -> Section10Exemptions:
         """Extract Section 10 exemptions."""
         return Section10Exemptions(
-            hra_1013A=self._extract_amount(text, r"(?:HRA|House\s*Rent\s*Allowance).*?(?:10\(13A\)|exempt).*?[:.]?\s*") or Decimal("0"),
-            travel_concession_105=self._extract_amount(text, r"(?:LTA|Leave\s*Travel|Travel\s*Concession).*?[:.]?\s*") or Decimal("0"),
+            hra_1013A=self._extract_amount(text, r"(?:HRA|House\s*Rent\s*Allowance).*?(?:10\(13A\)|exempt).*?[:.]?\s*") or Decimal(0),
+            travel_concession_105=self._extract_amount(text, r"(?:LTA|Leave\s*Travel|Travel\s*Concession).*?[:.]?\s*") or Decimal(0),
         )
 
     def _extract_chapter_via(self, text: str) -> ChapterVIADeductions:
@@ -325,10 +322,10 @@ class Form16Parser:
         17. Tax payable 155737.00
         """
         return TaxComputation(
-            tax_on_income=self._extract_amount(text, r"Tax\s*on\s*total\s*income\s*") or Decimal("0"),
-            rebate_87a=self._extract_amount(text, r"Rebate\s*under\s*section\s*87A\s*") or Decimal("0"),
-            health_education_cess=self._extract_amount(text, r"Health\s*and\s*education\s*cess\s*") or Decimal("0"),
-            net_tax_payable=self._extract_amount(text, r"Net\s*tax\s*payable\s*") or Decimal("0"),
+            tax_on_income=self._extract_amount(text, r"Tax\s*on\s*total\s*income\s*") or Decimal(0),
+            rebate_87a=self._extract_amount(text, r"Rebate\s*under\s*section\s*87A\s*") or Decimal(0),
+            health_education_cess=self._extract_amount(text, r"Health\s*and\s*education\s*cess\s*") or Decimal(0),
+            net_tax_payable=self._extract_amount(text, r"Net\s*tax\s*payable\s*") or Decimal(0),
         )
 
     def _extract_annexure(self, text: str) -> Form16Annexure:
@@ -423,7 +420,7 @@ class Form16Parser:
     # --- Utility methods ---
 
     @staticmethod
-    def _extract_amount(text: str, pattern: str) -> Optional[Decimal]:
+    def _extract_amount(text: str, pattern: str) -> Decimal | None:
         """Extract a monetary amount after a pattern match."""
         match = re.search(pattern + r"([\d,]+(?:\.\d{2})?)", text)
         if match:
@@ -431,7 +428,7 @@ class Form16Parser:
         return None
 
 
-def parse_form16(pdf_path: Path, password: Optional[str] = None) -> Form16Data:
+def parse_form16(pdf_path: Path, password: str | None = None) -> Form16Data:
     """Convenience function to parse a Form 16 PDF."""
     parser = Form16Parser()
     return parser.parse(pdf_path, password)

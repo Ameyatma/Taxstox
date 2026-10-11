@@ -11,12 +11,11 @@ from __future__ import annotations
 from decimal import Decimal
 
 from src.domain.tax_planning.scenario import (
-    TaxScenario,
     ScenarioComparison,
-    ScenarioVariable,
+    TaxScenario,
 )
-from src.engine.rules.evaluator import RuleEvaluator
 from src.engine.rules.config import rule_repository
+from src.engine.rules.evaluator import RuleEvaluator
 from src.models.financial_year import FinancialYear
 
 
@@ -56,8 +55,8 @@ class ScenarioSimulator:
         original_income = Decimal(str(baseline_breakdown.get("total_income", "0")))
         original_tax = Decimal(str(baseline_breakdown.get("final_tax", "0")))
         original_rate = (
-            (original_tax / original_income * Decimal("100")).quantize(Decimal("0.1"))
-            if original_income > 0 else Decimal("0")
+            (original_tax / original_income * Decimal(100)).quantize(Decimal("0.1"))
+            if original_income > 0 else Decimal(0)
         )
 
         # Apply scenario variables
@@ -67,8 +66,8 @@ class ScenarioSimulator:
         # Recompute with modified inputs
         scenario_tax = self._evaluate_scenario_tax(scenario_income, regime_config)
         scenario_rate = (
-            (scenario_tax / scenario_income * Decimal("100")).quantize(Decimal("0.1"))
-            if scenario_income > 0 else Decimal("0")
+            (scenario_tax / scenario_income * Decimal(100)).quantize(Decimal("0.1"))
+            if scenario_income > 0 else Decimal(0)
         )
 
         return ScenarioComparison(
@@ -108,6 +107,6 @@ class ScenarioSimulator:
         scenario = TaxScenario.create(name, f"What if income changes by ₹{income_change:,.0f}")
         original_income = Decimal(str(baseline_breakdown.get("total_income", "0")))
         scenario.add_variable("total_income", "Total Income", original_income,
-                             max(Decimal("0"), original_income + income_change))
+                             max(Decimal(0), original_income + income_change))
         simulator = ScenarioSimulator()
         return simulator.simulate(scenario, baseline_breakdown, financial_year, regime)

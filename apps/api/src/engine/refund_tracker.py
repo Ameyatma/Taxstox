@@ -12,10 +12,8 @@ from decimal import Decimal
 from uuid import UUID
 
 from src.domain.refund.refund_tracker import (
-    RefundTimeline,
-    RefundStatus,
     RefundStage,
-    TimelineEntry,
+    RefundTimeline,
 )
 
 

@@ -9,13 +9,11 @@ Traceability: C16.2 (External Tax APIs), C16.3 (FI Integration),
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from decimal import Decimal
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, Protocol
+from typing import Protocol
 from uuid import UUID, uuid4
-
 
 # ── API Key Management ───────────────────────────────────────────────
 
@@ -34,7 +32,7 @@ class ApiKey:
     scope: ApiKeyScope
     key_prefix: str        # First 8 chars for identification
     created_at: str
-    expires_at: Optional[str] = None
+    expires_at: str | None = None
     is_active: bool = True
 
 
@@ -103,7 +101,7 @@ class WebhookSubscription:
             url=url,
             events=frozenset(events),
             secret=secrets.token_hex(32),
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
 
 

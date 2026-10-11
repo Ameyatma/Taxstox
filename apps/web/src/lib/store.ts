@@ -50,6 +50,24 @@ export function subscribe(fn: Listener): () => void {
   return () => listeners.delete(fn);
 }
 
+/**
+ * Read the filing session ID — prefer the in-memory store (SPA routing),
+ * then fall back to a `session` query parameter (server-side reload),
+ * and finally to any URL search params a client may have appended.
+ * Phase 10: keeps the terminal cross-domain on a session even after a
+ * full page reload.
+ */
+export function getSessionId(): string | null {
+  const fromStore = getState().sessionId;
+  if (fromStore) return fromStore;
+  // SSR / hard reload: pick up ?session= or ?sessionId= from the URL.
+  if (typeof window !== "undefined") {
+    const params = new URL(window.location.href).searchParams;
+    return params.get("session") || params.get("sessionId");
+  }
+  return null;
+}
+
 export function reset() {
   store = {
     sessionId: null,

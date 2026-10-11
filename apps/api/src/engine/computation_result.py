@@ -6,9 +6,8 @@ Traceability: C6.5 (Tax Liability Aggregator), C6.6 (Pipeline Orchestrator),
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
 
 from src.models.financial_year import FinancialYear
 
@@ -17,7 +16,7 @@ from src.models.financial_year import FinancialYear
 class SlabStep:
     """A single slab bracket computation step."""
     income_from: Decimal
-    income_to: Optional[Decimal]   # None = unlimited
+    income_to: Decimal | None   # None = unlimited
     rate: Decimal
     taxable_in_slab: Decimal
     tax_in_slab: Decimal
@@ -40,43 +39,43 @@ class TaxBreakdown:
     financial_year: str
 
     # Income
-    income_salary: Decimal = Decimal("0")
-    income_house_property: Decimal = Decimal("0")
-    income_capital_gains: Decimal = Decimal("0")
-    income_other_sources: Decimal = Decimal("0")
-    gross_total_income: Decimal = Decimal("0")
+    income_salary: Decimal = Decimal(0)
+    income_house_property: Decimal = Decimal(0)
+    income_capital_gains: Decimal = Decimal(0)
+    income_other_sources: Decimal = Decimal(0)
+    gross_total_income: Decimal = Decimal(0)
 
     # Deductions
-    deductions_total: Decimal = Decimal("0")
-    total_income: Decimal = Decimal("0")
+    deductions_total: Decimal = Decimal(0)
+    total_income: Decimal = Decimal(0)
 
     # Tax Components
-    slab_income: Decimal = Decimal("0")
+    slab_income: Decimal = Decimal(0)
     slab_steps: tuple[SlabStep, ...] = ()
-    slab_tax: Decimal = Decimal("0")
-    special_rate_tax: Decimal = Decimal("0")
-    tax_before_rebate: Decimal = Decimal("0")
-    rebate_87a: Decimal = Decimal("0")
-    surcharge: Decimal = Decimal("0")
-    surcharge_rate: Decimal = Decimal("0")
-    cess: Decimal = Decimal("0")
-    cess_rate: Decimal = Decimal("0")
-    final_tax: Decimal = Decimal("0")
+    slab_tax: Decimal = Decimal(0)
+    special_rate_tax: Decimal = Decimal(0)
+    tax_before_rebate: Decimal = Decimal(0)
+    rebate_87a: Decimal = Decimal(0)
+    surcharge: Decimal = Decimal(0)
+    surcharge_rate: Decimal = Decimal(0)
+    cess: Decimal = Decimal(0)
+    cess_rate: Decimal = Decimal(0)
+    final_tax: Decimal = Decimal(0)
 
     # Credits
-    tds_credited: Decimal = Decimal("0")
-    advance_tax: Decimal = Decimal("0")
-    self_assessment_tax: Decimal = Decimal("0")
+    tds_credited: Decimal = Decimal(0)
+    advance_tax: Decimal = Decimal(0)
+    self_assessment_tax: Decimal = Decimal(0)
 
     # Final
-    net_tax_payable: Decimal = Decimal("0")
-    refund_due: Decimal = Decimal("0")
+    net_tax_payable: Decimal = Decimal(0)
+    refund_due: Decimal = Decimal(0)
 
     @property
     def effective_tax_rate(self) -> Decimal:
         if self.total_income <= 0:
-            return Decimal("0")
-        return (self.final_tax / self.total_income * Decimal("100")).quantize(
+            return Decimal(0)
+        return (self.final_tax / self.total_income * Decimal(100)).quantize(
             Decimal("0.01")
         )
 
@@ -113,16 +112,16 @@ class ComputationResult:
     computed_at: str = ""  # ISO timestamp
 
     # Interest (234A/B/C)
-    interest_234a: Decimal = Decimal("0")
-    interest_234b: Decimal = Decimal("0")
-    interest_234c: Decimal = Decimal("0")
-    total_interest: Decimal = Decimal("0")
+    interest_234a: Decimal = Decimal(0)
+    interest_234b: Decimal = Decimal(0)
+    interest_234c: Decimal = Decimal(0)
+    total_interest: Decimal = Decimal(0)
 
     # Late fees
-    late_filing_fee_234f: Decimal = Decimal("0")
+    late_filing_fee_234f: Decimal = Decimal(0)
 
     # Grand total
-    total_amount_payable: Decimal = Decimal("0")
+    total_amount_payable: Decimal = Decimal(0)
 
     @property
     def recommended_breakdown(self) -> TaxBreakdown:

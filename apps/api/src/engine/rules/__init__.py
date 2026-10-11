@@ -6,7 +6,7 @@ M1 delivers:
 - RuleEvaluator: Generic, deterministic rule evaluation engine
 """
 
-from src.engine.rules.config import TaxYearConfig, RuleRepository
+from src.engine.rules.config import RuleRepository, TaxYearConfig
 from src.engine.rules.evaluator import RuleEvaluator
 
-__all__ = ["TaxYearConfig", "RuleRepository", "RuleEvaluator"]
+__all__ = ["RuleEvaluator", "RuleRepository", "TaxYearConfig"]

@@ -13,13 +13,14 @@ and returns comparison: original vs simulated side-by-side.
 """
 
 from decimal import Decimal
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from src.auth.jwt import get_current_user
-from src.engine.regime_optimizer_v2 import RegimeOptimizerV2
 from src.engine.recommendation_engine import RecommendationEngine
-from src.models.tax import UserAnswers, ClassifiedCGData
+from src.engine.regime_optimizer_v2 import RegimeOptimizerV2
+from src.models.tax import ClassifiedCGData, UserAnswers
 
 router = APIRouter(prefix="/api/v1/tax", tags=["Tax Simulation"])
 
@@ -114,11 +115,11 @@ async def simulate_with_session(
     optimizer = RegimeOptimizerV2()
 
     # ── ORIGINAL computation ──
-    savings_interest = session.ais.total_savings_interest if session.ais else Decimal("0")
-    other_interest = Decimal("0")
+    savings_interest = session.ais.total_savings_interest if session.ais else Decimal(0)
+    other_interest = Decimal(0)
     if session.ais:
-        other_interest = max(Decimal("0"),
-            (session.ais.total_tds_interest or Decimal("0")) - savings_interest)
+        other_interest = max(Decimal(0),
+            (session.ais.total_tds_interest or Decimal(0)) - savings_interest)
 
     original = optimizer.optimize(
         form16=session.form16,
@@ -153,7 +154,7 @@ async def simulate_with_session(
     # NPS
     if body.nps_additional > 0:
         if sim_answers.has_additional_80c:
-            current = sim_answers.additional_80c_breakup.get("nps_own", Decimal("0"))
+            current = sim_answers.additional_80c_breakup.get("nps_own", Decimal(0))
             sim_answers.additional_80c_breakup["nps_own"] = (
                 Decimal(str(current)) + Decimal(str(body.nps_additional))
             )
@@ -165,7 +166,7 @@ async def simulate_with_session(
     # ELSS
     if body.elss_investment > 0:
         if sim_answers.has_additional_80c:
-            current = sim_answers.additional_80c_breakup.get("elss", Decimal("0"))
+            current = sim_answers.additional_80c_breakup.get("elss", Decimal(0))
             sim_answers.additional_80c_breakup["elss"] = Decimal(str(current)) + Decimal(str(body.elss_investment))
         else:
             sim_answers.has_additional_80c = True
@@ -176,24 +177,24 @@ async def simulate_with_session(
     if body.health_insurance_additional > 0:
         sim_answers.has_health_insurance = True
         sim_answers.health_premium_self = (
-            (sim_answers.health_premium_self or Decimal("0"))
+            (sim_answers.health_premium_self or Decimal(0))
             + Decimal(str(body.health_insurance_additional))
         )
         changes.append(f"80D Health Insurance +₹{body.health_insurance_additional:,}")
 
     # Home loan prepay (reduces interest)
     if body.home_loan_prepay > 0:
-        current_interest = sim_answers.home_loan_interest or Decimal("0")
+        current_interest = sim_answers.home_loan_interest or Decimal(0)
         # Rough estimate: 10% of prepay = reduced interest
         interest_reduction = Decimal(str(body.home_loan_prepay)) * Decimal("0.10")
-        sim_answers.home_loan_interest = max(Decimal("0"), current_interest - interest_reduction)
+        sim_answers.home_loan_interest = max(Decimal(0), current_interest - interest_reduction)
         changes.append(f"Home Loan Prepay ₹{body.home_loan_prepay:,} → Interest -₹{int(interest_reduction):,}")
 
     # Rent increase
     if body.rent_increase > 0:
         sim_answers.pays_rent = True
         sim_answers.rent_per_month = (
-            (sim_answers.rent_per_month or Decimal("0"))
+            (sim_answers.rent_per_month or Decimal(0))
             + Decimal(str(body.rent_increase))
         )
         changes.append(f"Rent +₹{body.rent_increase:,}/mo")
@@ -209,7 +210,7 @@ async def simulate_with_session(
         changes.append("Capital gains deferred to next FY")
 
     # Run simulation
-    sim_rent = sim_answers.rent_per_month if sim_answers.pays_rent else Decimal("0")
+    sim_rent = sim_answers.rent_per_month if sim_answers.pays_rent else Decimal(0)
     simulated = optimizer.optimize(
         form16=sim_form16,
         classified_cg=sim_cg,

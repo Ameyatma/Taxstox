@@ -8,8 +8,7 @@ Traceability: C11.4 (Tax Concept Glossary — 0%→60%, P4)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -46,7 +45,7 @@ class TaxGlossary:
             self._by_category[entry.category] = []
         self._by_category[entry.category].append(entry)
 
-    def lookup(self, term: str) -> Optional[GlossaryEntry]:
+    def lookup(self, term: str) -> GlossaryEntry | None:
         """Look up a term (case-insensitive)."""
         return self._entries.get(term.lower().strip())
 

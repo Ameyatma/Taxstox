@@ -6,7 +6,7 @@ Traceability: C14.7 (Refund Tracker — 0%→50%, P6)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID, uuid4
@@ -33,7 +33,7 @@ class RefundStatus:
     current_stage: RefundStage
     last_updated: str = ""
     refund_reference: str = ""                 # ITD refund reference number
-    credited_amount: Decimal = Decimal("0")
+    credited_amount: Decimal = Decimal(0)
 
     @property
     def is_complete(self) -> bool:
@@ -86,7 +86,7 @@ class RefundTimeline:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def add_entry(self, stage: RefundStage, date: str, description: str, reference: str = "") -> None:
         self.entries.append(TimelineEntry(stage=stage, date=date, description=description, reference=reference))

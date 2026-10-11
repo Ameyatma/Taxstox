@@ -8,10 +8,9 @@ graceful fallback (never raises) on malformed input.
 """
 
 from decimal import Decimal
-from typing import Optional
 
 
-def to_decimal(value_str: Optional[str]) -> Decimal:
+def to_decimal(value_str: str | None) -> Decimal:
     """Convert a numeric string like ``'1,23,456.78'`` to ``Decimal``.
 
     Edge cases (preserved from the original parser helpers):
@@ -20,9 +19,9 @@ def to_decimal(value_str: Optional[str]) -> Decimal:
       - Malformed input → ``Decimal("0")`` (never raises)
     """
     if not value_str:
-        return Decimal("0")
+        return Decimal(0)
     cleaned = value_str.replace(",", "").replace(" ", "").strip()
     try:
         return Decimal(cleaned)
     except Exception:
-        return Decimal("0")
+        return Decimal(0)

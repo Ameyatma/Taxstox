@@ -8,22 +8,19 @@ Traceability: C21.8 (Billing & Subscription — 0%→50%, P5)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 from uuid import UUID, uuid4
 
 from src.domain.enterprise.billing import (
-    Subscription,
-    SubscriptionTier,
-    BillingPeriod,
+    TIER_CONFIG,
     Invoice,
     InvoiceItem,
-    InvoiceStatus,
+    Subscription,
+    SubscriptionTier,
     UsageRecord,
-    TIER_CONFIG,
 )
 
 
@@ -49,7 +46,7 @@ class PaymentRecord:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
 
 class BillingGateway:
@@ -76,7 +73,7 @@ class BillingGateway:
         """Confirm a payment. Marks as completed."""
         # Stub: In production, verify payment status with gateway webhook
         payment.status = PaymentStatus.COMPLETED
-        payment.paid_at = datetime.now(timezone.utc).isoformat()
+        payment.paid_at = datetime.now(UTC).isoformat()
         return payment
 
 
@@ -192,7 +189,7 @@ class UsageTracker:
 
     def count_this_month(self, tenant_id: UUID, event_type: str = "filing_completed") -> int:
         """Count usage events this calendar month."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         month_start = now.replace(day=1, hour=0, minute=0, second=0).isoformat()
         records = self._records.get(tenant_id, [])
         return sum(

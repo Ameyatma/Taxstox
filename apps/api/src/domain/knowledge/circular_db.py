@@ -6,9 +6,7 @@ Traceability: C11.5 (CBDT Circular Database — 0%→50%, P4)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import date
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -42,7 +40,7 @@ class CBDTCircularDatabase:
         """Register a circular."""
         self._circulars.append(circular)
 
-    def get_by_number(self, number: str) -> Optional[Circular]:
+    def get_by_number(self, number: str) -> Circular | None:
         """Look up a circular by its number."""
         for c in self._circulars:
             if c.circular_number.lower() == number.lower():

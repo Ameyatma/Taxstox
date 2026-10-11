@@ -1,0 +1,39 @@
+# Keep the Cloud Build upload context small.
+# The Dockerfile only copies requirements.txt and src/, so nothing else needs
+# to be shipped to the builder. Without this file the local venv/ (~527 MB)
+# is uploaded on every build.
+.gcloudignore
+.dockerignore
+
+# Virtualenvs / local tooling
+venv/
+.venv/
+env/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+__pycache__/
+*.py[cod]
+
+# Local databases, logs, runtime state
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.pid
+data/
+
+# Tests and docs are not needed to build the runtime image
+tests/
+docs/
+
+# Secrets — never upload these
+.env
+.env.*
+!.env.example
+
+# VCS / editor
+.git/
+.gitignore
+.idea/
+.vscode/

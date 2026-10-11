@@ -6,11 +6,11 @@ PRRP-DEFER-001: Migrated to httpOnly cookie-based token extraction.
 
 import contextvars
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
+from fastapi import HTTPException, Request, status
+from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
-from fastapi import HTTPException, Request, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # ── Config ──────────────────────────────────────────────────
 
@@ -49,12 +49,12 @@ def create_access_token(
     M8: Accepts optional tenant_id and roles claims for multi-tenancy.
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta or timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     )
     to_encode.update({
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     })
     if tenant_id:
         to_encode["tenant_id"] = tenant_id

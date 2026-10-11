@@ -19,7 +19,6 @@ import httpx
 from src.domain.integration.ports import (
     WebhookEvent,
     WebhookSubscription,
-    WebhookDispatcher,
 )
 
 logger = logging.getLogger(__name__)

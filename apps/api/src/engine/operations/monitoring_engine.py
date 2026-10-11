@@ -6,7 +6,7 @@ Traceability: C17.2 (Monitoring — 60%→85%, P7)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 
@@ -51,11 +51,11 @@ class MonitoringEngine:
     """
 
     def __init__(self) -> None:
-        self._start_time = datetime.now(timezone.utc).timestamp()
+        self._start_time = datetime.now(UTC).timestamp()
 
     def check_health(self) -> SystemHealth:
         """Run all health checks and return system status."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         deps: list[DependencyHealth] = []
 
         # Database check

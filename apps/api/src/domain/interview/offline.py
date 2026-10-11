@@ -10,9 +10,9 @@ Traceability: C13.8 (Offline Interview — 0%→40%, P4)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class QuestionType(str, Enum):
@@ -160,7 +160,7 @@ def pack_interview(
     """
     import uuid
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires = now + timedelta(hours=ttl_hours)
 
     # Count total questions including sub-questions

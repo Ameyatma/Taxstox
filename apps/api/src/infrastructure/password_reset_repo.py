@@ -11,10 +11,9 @@ from __future__ import annotations
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from src.db.database import get_db, _exec_sql
-from src.domain.auth.password_reset import PasswordResetRepository
+from src.db.database import _exec_sql, get_db
 
 
 class PsycopgPasswordResetRepository:
@@ -34,7 +33,7 @@ class PsycopgPasswordResetRepository:
         """
         raw_token = secrets.token_urlsafe(32)  # 256-bit
         token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-        expires_at = (datetime.now(timezone.utc) + timedelta(
+        expires_at = (datetime.now(UTC) + timedelta(
             minutes=PsycopgPasswordResetRepository.TOKEN_TTL_MINUTES
         )).isoformat()
 
@@ -45,7 +44,7 @@ class PsycopgPasswordResetRepository:
                     (id, user_id, token_hash, expires_at, used, created_at)
                 VALUES (%s, %s, %s, %s, FALSE, %s)
             """, (str(uuid.uuid4()), user_id, token_hash, expires_at,
-                  datetime.now(timezone.utc).isoformat()))
+                  datetime.now(UTC).isoformat()))
         finally:
             conn.close()
 
@@ -83,7 +82,7 @@ class PsycopgPasswordResetRepository:
             expires = row["expires_at"]
             if isinstance(expires, str):
                 expires = datetime.fromisoformat(expires)
-            if datetime.now(timezone.utc) > expires:
+            if datetime.now(UTC) > expires:
                 return False
 
             # Mark as used
@@ -124,7 +123,7 @@ class PsycopgPasswordResetRepository:
                 DELETE FROM password_reset_tokens
                 WHERE used = TRUE
                    OR expires_at < %s
-            """, (datetime.now(timezone.utc).isoformat(),))
+            """, (datetime.now(UTC).isoformat(),))
             count = cur.rowcount
             cur.close()
             return count

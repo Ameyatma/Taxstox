@@ -13,10 +13,9 @@ from decimal import Decimal
 from src.domain.tax_planning.projection import (
     MultiYearProjection,
     YearProjection,
-    ProjectionAssumption,
 )
-from src.engine.rules.evaluator import RuleEvaluator
 from src.engine.rules.config import rule_repository
+from src.engine.rules.evaluator import RuleEvaluator
 from src.models.financial_year import FinancialYear
 
 
@@ -75,7 +74,7 @@ class MultiYearProjectionEngine:
                 config = rule_repository.get(current_fy)
 
             regime_config = config.get_regime(regime)
-            taxable = max(Decimal("0"), income - deductions)
+            taxable = max(Decimal(0), income - deductions)
 
             # Compute tax
             tax = self._evaluator.compute_slab_tax(taxable, regime_config.slabs)
@@ -86,8 +85,8 @@ class MultiYearProjectionEngine:
             final_tax = self._evaluator.round_final_tax(tax_after_rebate + surcharge + cess)
 
             effective_rate = (
-                (final_tax / taxable * Decimal("100")).quantize(Decimal("0.1"))
-                if taxable > 0 else Decimal("0")
+                (final_tax / taxable * Decimal(100)).quantize(Decimal("0.1"))
+                if taxable > 0 else Decimal(0)
             )
 
             projection.add_year(YearProjection(
@@ -100,8 +99,8 @@ class MultiYearProjectionEngine:
             ))
 
             # Grow for next year
-            income = (income * (Decimal("1") + income_growth_rate)).quantize(Decimal("0.01"))
-            deductions = (deductions * (Decimal("1") + deductions_growth_rate)).quantize(Decimal("0.01"))
+            income = (income * (Decimal(1) + income_growth_rate)).quantize(Decimal("0.01"))
+            deductions = (deductions * (Decimal(1) + deductions_growth_rate)).quantize(Decimal("0.01"))
 
         return projection
 

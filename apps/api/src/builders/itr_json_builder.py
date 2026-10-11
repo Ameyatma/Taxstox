@@ -7,24 +7,40 @@ Produces JSON matching the ITD utility schema exactly, with:
 - Proper date range segmentation for Schedule CG Section F
 """
 
-import json
-import hashlib
 import logging
 from datetime import date
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
-from src.models.form16 import Form16Data, Regime
-from src.models.ais import AISData
 from src.models.financial_year import FinancialYear
+from src.models.form16 import Regime
 from src.models.tax import (
-    UnifiedTaxData,
-    ClassifiedCGData,
-    CGSaleEntry,
     CGDateRanges,
-    UserAnswers,
-    RegimeResult,
+    CGSaleEntry,
+    UnifiedTaxData,
 )
+
+
+def _to_int_string(value: Decimal | int | float | str) -> str:
+    """Convert a value to integer string per CBDT Sections 288A/288B.
+
+    Args:
+        value: The value to convert
+
+    Returns:
+        String representation of integer value (no decimal point)
+    """
+    if value is None:
+        return "0"
+
+    # Convert to Decimal if not already
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+
+    # Round to nearest integer (away from zero for consistency)
+    int_value = int(value.to_integral_value(rounding="ROUND_HALF_UP"))
+
+    return str(int_value)
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +48,14 @@ logger = logging.getLogger(__name__)
 class ITRJSONBuilder:
     """Builds the complete ITR-2 JSON structure from unified tax data."""
 
-    def __init__(self, financial_year: Optional[FinancialYear] = None) -> None:
+    def __init__(self, financial_year: FinancialYear | None = None) -> None:
         self._fy = financial_year or FinancialYear.from_string("FY2025-26")
         self._ay = self._fy.assessment_year
 
     def build(self, data: UnifiedTaxData) -> dict:
         """Build the full ITR JSON ready for upload."""
         json_data = {
-            "PartA_GeneralInfo": self._build_general_info(data),
+            "PartA_GEN": self._build_general_info(data),
             "ScheduleS": self._build_schedule_s(data),
             "Schedule112A": self._build_schedule_112a(data),
             "ScheduleCG": self._build_schedule_cg(data),
@@ -48,8 +64,8 @@ class ITRJSONBuilder:
             "ScheduleBFLA": self._build_schedule_bfla(data),
             "ScheduleSI": self._build_schedule_si(data),
             "ScheduleVI-A": self._build_schedule_via(data),
-            "PartB-TI": self._build_partb_ti(data),
-            "PartB-TTI": self._build_partb_tti(data),
+            "PartB_TI": self._build_partb_ti(data),
+            "PartB_TTI": self._build_partb_tti(data),
             "ScheduleTaxPaid": self._build_schedule_tax_paid(data),
         }
         return json_data
@@ -114,14 +130,14 @@ class ITRJSONBuilder:
             "EmployerTAN": f.part_a.employer_tan,
             "EmployerPAN": f.part_a.employer_pan,
             "Address": f.part_a.employer_address,
-            "Salary_171": str(f.part_b.salary_171),
-            "Perquisites_172": str(f.part_b.perquisites_172),
-            "ProfitsLieu_173": str(f.part_b.profits_lieu_173),
-            "TotalGrossSalary": str(f.part_b.total_gross_salary),
-            "StdDeduction_16ia": str(f.part_b.std_deduction_16ia),
-            "Entertainment_16ii": str(f.part_b.entertainment_16ii),
-            "ProfessionalTax_16iii": str(f.part_b.professional_tax_16iii),
-            "IncomeUnderHeadSalaries": str(f.part_b.income_under_head_salaries),
+            "Salary_171": _to_int_string(f.part_b.salary_171),
+            "Perquisites_172": _to_int_string(f.part_b.perquisites_172),
+            "ProfitsLieu_173": _to_int_string(f.part_b.profits_lieu_173),
+            "TotalGrossSalary": _to_int_string(f.part_b.total_gross_salary),
+            "StdDeduction_16ia": _to_int_string(f.part_b.std_deduction_16ia),
+            "Entertainment_16ii": _to_int_string(f.part_b.entertainment_16ii),
+            "ProfessionalTax_16iii": _to_int_string(f.part_b.professional_tax_16iii),
+            "IncomeUnderHeadSalaries": _to_int_string(f.part_b.income_under_head_salaries),
         }
 
         return {"SalaryIncome": [salary_entry]}
@@ -141,9 +157,9 @@ class ITRJSONBuilder:
 
         # Build one consolidated entry for all equity MF LTCG
         # (Option: can also group by ISIN)
-        total_consideration = sum((e.consideration for e in entries_112a), Decimal("0"))
-        total_cost = sum((e.cost for e in entries_112a), Decimal("0"))
-        total_gain = sum((e.gain for e in entries_112a), Decimal("0"))
+        total_consideration = sum((e.consideration for e in entries_112a), Decimal(0))
+        total_cost = sum((e.cost for e in entries_112a), Decimal(0))
+        total_gain = sum((e.gain for e in entries_112a), Decimal(0))
 
         # Find date range
         dates = [e.date for e in entries_112a if e.date]
@@ -151,30 +167,30 @@ class ITRJSONBuilder:
         to_date = max(dates).strftime("%d/%m/%Y") if dates else ""
 
         # Apply ₹1.25L exemption
-        exemption = min(total_gain, Decimal("125000"))
-        taxable_gain = max(Decimal("0"), total_gain - exemption)
+        exemption = min(total_gain, Decimal(125000))
+        taxable_gain = max(Decimal(0), total_gain - exemption)
 
         consolidated = {
             "ISINCode": "INNOTAVAILAB",  # Consolidated — not a single ISIN
             "NameOfUnit": "Various Equity Mutual Funds",
-            "NoOfUnits": str(sum((e.quantity for e in entries_112a), Decimal("0"))),
-            "SalePricePerUnit": str(Decimal("0")),  # Not needed for consolidated
-            "FullValueOfConsideration": str(total_consideration),
-            "CostOfAcquisition": str(total_cost),
+            "NoOfUnits": _to_int_string(sum((e.quantity for e in entries_112a), Decimal(0))),
+            "SalePricePerUnit": "0",  # Not needed for consolidated
+            "FullValueOfConsideration": _to_int_string(total_consideration),
+            "CostOfAcquisition": _to_int_string(total_cost),
             "Expenditure": "0",
             "DateFrom": from_date,
             "DateTo": to_date,
             "FMVPerUnit": "0",
             "FMVTotal": "0",
-            "Deduction": str(exemption),
-            "Balance": str(taxable_gain),
+            "Deduction": _to_int_string(exemption),
+            "Balance": _to_int_string(taxable_gain),
             "SecondaryAdd": "Y",  # Must be "Y" or "N", NOT empty string
         }
 
         return {
             "Securities": [consolidated],
-            "TotalDeduction": str(exemption),
-            "TotalBalance": str(taxable_gain),
+            "TotalDeduction": _to_int_string(exemption),
+            "TotalBalance": _to_int_string(taxable_gain),
         }
 
     # ── Schedule CG: Capital Gains ──────────────────────────────────
@@ -224,12 +240,12 @@ class ITRJSONBuilder:
                 "DateOfSale": e.date.strftime("%d/%m/%Y") if e.date else "",
                 "ISINCode": e.isin or "INNOTAVAILAB",
                 "NameOfSecurity": e.security_name,
-                "NoOfUnits": str(e.quantity),
-                "SalePrice": str(e.sale_price),
-                "FullValueOfConsideration": str(e.consideration),
-                "CostOfAcquisition": str(e.cost),
+                "NoOfUnits": _to_int_string(e.quantity),
+                "SalePrice": _to_int_string(e.sale_price),
+                "FullValueOfConsideration": _to_int_string(e.consideration),
+                "CostOfAcquisition": _to_int_string(e.cost),
                 "Expenditure": "0",
-                "Balance": str(e.gain),
+                "Balance": _to_int_string(e.gain),
             }
 
             if section == "A2":
@@ -237,15 +253,15 @@ class ITRJSONBuilder:
 
             items.append(item)
 
-        total_consideration = sum((e.consideration for e in entries), Decimal("0"))
-        total_cost = sum((e.cost for e in entries), Decimal("0"))
-        total_gain = sum((e.gain for e in entries), Decimal("0"))
+        total_consideration = sum((e.consideration for e in entries), Decimal(0))
+        total_cost = sum((e.cost for e in entries), Decimal(0))
+        total_gain = sum((e.gain for e in entries), Decimal(0))
 
         base = {
             "Entries": items,
-            "TotalFullValueOfConsideration": str(total_consideration),
-            "TotalCostOfAcquisition": str(total_cost),
-            "TotalBalance": str(total_gain),
+            "TotalFullValueOfConsideration": _to_int_string(total_consideration),
+            "TotalCostOfAcquisition": _to_int_string(total_cost),
+            "TotalBalance": _to_int_string(total_gain),
         }
 
         if section == "A2":
@@ -271,40 +287,40 @@ class ITRJSONBuilder:
         # LTCG at 12.5% (112A)
         ltcg_rows = []
         for period in periods:
-            amount = ranges.ltcg_12_5pct.get(period, Decimal("0"))
+            amount = ranges.ltcg_12_5pct.get(period, Decimal(0))
             ltcg_rows.append({
                 "Period": period,
-                "Amount": str(amount),
+                "Amount": _to_int_string(amount),
             })
         sec_f["LTCG_12_5pct"] = ltcg_rows
-        sec_f["Total_LTCG_12_5pct"] = str(sum(
-            (ranges.ltcg_12_5pct.get(p, Decimal("0")) for p in periods), Decimal("0")
+        sec_f["Total_LTCG_12_5pct"] = _to_int_string(sum(
+            (ranges.ltcg_12_5pct.get(p, Decimal(0)) for p in periods), Decimal(0)
         ))
 
         # STCG at applicable rate
         stcg_rows = []
         for period in periods:
-            amount = ranges.stcg_app_rate.get(period, Decimal("0"))
+            amount = ranges.stcg_app_rate.get(period, Decimal(0))
             stcg_rows.append({
                 "Period": period,
-                "Amount": str(amount),
+                "Amount": _to_int_string(amount),
             })
         sec_f["STCG_AppRate"] = stcg_rows
-        sec_f["Total_STCG_AppRate"] = str(sum(
-            (ranges.stcg_app_rate.get(p, Decimal("0")) for p in periods), Decimal("0")
+        sec_f["Total_STCG_AppRate"] = _to_int_string(sum(
+            (ranges.stcg_app_rate.get(p, Decimal(0)) for p in periods), Decimal(0)
         ))
 
         # STCG at 15% (111A)
         stcg_15_rows = []
         for period in periods:
-            amount = ranges.stcg_15pct.get(period, Decimal("0"))
+            amount = ranges.stcg_15pct.get(period, Decimal(0))
             stcg_15_rows.append({
                 "Period": period,
-                "Amount": str(amount),
+                "Amount": _to_int_string(amount),
             })
         sec_f["STCG_15pct"] = stcg_15_rows
-        sec_f["Total_STCG_15pct"] = str(sum(
-            (ranges.stcg_15pct.get(p, Decimal("0")) for p in periods), Decimal("0")
+        sec_f["Total_STCG_15pct"] = _to_int_string(sum(
+            (ranges.stcg_15pct.get(p, Decimal(0)) for p in periods), Decimal(0)
         ))
 
         return sec_f
@@ -323,30 +339,30 @@ class ITRJSONBuilder:
         if ais.total_savings_interest > 0:
             entries.append({
                 "Source": "Savings Bank Interest",
-                "GrossAmount": str(ais.total_savings_interest),
+                "GrossAmount": _to_int_string(ais.total_savings_interest),
                 "Deduction": "0",
-                "NetAmount": str(ais.total_savings_interest),
+                "NetAmount": _to_int_string(ais.total_savings_interest),
             })
 
         # Term deposit interest
         if ais.total_tds_interest > 0:
             entries.append({
                 "Source": "Fixed Deposit Interest",
-                "GrossAmount": str(ais.total_tds_interest),
+                "GrossAmount": _to_int_string(ais.total_tds_interest),
                 "Deduction": "0",
-                "NetAmount": str(ais.total_tds_interest),
+                "NetAmount": _to_int_string(ais.total_tds_interest),
             })
 
         if not entries:
             return {}
 
         total_os = sum(
-            (Decimal(e["NetAmount"]) for e in entries), Decimal("0")
+            (Decimal(e["NetAmount"]) for e in entries), Decimal(0)
         )
 
         return {
             "OtherSourceIncome": entries,
-            "TotalOtherSourceIncome": str(total_os),
+            "TotalOtherSourceIncome": _to_int_string(total_os),
         }
 
     # ── Schedule CYLA / BFLA ───────────────────────────────────────
@@ -372,27 +388,27 @@ class ITRJSONBuilder:
         entries = []
 
         # STCG 111A (15%)
-        total_stcg_15 = sum((e.gain for e in cg.cg_a2_stcg_111a), Decimal("0"))
+        total_stcg_15 = sum((e.gain for e in cg.cg_a2_stcg_111a), Decimal(0))
         if total_stcg_15 > 0:
             entries.append({
                 "Section": "111A",
                 "NatureOfIncome": "Short Term Capital Gain (STCG) on equity shares/units",
-                "Amount": str(total_stcg_15),
+                "Amount": _to_int_string(total_stcg_15),
                 "Rate": "15%",
-                "TaxAmount": str(total_stcg_15 * Decimal("0.15")),
+                "TaxAmount": _to_int_string(total_stcg_15 * Decimal("0.15")),
             })
 
         # LTCG 112A (12.5%)
-        total_ltcg_112a = sum((e.gain for e in cg.schedule_112a), Decimal("0"))
-        exemption_112a = min(total_ltcg_112a, Decimal("125000"))
-        taxable_112a = max(Decimal("0"), total_ltcg_112a - exemption_112a)
+        total_ltcg_112a = sum((e.gain for e in cg.schedule_112a), Decimal(0))
+        exemption_112a = min(total_ltcg_112a, Decimal(125000))
+        taxable_112a = max(Decimal(0), total_ltcg_112a - exemption_112a)
         if taxable_112a > 0:
             entries.append({
                 "Section": "112A",
                 "NatureOfIncome": "Long Term Capital Gain (LTCG) on equity shares/units",
-                "Amount": str(taxable_112a),
+                "Amount": _to_int_string(taxable_112a),
                 "Rate": "12.5%",
-                "TaxAmount": str(taxable_112a * Decimal("0.125")),
+                "TaxAmount": _to_int_string(taxable_112a * Decimal("0.125")),
             })
 
         if not entries:
@@ -411,22 +427,22 @@ class ITRJSONBuilder:
 
         if data.recommended_regime == Regime.OLD:
             breakdown = result.old_breakdown
-            deductions = breakdown.get("deductions_total", Decimal("0"))
+            deductions = breakdown.get("deductions_total", Decimal(0))
             parts = {
-                "80C": str(data.form16.part_b.chapter_vi_a.sec80c),
-                "80CCD_1B": str(data.form16.part_b.chapter_vi_a.sec80ccd1b),
-                "80CCD_2": str(data.form16.part_b.chapter_vi_a.sec80ccd2),
-                "80D": str(data.form16.part_b.chapter_vi_a.sec80d),
-                "80TTA": str(data.form16.part_b.chapter_vi_a.sec80tta),
-                "80G": str(data.form16.part_b.chapter_vi_a.sec80g),
-                "Total": str(deductions),
+                "80C": _to_int_string(data.form16.part_b.chapter_vi_a.sec80c),
+                "80CCD_1B": _to_int_string(data.form16.part_b.chapter_vi_a.sec80ccd1b),
+                "80CCD_2": _to_int_string(data.form16.part_b.chapter_vi_a.sec80ccd2),
+                "80D": _to_int_string(data.form16.part_b.chapter_vi_a.sec80d),
+                "80TTA": _to_int_string(data.form16.part_b.chapter_vi_a.sec80tta),
+                "80G": _to_int_string(data.form16.part_b.chapter_vi_a.sec80g),
+                "Total": _to_int_string(deductions),
             }
         else:
             # New regime: only 80CCD(2)
             d = data.form16.part_b.chapter_vi_a.sec80ccd2
             parts = {
-                "80CCD_2": str(d),
-                "Total": str(d),
+                "80CCD_2": _to_int_string(d),
+                "Total": _to_int_string(d),
             }
 
         return {"Deductions": parts, "TotalDeductions": parts.get("Total", "0")}
@@ -441,13 +457,13 @@ class ITRJSONBuilder:
         breakdown = result.new_breakdown if is_new else result.old_breakdown
 
         ti = {
-            "IncomeUnderHeadSalaries": str(breakdown.get("income_salary", "0")),
-            "IncomeUnderHeadHouseProperty": str(breakdown.get("home_loan_loss", "0")),
-            "IncomeUnderHeadCapitalGains": str(breakdown.get("income_cg", "0")),
-            "IncomeUnderHeadOtherSources": str(breakdown.get("income_interest", "0")),
-            "GrossTotalIncome": str(breakdown.get("gross_total", "0")),
-            "TotalDeductions": str(breakdown.get("deductions_total", "0")),
-            "TotalIncome": str(breakdown.get("total_income", "0")),
+            "IncomeUnderHeadSalaries": _to_int_string(breakdown.get("income_salary", "0")),
+            "IncomeUnderHeadHouseProperty": _to_int_string(breakdown.get("home_loan_loss", "0")),
+            "IncomeUnderHeadCapitalGains": _to_int_string(breakdown.get("income_cg", "0")),
+            "IncomeUnderHeadOtherSources": _to_int_string(breakdown.get("income_interest", "0")),
+            "GrossTotalIncome": _to_int_string(breakdown.get("gross_total", "0")),
+            "TotalDeductions": _to_int_string(breakdown.get("deductions_total", "0")),
+            "TotalIncome": _to_int_string(breakdown.get("total_income", "0")),
         }
 
         return ti
@@ -469,16 +485,16 @@ class ITRJSONBuilder:
         )
 
         tti = {
-            "TotalIncome": str(breakdown.get("total_income", "0")),
-            "TaxOnTotalIncome": str(breakdown.get("tax_slab", "0")),
-            "TaxOnSpecialRates": str(special_rates_tax),
-            "TotalTaxBeforeRebate": str(
+            "TotalIncome": _to_int_string(breakdown.get("total_income", "0")),
+            "TaxOnTotalIncome": _to_int_string(breakdown.get("tax_slab", "0")),
+            "TaxOnSpecialRates": _to_int_string(special_rates_tax),
+            "TotalTaxBeforeRebate": _to_int_string(
                 Decimal(breakdown.get("tax_slab", "0")) + special_rates_tax
             ),
-            "Rebate87A": str(breakdown.get("rebate_87a", "0")),
+            "Rebate87A": _to_int_string(breakdown.get("rebate_87a", "0")),
             "Surcharge": "0",
-            "HealthEducationCess": str(breakdown.get("cess", "0")),
-            "TotalTaxLiability": str(breakdown.get("net_tax", "0")),
+            "HealthEducationCess": _to_int_string(breakdown.get("cess", "0")),
+            "TotalTaxLiability": _to_int_string(breakdown.get("net_tax", "0")),
         }
 
         return tti
@@ -499,31 +515,31 @@ class ITRJSONBuilder:
         salary_tds = f.part_a.total_tds_deducted
 
         # Other TDS (from AIS)
-        other_tds = Decimal("0")
+        other_tds = Decimal(0)
         if data.ais:
             other_tds = data.ais.total_non_salary_tds
 
         total_tds = salary_tds + other_tds
 
         # Total tax liability
-        total_tax = breakdown.get("net_tax", Decimal("0"))
+        total_tax = breakdown.get("net_tax", Decimal(0))
         total_tax_d = Decimal(total_tax) if not isinstance(total_tax, Decimal) else total_tax
 
         # Self-assessment tax needed
         balance = total_tax_d - total_tds
-        self_assessment_tax = max(Decimal("0"), balance)
+        self_assessment_tax = max(Decimal(0), balance)
 
         tax_paid = {
             "TDS": {
-                "SalaryTDS": str(salary_tds),
-                "OtherTDS": str(other_tds),
-                "TotalTDS": str(total_tds),
+                "SalaryTDS": _to_int_string(salary_tds),
+                "OtherTDS": _to_int_string(other_tds),
+                "TotalTDS": _to_int_string(total_tds),
             },
             "AdvanceTax": "0",
-            "SelfAssessmentTax": str(self_assessment_tax),
-            "TotalTaxPaid": str(total_tds + self_assessment_tax),
-            "BalancePayable": str(max(Decimal("0"), total_tax_d - total_tds - self_assessment_tax)),
-            "RefundDue": str(max(Decimal("0"), total_tds + self_assessment_tax - total_tax_d)),
+            "SelfAssessmentTax": _to_int_string(self_assessment_tax),
+            "TotalTaxPaid": _to_int_string(total_tds + self_assessment_tax),
+            "BalancePayable": _to_int_string(max(Decimal(0), total_tax_d - total_tds - self_assessment_tax)),
+            "RefundDue": _to_int_string(max(Decimal(0), total_tds + self_assessment_tax - total_tax_d)),
         }
 
         return tax_paid

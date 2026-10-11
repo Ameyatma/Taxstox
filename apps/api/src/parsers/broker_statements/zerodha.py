@@ -10,7 +10,6 @@ import csv
 import io
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
 from src.models.tax import CGSaleEntry
 
@@ -62,8 +61,8 @@ def parse_zerodha_tradebook(content: bytes, filename: str = "") -> list[CGSaleEn
             date_str = row_lower.get(date_col, "") if date_col else ""
             trade_date = _parse_date(date_str)
 
-            qty = Decimal(row_lower.get(qty_col, "0")) if qty_col else Decimal("0")
-            price = Decimal(row_lower.get(price_col, "0")) if price_col else Decimal("0")
+            qty = Decimal(row_lower.get(qty_col, "0")) if qty_col else Decimal(0)
+            price = Decimal(row_lower.get(price_col, "0")) if price_col else Decimal(0)
 
             consideration = qty * price
 
@@ -77,11 +76,11 @@ def parse_zerodha_tradebook(content: bytes, filename: str = "") -> list[CGSaleEn
                 quantity=qty,
                 sale_price=price,
                 consideration=consideration,
-                cost=Decimal("0"),  # Will be enriched from buy-side data or user input
+                cost=Decimal(0),  # Will be enriched from buy-side data or user input
                 stt_paid=True,  # Equity trades on NSE/BSE have STT
                 term="",  # Determined by classifier based on holding period
                 asset_class=_detect_asset_class(row_lower.get(segment_col, "")) if segment_col else "equity",
-                gain=Decimal("0"),  # Computed when cost basis is available
+                gain=Decimal(0),  # Computed when cost basis is available
             )
 
             # Determine term based on common patterns
@@ -90,7 +89,7 @@ def parse_zerodha_tradebook(content: bytes, filename: str = "") -> list[CGSaleEn
 
             entries.append(entry)
 
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError):
             # Skip malformed rows
             continue
 
@@ -117,8 +116,8 @@ def parse_zerodha_tax_pnl(content: bytes, filename: str = "") -> list[CGSaleEntr
     buy_date_col = _find_column(headers, ["buy_date", "buy date", "purchase_date", "purchase date", "acquisition_date"])
     sell_date_col = _find_column(headers, ["sell_date", "sell date", "sale_date", "sale date"])
     qty_col = _find_column(headers, ["quantity", "qty", "shares", "units"])
-    buy_price_col = _find_column(headers, ["buy_price", "buy rate", "purchase_price", "cost_per_share", "buy_average"])
-    sell_price_col = _find_column(headers, ["sell_price", "sell rate", "sale_price", "sell_average"])
+    buy_price_col = _find_column(headers, ["buy price", "buy rate", "purchase price", "cost per share", "buy average"])
+    sell_price_col = _find_column(headers, ["sell price", "sell rate", "sale price", "sell average"])
     term_col = _find_column(headers, ["term", "holding", "holding_period", "ltcg/stcg", "type"])
     segment_col = _find_column(headers, ["segment", "instrument", "market"])
 
@@ -131,10 +130,16 @@ def parse_zerodha_tax_pnl(content: bytes, filename: str = "") -> list[CGSaleEntr
             isin = row_lower.get(isin_col, "INNOTAVAILAB") if isin_col else "INNOTAVAILAB"
             symbol = row_lower.get(symbol_col, "Unknown") if symbol_col else "Unknown"
 
-            sell_date = _parse_date(row_lower.get(sell_date_col, "")) if sell_date_col else date.today()
-            qty = Decimal(row_lower.get(qty_col, "0")) if qty_col else Decimal("0")
-            sell_price = Decimal(row_lower.get(sell_price_col, "0")) if sell_price_col else Decimal("0")
-            buy_price = Decimal(row_lower.get(buy_price_col, "0")) if buy_price_col else Decimal("0")
+            sell_date_str = row_lower.get(sell_date_col, "") if sell_date_col else ""
+            qty_str = row_lower.get(qty_col, "0") if qty_col else "0"
+            sell_price_str = row_lower.get(sell_price_col, "0") if sell_price_col else "0"
+            buy_price_str = row_lower.get(buy_price_col, "0") if buy_price_col else "0"
+            print(f"DEBUG PARSER: row={row_lower}")
+            print(f"DEBUG PARSER: sell_date_str={sell_date_str}, qty_str={qty_str}, sell_price_str={sell_price_str}, buy_price_str={buy_price_str}")
+            sell_date = _parse_date(sell_date_str) if sell_date_col else date.today()
+            qty = Decimal(qty_str) if qty_col else Decimal(0)
+            sell_price = Decimal(sell_price_str) if sell_price_col else Decimal(0)
+            buy_price = Decimal(buy_price_str) if buy_price_col else Decimal(0)
 
             consideration = qty * sell_price
             cost = qty * buy_price
@@ -176,7 +181,7 @@ def parse_zerodha_tax_pnl(content: bytes, filename: str = "") -> list[CGSaleEntr
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
-def _find_column(headers: list[str], candidates: list[str]) -> Optional[str]:
+def _find_column(headers: list[str], candidates: list[str]) -> str | None:
     """Find the first matching column header from candidates."""
     for h in headers:
         for c in candidates:

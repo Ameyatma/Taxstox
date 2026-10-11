@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 
 from src.domain.gateway.rate_limiter import RateLimitStore
 from src.engine.gateway.rate_limiter import InMemoryRateLimitStore

@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, Callable
+from typing import Any
 
-from src.engine.rules.config import rule_repository, TaxYearConfig
+from src.engine.rules.config import TaxYearConfig, rule_repository
 from src.engine.rules.evaluator import RuleEvaluator
 from src.models.financial_year import FinancialYear
 
@@ -27,7 +27,7 @@ class RuleTestCase:
     rule_name: str                     # e.g., "slab_tax_new", "rebate_87a"
     input_data: dict[str, Any]
     expected_output: Any               # Expected result
-    tolerance: Decimal = Decimal("0")  # Allowed difference (0 = exact match)
+    tolerance: Decimal = Decimal(0)  # Allowed difference (0 = exact match)
 
 
 @dataclass
@@ -97,7 +97,7 @@ class RuleTestSuite:
             )
         elif rule == "cess":
             return evaluator.compute_cess(
-                inp["tax_after_rebate"], inp.get("surcharge", Decimal("0")), config.cess_rate,
+                inp["tax_after_rebate"], inp.get("surcharge", Decimal(0)), config.cess_rate,
             )
         elif rule == "deduction_limit":
             return config.get_deduction_limit(inp["section"], inp.get("regime"))
@@ -134,40 +134,40 @@ def build_standard_rule_test_suite() -> RuleTestSuite:
     # ── Slab Tax Tests ──
     # FY2025-26 New Regime: 0-4L:0%, 4-8L:5%, 8-12L:10%, 12-16L:15%, 16-20L:20%, 20-24L:25%, >24L:30%
     suite.add_case(RuleTestCase("SLAB-001", "New Regime ₹5L income", FY25,
-        "slab_tax_new", {"income": Decimal("500000")}, Decimal("5000")))
+        "slab_tax_new", {"income": Decimal(500000)}, Decimal(5000)))
     suite.add_case(RuleTestCase("SLAB-002", "New Regime ₹10L income", FY25,
-        "slab_tax_new", {"income": Decimal("1000000")}, Decimal("40000")))
+        "slab_tax_new", {"income": Decimal(1000000)}, Decimal(40000)))
     suite.add_case(RuleTestCase("SLAB-003", "New Regime ₹3L (below exemption)", FY25,
-        "slab_tax_new", {"income": Decimal("300000")}, Decimal("0")))
+        "slab_tax_new", {"income": Decimal(300000)}, Decimal(0)))
 
     # FY2024-25 New Regime: 0-3L:0%, 3-7L:5%, 7-10L:10%, 10-12L:15%, 12-15L:20%, >15L:30%
     suite.add_case(RuleTestCase("SLAB-004", "FY24-25 New Regime ₹5L", FY24,
-        "slab_tax_new", {"income": Decimal("500000")}, Decimal("10000")))
+        "slab_tax_new", {"income": Decimal(500000)}, Decimal(10000)))
 
     # FY2025-26 Old Regime: 0-2.5L:0%, 2.5-5L:5%, 5-10L:20%, >10L:30%
     suite.add_case(RuleTestCase("SLAB-005", "Old Regime ₹4L income", FY25,
-        "slab_tax_old", {"income": Decimal("400000")}, Decimal("7500")))
+        "slab_tax_old", {"income": Decimal(400000)}, Decimal(7500)))
 
     # ── Rebate Tests ──
     suite.add_case(RuleTestCase("REB-001", "87A New Regime below threshold", FY25,
-        "rebate_87a_new", {"tax_before_rebate": Decimal("30000"), "total_income": Decimal("1000000")},
-        Decimal("30000")))
+        "rebate_87a_new", {"tax_before_rebate": Decimal(30000), "total_income": Decimal(1000000)},
+        Decimal(30000)))
     suite.add_case(RuleTestCase("REB-002", "87A New Regime above threshold", FY25,
-        "rebate_87a_new", {"tax_before_rebate": Decimal("80000"), "total_income": Decimal("1500000")},
-        Decimal("0")))
+        "rebate_87a_new", {"tax_before_rebate": Decimal(80000), "total_income": Decimal(1500000)},
+        Decimal(0)))
 
     # ── Surcharge Tests ──
     suite.add_case(RuleTestCase("SUR-001", "No surcharge below ₹50L", FY25,
-        "surcharge", {"total_income": Decimal("4000000"), "tax_after_rebate": Decimal("500000")},
-        Decimal("0")))
+        "surcharge", {"total_income": Decimal(4000000), "tax_after_rebate": Decimal(500000)},
+        Decimal(0)))
     suite.add_case(RuleTestCase("SUR-002", "10% surcharge above ₹50L", FY25,
-        "surcharge", {"total_income": Decimal("6000000"), "tax_after_rebate": Decimal("500000")},
-        Decimal("50000")))
+        "surcharge", {"total_income": Decimal(6000000), "tax_after_rebate": Decimal(500000)},
+        Decimal(50000)))
 
     # ── Deduction Limit Tests ──
     suite.add_case(RuleTestCase("DED-001", "80C limit FY2025-26", FY25,
-        "deduction_limit", {"section": "80C", "regime": "old"}, Decimal("150000")))
+        "deduction_limit", {"section": "80C", "regime": "old"}, Decimal(150000)))
     suite.add_case(RuleTestCase("DED-002", "80C not available in New Regime", FY25,
-        "deduction_limit", {"section": "80C", "regime": "new"}, Decimal("0")))
+        "deduction_limit", {"section": "80C", "regime": "new"}, Decimal(0)))
 
     return suite

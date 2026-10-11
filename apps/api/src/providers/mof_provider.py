@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from bs4 import BeautifulSoup
@@ -114,19 +114,19 @@ class MoFProvider(BaseProvider):
     @staticmethod
     def _parse_date(date_str: str) -> str:
         if not date_str:
-            return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            return datetime.now(UTC).strftime("%Y-%m-%d")
         formats = ["%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d %B %Y", "%d %b %Y", "%B %d, %Y"]
         for fmt in formats:
             try:
                 return datetime.strptime(date_str.strip(), fmt).strftime("%Y-%m-%d")
             except ValueError:
                 continue
-        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return datetime.now(UTC).strftime("%Y-%m-%d")
 
     @staticmethod
     def _is_recent(date_str: str, days: int = 90) -> bool:
         try:
-            d = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            return (datetime.now(timezone.utc) - d).days <= days
+            d = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
+            return (datetime.now(UTC) - d).days <= days
         except ValueError:
             return True

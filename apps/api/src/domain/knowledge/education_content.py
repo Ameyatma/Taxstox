@@ -8,9 +8,8 @@ Traceability: C11.6 (Taxpayer Education Content — 0%→50%, P4)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class ExpertiseLevel(str, Enum):
@@ -60,7 +59,7 @@ class EducationContent:
             self._by_expertise[key] = []
         self._by_expertise[key].append(article)
 
-    def get(self, article_id: str) -> Optional[EducationArticle]:
+    def get(self, article_id: str) -> EducationArticle | None:
         """Get an article by ID."""
         return self._articles.get(article_id)
 

@@ -6,7 +6,7 @@ Traceability: C17.6 (Backup & DR — 0%→60%, P7)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -70,7 +70,7 @@ class DRPlan:
 
     def __post_init__(self) -> None:
         if not self.documented_at:
-            self.documented_at = datetime.now(timezone.utc).isoformat()
+            self.documented_at = datetime.now(UTC).isoformat()
 
     @staticmethod
     def create() -> DRPlan:
@@ -93,7 +93,7 @@ class DRPlan:
         return plan
 
     def record_dr_test(self, result: DRTestResult) -> None:
-        self.last_dr_test = datetime.now(timezone.utc).isoformat()
+        self.last_dr_test = datetime.now(UTC).isoformat()
         self.dr_test_result = result
 
     @property

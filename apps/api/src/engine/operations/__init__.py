@@ -1,6 +1,6 @@
 """Operations Engine — Health monitoring, DR testing, backup verification.
 """
 
-from src.engine.operations.monitoring_engine import MonitoringEngine, HealthStatus
+from src.engine.operations.monitoring_engine import HealthStatus, MonitoringEngine
 
-__all__ = ["MonitoringEngine", "HealthStatus"]
+__all__ = ["HealthStatus", "MonitoringEngine"]

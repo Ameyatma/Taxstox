@@ -91,7 +91,7 @@ class TaxScenario:
     @property
     def total_change(self) -> Decimal:
         """Sum of all variable changes."""
-        total = Decimal("0")
+        total = Decimal(0)
         for var in self.variables:
             total += var.new_value - var.original_value
         return total

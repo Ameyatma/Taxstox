@@ -8,7 +8,7 @@ Traceability: C19.2 (Tax-Loss Harvesting — 0%→30%, P6)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID, uuid4
@@ -62,8 +62,8 @@ class HarvestingRecommendation:
 
     recommendation_id: UUID
     opportunity: LossHarvestingOpportunity
-    sell_quantity: Decimal = Decimal("1")
-    estimated_tax_saved: Decimal = Decimal("0")
+    sell_quantity: Decimal = Decimal(1)
+    estimated_tax_saved: Decimal = Decimal(0)
     offsets_which_gains: str = ""        # Description of which gains are offset
     action: str = ""                     # "Sell 100 shares of X"
     priority: int = 50                   # 1-100

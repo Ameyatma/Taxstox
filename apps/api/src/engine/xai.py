@@ -11,9 +11,10 @@ Traceability: C10.6 (Explainable AI — 0%→30%, P4)
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -138,7 +139,7 @@ class ExplainableAIEngine:
             if val > 0:
                 # Approximate contribution: proportional to income share
                 gti = Decimal(str(breakdown.get("gross_total_income", "1")))
-                share = val / gti if gti > 0 else Decimal("0")
+                share = val / gti if gti > 0 else Decimal(0)
                 contrib = (final_tax * share).quantize(Decimal("0.01"))
                 contributions.append(FeatureContribution(
                     feature=key, label=label, value=val,
@@ -158,7 +159,7 @@ class ExplainableAIEngine:
                 contributions.append(FeatureContribution(
                     feature=key, label=label, value=val,
                     contribution_to_tax=-val,
-                    percentage_of_total=Decimal("0"),
+                    percentage_of_total=Decimal(0),
                     direction="reduces_tax",
                 ))
 
@@ -185,26 +186,26 @@ class ExplainableAIEngine:
         cfs: list[Counterfactual] = []
 
         # 1. What if income were ₹50K higher?
-        higher = total_income + Decimal("50000")
+        higher = total_income + Decimal(50000)
         new_tax_higher = compute_fn(higher) if compute_fn else self._estimate(higher, total_income, final_tax)
         cfs.append(Counterfactual(
             scenario_id="CF-001",
-            description=f"If your income were ₹50,000 higher",
+            description="If your income were ₹50,000 higher",
             change_description="Income increased by ₹50,000",
             original_tax=final_tax,
             new_tax=new_tax_higher,
             tax_difference=new_tax_higher - final_tax,
-            savings_possible=Decimal("0"),
+            savings_possible=Decimal(0),
             recommendation="Additional income at top marginal rate — plan for tax on bonuses or windfalls",
         ))
 
         # 2. What if income were ₹50K lower?
-        lower = max(Decimal("0"), total_income - Decimal("50000"))
+        lower = max(Decimal(0), total_income - Decimal(50000))
         new_tax_lower = compute_fn(lower) if compute_fn else self._estimate(lower, total_income, final_tax)
         savings = final_tax - new_tax_lower
         cfs.append(Counterfactual(
             scenario_id="CF-002",
-            description=f"If your income were ₹50,000 lower",
+            description="If your income were ₹50,000 lower",
             change_description="Income decreased by ₹50,000",
             original_tax=final_tax,
             new_tax=new_tax_lower,
@@ -215,39 +216,39 @@ class ExplainableAIEngine:
 
         # 3. Old Regime: What if all 80C were maxed?
         ded_80c = Decimal(str(breakdown.get("80c_deduction", "0")))
-        max_80c = Decimal("150000")
+        max_80c = Decimal(150000)
         if ded_80c < max_80c and regime == "old":
             gap = max_80c - ded_80c
             new_income = total_income - gap
-            new_tax_maxed = compute_fn(max(Decimal("0"), new_income)) if compute_fn else final_tax
+            new_tax_maxed = compute_fn(max(Decimal(0), new_income)) if compute_fn else final_tax
             saving = final_tax - new_tax_maxed
             cfs.append(Counterfactual(
                 scenario_id="CF-003",
                 description=f"If you maxed out 80C (additional ₹{gap:,.0f})",
                 change_description=f"80C increased from ₹{ded_80c:,.0f} to ₹{max_80c:,.0f}",
                 original_tax=final_tax,
-                new_tax=new_tax_maxed if new_tax_maxed < final_tax else final_tax,
-                tax_difference=-(saving) if saving > 0 else Decimal("0"),
-                savings_possible=saving if saving > 0 else Decimal("0"),
+                new_tax=min(final_tax, new_tax_maxed),
+                tax_difference=-(saving) if saving > 0 else Decimal(0),
+                savings_possible=saving if saving > 0 else Decimal(0),
                 recommendation=f"Max out 80C by investing ₹{gap:,.0f} more in PPF/ELSS/NPS" if saving > 0 else "80C already at limit — no additional saving",
             ))
 
         # 4. Old Regime: What if you added NPS 80CCD(1B)?
         ded_nps = Decimal(str(breakdown.get("80ccd1b_deduction", "0")))
-        max_nps = Decimal("50000")
+        max_nps = Decimal(50000)
         if ded_nps < max_nps and regime == "old":
             gap = max_nps - ded_nps
             new_income_nps = total_income - gap
-            new_tax_nps = compute_fn(max(Decimal("0"), new_income_nps)) if compute_fn else final_tax
+            new_tax_nps = compute_fn(max(Decimal(0), new_income_nps)) if compute_fn else final_tax
             saving_nps = final_tax - new_tax_nps
             cfs.append(Counterfactual(
                 scenario_id="CF-004",
                 description=f"If you invested ₹{gap:,.0f} in NPS (80CCD(1B))",
                 change_description=f"NPS contribution added: ₹{gap:,.0f}",
                 original_tax=final_tax,
-                new_tax=new_tax_nps if new_tax_nps < final_tax else final_tax,
-                tax_difference=-(saving_nps) if saving_nps > 0 else Decimal("0"),
-                savings_possible=saving_nps if saving_nps > 0 else Decimal("0"),
+                new_tax=min(final_tax, new_tax_nps),
+                tax_difference=-(saving_nps) if saving_nps > 0 else Decimal(0),
+                savings_possible=saving_nps if saving_nps > 0 else Decimal(0),
                 recommendation=f"Invest ₹{gap:,.0f} in NPS for additional deduction" if saving_nps > 0 else "NPS already at max",
             ))
 
@@ -262,8 +263,8 @@ class ExplainableAIEngine:
                 change_description=f"Regime changed from {regime} to {other}",
                 original_tax=final_tax,
                 new_tax=other_tax if other_tax > 0 else final_tax,
-                tax_difference=diff if other_tax > 0 else Decimal("0"),
-                savings_possible=max(Decimal("0"), -diff),
+                tax_difference=diff if other_tax > 0 else Decimal(0),
+                savings_possible=max(Decimal(0), -diff),
                 recommendation=f"Switch to {other.title()} Regime" if diff < 0 else f"Stay with {regime.title()} Regime",
             ))
 
@@ -279,7 +280,7 @@ class ExplainableAIEngine:
         sensitivities: list[SensitivityAnalysis] = []
 
         # Sensitivity to total income changes (marginal rate)
-        delta = Decimal("1000")
+        delta = Decimal(1000)
         if total_income > 0:
             # Estimate marginal rate
             tax_plus = self._estimate(total_income + delta, total_income, tax)
@@ -295,7 +296,7 @@ class ExplainableAIEngine:
                 regime_config = config.new_regime  # Default to new
                 inflections = tuple(
                     b.income_to for b in regime_config.slabs
-                    if b.income_to < Decimal("999999999")
+                    if b.income_to < Decimal(999999999)
                 )
             except Exception:
                 inflections = ()

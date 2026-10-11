@@ -13,12 +13,10 @@ Traceability: C12.7 (Rule Change Impact Analysis — 0%→50%, P4)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
 
 from src.engine.knowledge_graph import (
-    KnowledgeGraph,
     EdgeType,
-    KnowledgeNode,
+    KnowledgeGraph,
     tax_knowledge_graph,
 )
 
@@ -189,8 +187,6 @@ class RuleImpactAnalyzer:
         provision_id = analysis.changed_provision_id
 
         # Check if it's in RuleRepository
-        from src.engine.rules.config import rule_repository
-        from src.models.financial_year import FinancialYear
 
         changes.append(f"Update TaxYearConfig for {provision_id} in rules/config.py")
         changes.append(f"Verify RuleEvaluator handles updated {provision_id} values")

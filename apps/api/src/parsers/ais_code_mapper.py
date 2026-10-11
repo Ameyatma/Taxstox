@@ -10,8 +10,7 @@ Used by:
 - ITR JSON Builder: populate correct schedules with correct sources
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass
@@ -306,7 +305,7 @@ CODE_MAP: dict[str, CodeMapping] = {
 }
 
 
-def get_mapping(code: str) -> Optional[CodeMapping]:
+def get_mapping(code: str) -> CodeMapping | None:
     """Get the ITR mapping for an AIS information code.
 
     Handles variants: "TDS-192", "TDS192", "TDS 192", "TDS-192-Ann.II-SAL"

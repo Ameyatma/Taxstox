@@ -2,7 +2,6 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,28 +16,28 @@ class UploadRequest(BaseModel):
 class UploadResponse(BaseModel):
     session_id: str
     status: str  # "parsed", "password_required", "error"
-    data_summary: Optional[dict] = None
+    data_summary: dict | None = None
     password_required: bool = False
-    password_hint: Optional[str] = None
+    password_hint: str | None = None
 
 
 class Question(BaseModel):
     id: str
     text: str
     type: str  # yes_no, number, dropdown, text
-    sub_questions: Optional[list["Question"]] = None
+    sub_questions: list["Question"] | None = None
     impact: str = ""
     suppressible: bool = True
 
     # For conditional display
-    depends_on: Optional[str] = None
-    depends_on_answer: Optional[str] = None
+    depends_on: str | None = None
+    depends_on_answer: str | None = None
 
 
 class QuestionsResponse(BaseModel):
     itr_type: str = "ITR-2"
     regime_recommended: Regime = Regime.NEW
-    regime_savings: Decimal = Decimal("0")
+    regime_savings: Decimal = Decimal(0)
     income_summary: dict = Field(default_factory=dict)
     questions: list[Question] = Field(default_factory=list)
     # Auto-detected data from PDFs (salary, TDS, interest, CG, deductions)
@@ -54,13 +53,13 @@ class AnswersSubmitRequest(BaseModel):
 class TaxSummaryResponse(BaseModel):
     income: dict = Field(default_factory=dict)            # Nested detail: {Salary: {Gross, HRA, ...}}
     deductions: dict = Field(default_factory=dict)         # {80C, 80CCD2, 80D, ...}
-    taxable_income: Decimal = Decimal("0")
+    taxable_income: Decimal = Decimal(0)
     tax_breakdown: dict = Field(default_factory=dict)      # Line-item tax: {Slab, 112A, 111A, rebate, cess}
     payments: dict = Field(default_factory=dict)           # {TDS Employer, TDS Other, ...}
-    balance_payable: Decimal = Decimal("0")
+    balance_payable: Decimal = Decimal(0)
     regime: Regime = Regime.NEW
-    regime_savings: Decimal = Decimal("0")
-    filing_deadline: Optional[date] = None
+    regime_savings: Decimal = Decimal(0)
+    filing_deadline: date | None = None
     # V2: Both regime breakdowns for side-by-side comparison
     old_regime_breakdown: dict = Field(default_factory=dict)
     new_regime_breakdown: dict = Field(default_factory=dict)
@@ -78,7 +77,7 @@ class ValidationResult(BaseModel):
     passed: bool
     severity: str = "info"  # error, warning, info
     message: str = ""
-    fix_suggestion: Optional[str] = None
+    fix_suggestion: str | None = None
 
 
 class ValidationReport(BaseModel):

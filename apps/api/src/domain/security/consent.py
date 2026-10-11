@@ -11,9 +11,9 @@ Traceability: C1.8 (Consent Management — Critical), C17.3 (DPDP),
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, Protocol
+from typing import Protocol
 from uuid import UUID, uuid4
 
 
@@ -42,16 +42,16 @@ class ConsentRecord:
     version: int = 1
     granted_at: str = ""
     withdrawn_at: str = ""
-    tenant_id: Optional[UUID] = None
+    tenant_id: UUID | None = None
     ip_address: str = ""     # For audit trail, not stored persistently in domain
 
     def __post_init__(self) -> None:
         if not self.granted_at:
-            self.granted_at = datetime.now(timezone.utc).isoformat()
+            self.granted_at = datetime.now(UTC).isoformat()
 
     def withdraw(self) -> None:
         self.status = ConsentStatus.WITHDRAWN
-        self.withdrawn_at = datetime.now(timezone.utc).isoformat()
+        self.withdrawn_at = datetime.now(UTC).isoformat()
 
     @property
     def is_active(self) -> bool:
@@ -64,7 +64,7 @@ class ConsentAggregate:
     user_id: UUID
     records: list[ConsentRecord] = field(default_factory=list)
 
-    def grant(self, purpose_id: str, tenant_id: Optional[UUID] = None) -> ConsentRecord:
+    def grant(self, purpose_id: str, tenant_id: UUID | None = None) -> ConsentRecord:
         """Grant consent for a purpose. Revokes previous version if exists."""
         # Withdraw any existing consent for this purpose
         for r in self.records:

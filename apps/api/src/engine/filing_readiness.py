@@ -9,16 +9,14 @@ Traceability: C8.3, C8.4, C8.5, C8.7
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from decimal import Decimal
-from typing import Optional
+from dataclasses import dataclass
 
 from src.engine.validation_pipeline import (
     ValidationPipeline,
     ValidationReport,
-    check_pan_format,
     check_assessment_year,
     check_deduction_limits,
+    check_pan_format,
     check_total_income_positive,
 )
 from src.models.financial_year import FinancialYear
@@ -33,10 +31,10 @@ class FilingReadinessReport:
     pan_masked: str
 
     # Sub-reports
-    identity_check: Optional[ValidationReport] = None
-    income_check: Optional[ValidationReport] = None
-    deduction_check: Optional[ValidationReport] = None
-    compliance_check: Optional[ValidationReport] = None
+    identity_check: ValidationReport | None = None
+    income_check: ValidationReport | None = None
+    deduction_check: ValidationReport | None = None
+    compliance_check: ValidationReport | None = None
 
     # Summary
     total_checks: int = 0

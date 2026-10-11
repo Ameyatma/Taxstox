@@ -13,11 +13,10 @@ ITR-1 eligibility:
 import logging
 from datetime import date
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from src.models.financial_year import FinancialYear
 from src.models.form16 import Form16Data
-from src.models.ais import AISData
 from src.models.tax import UnifiedTaxData
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 class ITR1Builder:
     """Builds ITR-1 (SAHAJ) JSON from unified tax data."""
 
-    def __init__(self, financial_year: Optional[FinancialYear] = None) -> None:
+    def __init__(self, financial_year: FinancialYear | None = None) -> None:
         self._fy = financial_year or FinancialYear.from_string("FY2025-26")
         self._ay = self._fy.assessment_year
 
@@ -106,7 +105,7 @@ class ITR1Builder:
 
     def _build_schedule_hp(self, data: UnifiedTaxData) -> dict:
         answers = data.user_answers
-        has_loan = answers.home_loan_interest or Decimal("0") > 0 if answers else False
+        has_loan = answers.home_loan_interest or Decimal(0) > 0 if answers else False
         interest = str(answers.home_loan_interest) if answers and answers.home_loan_interest else "0"
 
         return {
@@ -175,15 +174,15 @@ class ITR1Builder:
         """80TTA: Up to ₹10,000 deduction on savings interest."""
         if data.ais:
             si = data.ais.total_savings_interest
-            return str(min(si, Decimal("10000")))
+            return str(min(si, Decimal(10000)))
         return "0"
 
     def _calc_80d(self, answers) -> dict:
         if not answers:
             return {"HealthPremiumSelf": "0", "HealthPremiumParents": "0", "Total80D": "0"}
 
-        self_amt = str(answers.health_premium_self or Decimal("0"))
-        parent_amt = str(answers.health_premium_parents or Decimal("0"))
+        self_amt = str(answers.health_premium_self or Decimal(0))
+        parent_amt = str(answers.health_premium_parents or Decimal(0))
         total = str(Decimal(self_amt) + Decimal(parent_amt))
         return {
             "HealthPremiumSelf": self_amt,
@@ -209,7 +208,7 @@ class ITR1Builder:
 
         gross = salary + hp_income + os_income
         deductions = Decimal(breakdown.get("deductions_total", "0"))
-        taxable = max(Decimal("0"), gross - deductions)
+        taxable = max(Decimal(0), gross - deductions)
 
         return {
             "Salary": str(salary),
@@ -231,7 +230,7 @@ class ITR1Builder:
 
         # Compute slab-wise tax
         tax, cess, rebate = self._compute_tax(total_income, is_new)
-        total_tax = max(Decimal("0"), tax - rebate) + cess
+        total_tax = max(Decimal(0), tax - rebate) + cess
 
         return {
             "TaxOnSlabIncome": str(tax),
@@ -253,8 +252,8 @@ class ITR1Builder:
 
         slab_tax = evaluator.compute_slab_tax(total_income, regime.slabs)
         rebate = evaluator.compute_rebate(slab_tax, total_income, regime)
-        tax_after_rebate = max(Decimal("0"), slab_tax - rebate)
-        cess = evaluator.compute_cess(tax_after_rebate, Decimal("0"), config.cess_rate)
+        tax_after_rebate = max(Decimal(0), slab_tax - rebate)
+        cess = evaluator.compute_cess(tax_after_rebate, Decimal(0), config.cess_rate)
 
         return slab_tax, cess, rebate
 

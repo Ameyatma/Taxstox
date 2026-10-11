@@ -9,7 +9,7 @@ Traceability: C18.2 (Deadline Reminders — 0%→60%, P6)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -63,7 +63,7 @@ class DeadlineRule:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def should_remind_today(self, deadline_date: date) -> bool:
         """Check if a reminder should be sent today."""

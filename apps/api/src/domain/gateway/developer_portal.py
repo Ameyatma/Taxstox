@@ -6,7 +6,7 @@ Traceability: C16.8 (Developer Portal — 0%→30%, P7)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 
@@ -37,7 +37,7 @@ class DeveloperRegistration:
 
     def __post_init__(self) -> None:
         if not self.registered_at:
-            self.registered_at = datetime.now(timezone.utc).isoformat()
+            self.registered_at = datetime.now(UTC).isoformat()
 
     def approve(self) -> None:
         self.status = "approved"

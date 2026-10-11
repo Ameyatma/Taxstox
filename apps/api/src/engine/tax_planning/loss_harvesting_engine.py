@@ -10,9 +10,9 @@ from __future__ import annotations
 from decimal import Decimal
 
 from src.domain.tax_planning.loss_harvesting import (
-    LossHarvestingOpportunity,
-    HarvestingRecommendation,
     AssetType,
+    HarvestingRecommendation,
+    LossHarvestingOpportunity,
 )
 
 
@@ -27,9 +27,9 @@ class LossHarvestingEngine:
         self,
         holdings: list[dict],
         marginal_tax_rate: Decimal = Decimal("0.30"),
-        existing_stcg: Decimal = Decimal("0"),
-        existing_ltcg: Decimal = Decimal("0"),
-        existing_vda_gains: Decimal = Decimal("0"),
+        existing_stcg: Decimal = Decimal(0),
+        existing_ltcg: Decimal = Decimal(0),
+        existing_vda_gains: Decimal = Decimal(0),
     ) -> list[HarvestingRecommendation]:
         """Analyze portfolio for loss harvesting opportunities.
 

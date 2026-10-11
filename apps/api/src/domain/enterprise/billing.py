@@ -8,11 +8,10 @@ Traceability: C21.8 (Billing & Subscription — 0%→50%, P5)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -44,8 +43,8 @@ TIER_CONFIG = {
         "max_staff": 2,
         "white_label": False,
         "sso": False,
-        "price_per_month": Decimal("0"),
-        "price_per_filing": Decimal("0"),
+        "price_per_month": Decimal(0),
+        "price_per_filing": Decimal(0),
     },
     SubscriptionTier.PROFESSIONAL: {
         "max_clients": 500,
@@ -53,8 +52,8 @@ TIER_CONFIG = {
         "max_staff": 20,
         "white_label": False,
         "sso": False,
-        "price_per_month": Decimal("999"),
-        "price_per_filing": Decimal("149"),
+        "price_per_month": Decimal(999),
+        "price_per_filing": Decimal(149),
     },
     SubscriptionTier.ENTERPRISE: {
         "max_clients": 999999,
@@ -62,8 +61,8 @@ TIER_CONFIG = {
         "max_staff": 999999,
         "white_label": True,
         "sso": True,
-        "price_per_month": Decimal("4999"),
-        "price_per_filing": Decimal("0"),
+        "price_per_month": Decimal(4999),
+        "price_per_filing": Decimal(0),
     },
 }
 
@@ -81,7 +80,7 @@ class UsageRecord:
     def __post_init__(self) -> None:
         if not self.recorded_at:
             object.__setattr__(self, "recorded_at",
-                              datetime.now(timezone.utc).isoformat())
+                              datetime.now(UTC).isoformat())
 
     @staticmethod
     def filing(tenant_id: UUID, count: int = 1) -> UsageRecord:
@@ -110,7 +109,7 @@ class Invoice:
     def __post_init__(self) -> None:
         if not self.issued_at:
             object.__setattr__(self, "issued_at",
-                              datetime.now(timezone.utc).isoformat())
+                              datetime.now(UTC).isoformat())
 
     @property
     def is_paid(self) -> bool:
@@ -145,7 +144,7 @@ class Subscription:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
         if not self.updated_at:
             self.updated_at = self.created_at
         if not self.current_period_start:
@@ -209,4 +208,4 @@ class Subscription:
         self._touch()
 
     def _touch(self) -> None:
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()

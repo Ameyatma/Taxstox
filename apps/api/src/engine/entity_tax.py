@@ -12,7 +12,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from src.engine.rules.evaluator import RuleEvaluator
 from src.models.financial_year import FinancialYear
@@ -41,8 +40,8 @@ class EntityTaxConfig:
     """
     entity_type: EntityType
     base_rate: Decimal                         # e.g., 0.25 for 25% (company)
-    surcharge_rate: Decimal = Decimal("0")     # e.g., 0.07 for 7% (company > ₹1Cr)
-    surcharge_threshold: Decimal = Decimal("0")
+    surcharge_rate: Decimal = Decimal(0)     # e.g., 0.07 for 7% (company > ₹1Cr)
+    surcharge_threshold: Decimal = Decimal(0)
     cess_rate: Decimal = Decimal("0.04")       # 4% HEC
     uses_slab_rates: bool = False              # Trust/AOP/BOI use progressive slabs
     is_flat_rate: bool = True                  # Most entities use flat rates
@@ -54,31 +53,31 @@ ENTITY_TAX_CONFIGS: dict[EntityType, EntityTaxConfig] = {
         entity_type=EntityType.COMPANY,
         base_rate=Decimal("0.25"),
         surcharge_rate=Decimal("0.07"),
-        surcharge_threshold=Decimal("10000000"),  # ₹1Cr
+        surcharge_threshold=Decimal(10000000),  # ₹1Cr
     ),
     EntityType.COMPANY_115BAA: EntityTaxConfig(
         entity_type=EntityType.COMPANY_115BAA,
         base_rate=Decimal("0.22"),              # 22% + 10% surcharge
         surcharge_rate=Decimal("0.10"),
-        surcharge_threshold=Decimal("0"),        # Always applicable
+        surcharge_threshold=Decimal(0),        # Always applicable
     ),
     EntityType.COMPANY_115BAB: EntityTaxConfig(
         entity_type=EntityType.COMPANY_115BAB,
         base_rate=Decimal("0.15"),              # 15% + 10% surcharge
         surcharge_rate=Decimal("0.10"),
-        surcharge_threshold=Decimal("0"),
+        surcharge_threshold=Decimal(0),
     ),
     EntityType.FIRM: EntityTaxConfig(
         entity_type=EntityType.FIRM,
         base_rate=Decimal("0.30"),
         surcharge_rate=Decimal("0.12"),
-        surcharge_threshold=Decimal("10000000"),
+        surcharge_threshold=Decimal(10000000),
     ),
     EntityType.LLP: EntityTaxConfig(
         entity_type=EntityType.LLP,
         base_rate=Decimal("0.30"),
         surcharge_rate=Decimal("0.12"),
-        surcharge_threshold=Decimal("10000000"),
+        surcharge_threshold=Decimal(10000000),
     ),
     EntityType.TRUST: EntityTaxConfig(
         entity_type=EntityType.TRUST,
@@ -124,7 +123,7 @@ class EntityTaxEngine:
         self,
         entity_type: EntityType,
         total_income: Decimal,
-        fy: Optional[FinancialYear] = None,
+        fy: FinancialYear | None = None,
     ) -> dict:
         """Compute entity tax liability."""
         config = ENTITY_TAX_CONFIGS.get(entity_type)
@@ -142,17 +141,16 @@ class EntityTaxEngine:
             tax = evaluator.compute_slab_tax(total_income, tax_config.old_regime.slabs)
 
         # Surcharge
-        surcharge = Decimal("0")
+        surcharge = Decimal(0)
         if config.surcharge_rate > 0 and (
             config.surcharge_threshold == 0
             or total_income > config.surcharge_threshold
         ):
             surcharge = tax * config.surcharge_rate
             # Marginal relief for companies
-            if entity_type == EntityType.COMPANY and total_income > Decimal("10000000"):
-                excess = total_income - Decimal("10000000")
-                if surcharge > excess:
-                    surcharge = excess
+            if entity_type == EntityType.COMPANY and total_income > Decimal(10000000):
+                excess = total_income - Decimal(10000000)
+                surcharge = min(surcharge, excess)
 
         # Cess
         cess = (tax + surcharge) * config.cess_rate
@@ -167,5 +165,5 @@ class EntityTaxEngine:
             "surcharge": str(surcharge.quantize(Decimal("0.01"))),
             "surcharge_rate": str(config.surcharge_rate),
             "cess": str(cess.quantize(Decimal("0.01"))),
-            "net_tax": str(final_tax.quantize(Decimal("1"))),
+            "net_tax": str(final_tax.quantize(Decimal(1))),
         }

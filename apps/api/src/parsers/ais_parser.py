@@ -5,40 +5,38 @@ Uses pdfplumber table extraction for reliable structured data parsing.
 """
 
 import io
-import re
 import logging
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
 
 import pdfplumber
 import pikepdf
 
 from src.models.ais import (
+    AISAnnexureIISalary,
     AISData,
-    AISTDSEntry,
-    AISSavingsInterest,
     AISEquityMFSale,
     AISOtherUnitSale,
-    AISSecuritiesPurchase,
     AISRefund,
-    AISAnnexureIISalary,
+    AISSavingsInterest,
+    AISSecuritiesPurchase,
+    AISTDSEntry,
 )
-
 from src.utils.decimal_utils import to_decimal
 
 logger = logging.getLogger(__name__)
 
 
-def _clean_cell(cell: Optional[str]) -> str:
+def _clean_cell(cell: str | None) -> str:
     """Clean a table cell — strip whitespace, collapse newlines to spaces."""
     if not cell:
         return ""
     return " ".join(cell.split())
 
 
-def _parse_date(date_str: Optional[str]) -> Optional[date]:
+def _parse_date(date_str: str | None) -> date | None:
     """Parse a date string."""
     if not date_str:
         return None
@@ -75,7 +73,7 @@ class AISParser:
             raise RuntimeError(f"Failed to decrypt AIS PDF {pdf_path}: {e}")
 
     @staticmethod
-    def _extract_all_tables(pdf_bytes: bytes) -> list[list[list[Optional[str]]]]:
+    def _extract_all_tables(pdf_bytes: bytes) -> list[list[list[str | None]]]:
         """Extract all tables from all pages of the decrypted AIS PDF."""
         all_rows = []
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
@@ -187,6 +185,12 @@ class AISParser:
                 in_equity_table = False
                 in_otu_table = False
 
+            # Parse dividend income (TDS-194 and TDS-194K)
+            if info_code in ("TDS-194", "TDS-194K"):
+                dividend_entry = self._parse_dividend_row(row, all_rows)
+                if dividend_entry:
+                    ais.dividend_income += dividend_entry
+
         # Assign to AIS
         ais.salary_tds = salary_tds
         ais.other_tds = other_tds
@@ -199,7 +203,7 @@ class AISParser:
 
         return ais
 
-    def _find_info_code(self, row: list[str]) -> Optional[str]:
+    def _find_info_code(self, row: list[str]) -> str | None:
         """Find an AIS information code in a table row."""
         joined = " ".join(row)
         # TDS codes
@@ -257,14 +261,14 @@ class AISParser:
                     information_source=source,
                     quarter=quarter_match.group(1),
                     date_of_payment=_parse_date(date_match.group(1)),
-                    amount_paid=amounts[0] if len(amounts) >= 1 else Decimal("0"),
-                    tds_deducted=amounts[1] if len(amounts) >= 2 else Decimal("0"),
-                    tds_deposited=amounts[2] if len(amounts) >= 3 else Decimal("0"),
+                    amount_paid=amounts[0] if len(amounts) >= 1 else Decimal(0),
+                    tds_deducted=amounts[1] if len(amounts) >= 2 else Decimal(0),
+                    tds_deposited=amounts[2] if len(amounts) >= 3 else Decimal(0),
                 ))
 
         return entries
 
-    def _parse_savings_interest_row(self, summary_row: list[str], all_rows: list[list[str]]) -> Optional[AISSavingsInterest]:
+    def _parse_savings_interest_row(self, summary_row: list[str], all_rows: list[list[str]]) -> AISSavingsInterest | None:
         """Parse an SFT-016(SB) savings interest entry."""
         joined = " ".join(summary_row)
 
@@ -281,7 +285,7 @@ class AISParser:
             bank_pan = pan_match.group(1)
 
         # Extract interest amount from summary row — last numeric value before end
-        summary_interest = Decimal("0")
+        summary_interest = Decimal(0)
         for cell in reversed(summary_row):
             val = to_decimal(cell)
             if val > 0:
@@ -321,7 +325,7 @@ class AISParser:
 
         return None
 
-    def _parse_equity_mf_row(self, row: list[str]) -> Optional[AISEquityMFSale]:
+    def _parse_equity_mf_row(self, row: list[str]) -> AISEquityMFSale | None:
         """Parse an SFT-18-EMF(M) data row — column-adaptive since page layouts differ."""
         joined = " ".join(row)
         if not re.search(r"\d{2}/\d{2}/\d{4}", joined):
@@ -334,11 +338,11 @@ class AISParser:
         amc_name = ""
         security_name = ""
         asset_type = ""
-        quantity = Decimal("0")
-        sale_price = Decimal("0")
-        sale_consideration = Decimal("0")
-        stt_paid = Decimal("0")
-        cost_of_acquisition = Decimal("0")
+        quantity = Decimal(0)
+        sale_price = Decimal(0)
+        sale_consideration = Decimal(0)
+        stt_paid = Decimal(0)
+        cost_of_acquisition = Decimal(0)
         term = ""
         status = ""
 
@@ -368,11 +372,11 @@ class AISParser:
         amc_name = row[1] if len(row) > 1 else ""
         security_name = row[date_idx + 2] if date_idx >= 0 and len(row) > date_idx + 2 else ""
         asset_type = row[type_idx].strip() if type_idx >= 0 and len(row) > type_idx else ""
-        quantity = to_decimal(row[qty_idx]) if qty_idx >= 0 and len(row) > qty_idx else Decimal("0")
-        sale_price = to_decimal(row[price_idx]) if price_idx >= 0 and len(row) > price_idx else Decimal("0")
-        sale_consideration = to_decimal(row[cons_idx]) if cons_idx >= 0 and len(row) > cons_idx else Decimal("0")
-        stt_paid = to_decimal(row[stt_idx]) if stt_idx >= 0 and len(row) > stt_idx else Decimal("0")
-        cost_of_acquisition = to_decimal(row[cost_idx]) if cost_idx >= 0 and len(row) > cost_idx else Decimal("0")
+        quantity = to_decimal(row[qty_idx]) if qty_idx >= 0 and len(row) > qty_idx else Decimal(0)
+        sale_price = to_decimal(row[price_idx]) if price_idx >= 0 and len(row) > price_idx else Decimal(0)
+        sale_consideration = to_decimal(row[cons_idx]) if cons_idx >= 0 and len(row) > cons_idx else Decimal(0)
+        stt_paid = to_decimal(row[stt_idx]) if stt_idx >= 0 and len(row) > stt_idx else Decimal(0)
+        cost_of_acquisition = to_decimal(row[cost_idx]) if cost_idx >= 0 and len(row) > cost_idx else Decimal(0)
 
         if "long" in asset_type.lower():
             term = "Long term"
@@ -398,7 +402,7 @@ class AISParser:
             term=term,
         )
 
-    def _parse_other_unit_row(self, row: list[str]) -> Optional[AISOtherUnitSale]:
+    def _parse_other_unit_row(self, row: list[str]) -> AISOtherUnitSale | None:
         """Parse an SFT-17-OTU(M) data row — column-position based."""
         joined = " ".join(row)
         if not re.search(r"\d{2}/\d{2}/\d{4}", joined):
@@ -408,10 +412,10 @@ class AISParser:
         date_of_sale = _parse_date(row[1]) if len(row) > 1 else None
         security_name = row[3] if len(row) > 3 else ""
         asset_type = row[8].strip() if len(row) > 8 else ""
-        quantity = to_decimal(row[10]) if len(row) > 10 else Decimal("0")
-        sale_price = to_decimal(row[11]) if len(row) > 11 else Decimal("0")
-        sale_consideration = to_decimal(row[12]) if len(row) > 12 else Decimal("0")
-        cost_of_acquisition = to_decimal(row[13]) if len(row) > 13 else Decimal("0")
+        quantity = to_decimal(row[10]) if len(row) > 10 else Decimal(0)
+        sale_price = to_decimal(row[11]) if len(row) > 11 else Decimal(0)
+        sale_consideration = to_decimal(row[12]) if len(row) > 12 else Decimal(0)
+        cost_of_acquisition = to_decimal(row[13]) if len(row) > 13 else Decimal(0)
 
         term = ""
         if "long" in asset_type.lower():
@@ -436,7 +440,7 @@ class AISParser:
             term=term,
         )
 
-    def _parse_securities_purchase_row(self, summary_row: list[str], all_rows: list[list[str]]) -> Optional[AISSecuritiesPurchase]:
+    def _parse_securities_purchase_row(self, summary_row: list[str], all_rows: list[list[str]]) -> AISSecuritiesPurchase | None:
         """Parse an SFT-17(Pur) securities purchase entry."""
         joined = " ".join(summary_row)
         source = ""
@@ -444,8 +448,8 @@ class AISParser:
         if source_match:
             source = source_match.group(1).strip().rstrip(",")
 
-        market_purchase = Decimal("0")
-        market_sales = Decimal("0")
+        market_purchase = Decimal(0)
+        market_sales = Decimal(0)
         client_id = ""
 
         # The detail row follows
@@ -460,8 +464,8 @@ class AISParser:
                         amounts.append(to_decimal(c))
                 # Second-to-last is client ID, market purchase and sales are amounts
                 if len(amounts) >= 2:
-                    market_purchase = amounts[0] if len(amounts) >= 1 else Decimal("0")
-                    market_sales = amounts[1] if len(amounts) >= 2 else Decimal("0")
+                    market_purchase = amounts[0] if len(amounts) >= 1 else Decimal(0)
+                    market_sales = amounts[1] if len(amounts) >= 2 else Decimal(0)
                 # Client ID
                 for cell in row:
                     if cell.strip().isdigit() and len(cell.strip()) == 8:
@@ -475,7 +479,7 @@ class AISParser:
             market_sales=market_sales,
         )
 
-    def _parse_annexure_salary(self, row: list[str], all_rows: list[list[str]]) -> Optional[AISAnnexureIISalary]:
+    def _parse_annexure_salary(self, row: list[str], all_rows: list[list[str]]) -> AISAnnexureIISalary | None:
         """Parse TDS-Ann.II-SAL salary annexure entry."""
         joined = " ".join(row)
         # Look for the detail row with salary breakup
@@ -489,16 +493,16 @@ class AISParser:
                         amounts.append(to_decimal(c))
                 if len(amounts) >= 1:
                     return AISAnnexureIISalary(
-                        gross_salary_171=amounts[0] if len(amounts) >= 1 else Decimal("0"),
-                        perquisites_172=amounts[1] if len(amounts) >= 2 else Decimal("0"),
-                        profits_lieu_173=amounts[2] if len(amounts) >= 3 else Decimal("0"),
+                        gross_salary_171=amounts[0] if len(amounts) >= 1 else Decimal(0),
+                        perquisites_172=amounts[1] if len(amounts) >= 2 else Decimal(0),
+                        profits_lieu_173=amounts[2] if len(amounts) >= 3 else Decimal(0),
                         total_gross_salary=amounts[3] if len(amounts) >= 4 else (
-                            amounts[0] if len(amounts) == 1 else Decimal("0")
+                            amounts[0] if len(amounts) == 1 else Decimal(0)
                         ),
                     )
         return None
 
-    def _parse_refund_row(self, row: list[str]) -> Optional[AISRefund]:
+    def _parse_refund_row(self, row: list[str]) -> AISRefund | None:
         """Parse a Part B4 refund row."""
         joined = " ".join(row)
         if not ("ECS" in joined or "RTGS" in joined or "NEFT" in joined):
@@ -518,7 +522,7 @@ class AISParser:
         elif "NEFT" in joined:
             mode = "NEFT"
 
-        amount = Decimal("0")
+        amount = Decimal(0)
         date_of_payment = None
         # Find amount (numeric with commas) and date
         for cell in row:
@@ -534,6 +538,45 @@ class AISParser:
             amount=amount,
             date_of_payment=date_of_payment,
         )
+
+    def _parse_dividend_row(self, summary_row: list[str], all_rows: list[list[str]]) -> Decimal:
+        """Parse dividend income from TDS-194 or TDS-194K section."""
+        joined = " ".join(summary_row)
+
+        # Look for the dividend amount in the summary row
+        dividend_amount = Decimal(0)
+        for cell in summary_row:
+            try:
+                val = to_decimal(cell)
+                if val > 0:
+                    dividend_amount = val
+                    break
+            except Exception:
+                continue
+
+        # If not found in summary, look in detail rows
+        if dividend_amount == 0:
+            for row in all_rows:
+                joined_detail = " ".join(row)
+                # Skip header rows
+                if "SR. NO." in joined_detail or "INFORMATION CODE" in joined_detail:
+                    continue
+                if "DATE" in joined_detail and ("AMOUNT" in joined_detail or "PAID" in joined_detail):
+                    # This might be a detail row with date and amount
+                    amounts = []
+                    for cell in row:
+                        try:
+                            val = to_decimal(cell.strip())
+                            if val > 0:
+                                amounts.append(val)
+                        except Exception:
+                            pass
+                    if amounts:
+                        # Take the first positive amount as dividend
+                        dividend_amount = amounts[0]
+                        break
+
+        return dividend_amount
 
     def _extract_personal_info(self, text: str, ais: AISData) -> None:
         """Extract personal information from Part A text."""

@@ -8,10 +8,10 @@ Traceability: C17.2 (Monitoring), M11 (Production Hardening)
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Callable
 
 
 class HealthStatus(str, Enum):
@@ -48,7 +48,7 @@ class ProductionHealthReport:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
 
     @property
     def is_ready(self) -> bool:

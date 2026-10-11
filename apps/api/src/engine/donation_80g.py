@@ -8,7 +8,7 @@ Traceability: C5.5 (Donation 80G Engine — 0%→60%, P2)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 
@@ -36,11 +36,11 @@ class DonationEntry:
 class DonationResult:
     """80G deduction computation result."""
     donations: tuple[DonationEntry, ...]
-    total_donated: Decimal = Decimal("0")
-    eligible_amount: Decimal = Decimal("0")   # After cash limit, category caps
+    total_donated: Decimal = Decimal(0)
+    eligible_amount: Decimal = Decimal(0)   # After cash limit, category caps
     qualifying_limit_pct: Decimal = Decimal("0.10")  # 10% of adjusted GTI
-    adjusted_gti: Decimal = Decimal("0")
-    deduction_80g: Decimal = Decimal("0")
+    adjusted_gti: Decimal = Decimal(0)
+    deduction_80g: Decimal = Decimal(0)
     explanation: str = ""
 
     def to_dict(self) -> dict:
@@ -64,7 +64,7 @@ class Donation80GEngine:
     - Adjusted GTI = Gross Total Income - all deductions except 80G
     """
 
-    CASH_LIMIT = Decimal("2000")
+    CASH_LIMIT = Decimal(2000)
     QUALIFYING_LIMIT_PCT = Decimal("0.10")  # 10% of adjusted GTI
 
     def compute(
@@ -75,8 +75,8 @@ class Donation80GEngine:
         """Compute 80G deduction from donations list."""
         qualifying_limit = adjusted_gti * self.QUALIFYING_LIMIT_PCT
         total_donated = sum(d.amount for d in donations)
-        eligible = Decimal("0")
-        subject_to_limit = Decimal("0")
+        eligible = Decimal(0)
+        subject_to_limit = Decimal(0)
 
         for d in donations:
             # Cash limit

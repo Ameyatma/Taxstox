@@ -6,7 +6,7 @@ Traceability: C16.6 (Payment Gateway — 0%→50%, P7)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID, uuid4
@@ -57,12 +57,12 @@ class PaymentTransaction:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def mark_completed(self, gateway_payment_id: str) -> None:
         self.status = PaymentStatus.COMPLETED
         self.gateway_payment_id = gateway_payment_id
-        self.completed_at = datetime.now(timezone.utc).isoformat()
+        self.completed_at = datetime.now(UTC).isoformat()
 
     def mark_failed(self, reason: str = "") -> None:
         self.status = PaymentStatus.FAILED

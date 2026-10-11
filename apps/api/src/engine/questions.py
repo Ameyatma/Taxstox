@@ -9,15 +9,14 @@ question suppression. Added generate_minimal() with zero/few-question path.
 
 from decimal import Decimal
 
-from src.models.form16 import Form16Data, Regime
-from src.models.ais import AISData
-from src.models.tax import ClassifiedCGData
-from src.models.api import Question, QuestionsResponse
 from src.domain.interview.personalization import (
     InterviewPersonalizationEngine,
     TaxpayerProfile,
     personalization_engine,
 )
+from src.models.ais import AISData
+from src.models.api import Question, QuestionsResponse
+from src.models.form16 import Form16Data, Regime
 
 
 class QuestionEngine:
@@ -122,34 +121,51 @@ class QuestionEngine:
     def _build_profile(
         self,
         form16: Form16Data,
-        ais: AISData,
+        ais: AISData | None,
         recommended_regime: Regime,
     ) -> TaxpayerProfile:
         """Build a taxpayer profile for personalization from Form 16 and AIS data."""
+        has_capital_gains = False
+        has_interest_income = False
+        has_ais = False
+        if ais is not None:
+            has_capital_gains = len(ais.equity_mf_sales) > 0 or len(ais.other_unit_sales) > 0
+            has_interest_income = ais.total_savings_interest > 0 or ais.total_tds_interest > 0
+            has_ais = True
         return TaxpayerProfile(
             has_hra=form16.annexure.hra > 0 if form16.annexure else False,
             has_epf=form16.part_b.chapter_vi_a.sec80c > 0 if form16.part_b else False,
             has_home_loan_hint=False,  # Could be derived from AIS SFT codes
-            has_capital_gains=len(ais.equity_mf_sales) > 0 or len(ais.other_unit_sales) > 0,
-            has_interest_income=ais.total_savings_interest > 0 or ais.total_tds_interest > 0,
+            has_capital_gains=has_capital_gains,
+            has_interest_income=has_interest_income,
             has_dividend_income=False,
             has_foreign_assets=False,
             has_business_income=False,
             regime=recommended_regime.value if hasattr(recommended_regime, 'value') else str(recommended_regime),
-            estimated_income=Decimal(str(form16.part_b.total_gross_salary)) if form16.part_b else Decimal("0"),
-            total_80c_detected=Decimal(str(form16.part_b.chapter_vi_a.sec80c)) if form16.part_b else Decimal("0"),
+            estimated_income=Decimal(str(form16.part_b.total_gross_salary)) if form16.part_b else Decimal(0),
+            total_80c_detected=Decimal(str(form16.part_b.chapter_vi_a.sec80c)) if form16.part_b else Decimal(0),
             has_form16=True,
-            has_ais=True,
+            has_ais=has_ais,
         )
 
-    def _build_income_summary(self, form16: Form16Data, ais: AISData) -> dict:
+    def _build_income_summary(self, form16: Form16Data, ais: AISData | None) -> dict:
         """Build a summary of detected income for the UI."""
+        if ais is None:
+            total_savings_interest = Decimal(0)
+            total_tds_interest = Decimal(0)
+            equity_mf_sales_count = 0
+            other_unit_sales_count = 0
+        else:
+            total_savings_interest = ais.total_savings_interest
+            total_tds_interest = ais.total_tds_interest
+            equity_mf_sales_count = len(ais.equity_mf_sales)
+            other_unit_sales_count = len(ais.other_unit_sales)
         return {
             "salary": str(form16.part_b.total_gross_salary),
-            "interest_savings": str(ais.total_savings_interest),
-            "interest_fd": str(ais.total_tds_interest),
-            "equity_mf_sales_count": len(ais.equity_mf_sales),
-            "other_unit_sales_count": len(ais.other_unit_sales),
+            "interest_savings": str(total_savings_interest),
+            "interest_fd": str(total_tds_interest),
+            "equity_mf_sales_count": str(equity_mf_sales_count),
+            "other_unit_sales_count": str(other_unit_sales_count),
         }
 
     def _build_rent_question(

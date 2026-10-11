@@ -8,9 +8,7 @@ Traceability: C10.3 (Legal Provision Tracer — 40%→70%, P1)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from decimal import Decimal
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -120,6 +118,6 @@ class ProvisionTracer:
         return traces
 
     @staticmethod
-    def lookup(provision_key: str) -> Optional[ProvisionReference]:
+    def lookup(provision_key: str) -> ProvisionReference | None:
         """Look up a provision by key."""
         return PROVISION_MAP.get(provision_key)

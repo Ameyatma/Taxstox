@@ -8,7 +8,7 @@ Traceability: C18.1 (Notification Engine — 0%→60%, P6),
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -57,11 +57,11 @@ class Notification:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def mark_sent(self) -> None:
         self.status = "sent"
-        self.sent_at = datetime.now(timezone.utc).isoformat()
+        self.sent_at = datetime.now(UTC).isoformat()
 
     def mark_failed(self) -> None:
         self.status = "failed"

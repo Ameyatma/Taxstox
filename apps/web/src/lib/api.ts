@@ -189,6 +189,40 @@ export async function uploadPDFs(
   return res.json();
 }
 
+/**
+ * Upload a broker P&L statement to an existing session.
+ * Backend endpoint: POST /api/v1/tax/upload/broker-pl
+ * @param file The CSV/Excel broker P&L file
+ * @param sessionId The existing filing session ID
+ * @param broker Broker name (zerodha, groww, upstox, angel_one)
+ */
+export async function uploadBrokerPL(
+  file: File,
+  sessionId: string,
+  broker: string = "zerodha"
+): Promise<UploadResponseData> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("session_id", sessionId);
+  formData.append("broker", broker);
+
+  const res = await fetchApi(`${API_BASE}/tax/upload/broker-pl`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (res.status === 401) {
+    throw new Error("Session expired");
+  }
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Broker P&L upload failed");
+  }
+
+  return res.json();
+}
+
 export async function processPDFs(sessionId: string): Promise<QuestionsResponseData> {
   const res = await fetchApi(`${API_BASE}/process/${sessionId}`, {
     method: "POST",
@@ -356,5 +390,82 @@ export interface TaxInsightsData {
 export async function fetchTaxInsights(): Promise<TaxInsightsData> {
   const res = await fetchApi(`${API_BASE}/tax/insights`);
   if (!res.ok) throw new Error("Failed to load tax insights");
+  return res.json();
+}
+
+// ── Cross-Domain: Tax-Loss Harvesting (Phase 10) ─────────────────────
+
+export interface HarvestOpportunity {
+  symbol: string;
+  isin: string;
+  quantity: number;
+  buy_price: number;
+  current_price: number;
+  unrealized_loss: number;
+  potential_tax_savings: number;
+  action: string;
+}
+
+export interface HoldingPosition {
+  symbol: string;
+  isin: string;
+  quantity: number;
+  buy_price: number;
+  current_price: number;
+  day_change_pct: number;
+  unrealized_pnl: number;
+}
+
+export interface PortfolioItem {
+  symbol: string;
+  added_at: string;
+}
+
+export interface Recommendation {
+  symbol: string;
+  rating: string;
+  composite_score: number;
+  catalyst: string;
+  catalyst_confidence: number;
+}
+
+export interface TaxHarvestingData {
+  realized_stcg: number;
+  total_potential_savings: number;
+  opportunities: HarvestOpportunity[];
+  holdings: HoldingPosition[];
+}
+
+// ── Helper functions used by watchlist (keep same shape as before) ─────
+
+export async function fetchPortfolio(): Promise<PortfolioItem[]> {
+  const res = await fetchApi(`/api/v1/market/users/portfolio`);
+  if (!res.ok) throw new Error("Failed to load portfolio");
+  return res.json();
+}
+
+export async function fetchRecommendations(): Promise<Recommendation[]> {
+  try {
+    const res = await fetchApi(`/api/v1/market/recommendations/next-day`);
+    if (!res.ok) return []; // non-critical
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch tax-loss harvesting opportunities for a filing session.
+ * Backend endpoint: GET /api/v1/tax/harvesting/{session_id}
+ * @param sessionId The filing session ID
+ */
+export async function getTaxHarvesting(
+  sessionId: string
+): Promise<TaxHarvestingData> {
+  const res = await fetchApi(`${API_BASE}/tax/harvesting/${sessionId}`);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Failed to load harvesting opportunities");
+  }
   return res.json();
 }

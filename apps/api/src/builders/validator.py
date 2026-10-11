@@ -15,14 +15,12 @@ Checks (40+ validation rules):
 12. Interest income consistency
 """
 
-import json
 import re
 from decimal import Decimal
-from typing import Any, Optional
 
 from src.engine.rules.config import FY2025_26, rule_repository
+from src.models.api import ValidationReport, ValidationResult
 from src.models.financial_year import FinancialYear
-from src.models.api import ValidationResult, ValidationReport
 
 
 class ITRValidator:
@@ -40,7 +38,7 @@ class ITRValidator:
     LIMIT_ITR1_INCOME = 5_000_000  # ₹50L
     LIMIT_AGRICULTURAL_ITR1 = 5_000
 
-    def __init__(self, financial_year: Optional[FinancialYear] = None) -> None:
+    def __init__(self, financial_year: FinancialYear | None = None) -> None:
         # PR3: Deduction limits sourced from RuleRepository (no duplication)
         self._config = rule_repository.get(financial_year or FY2025_26)
 
@@ -231,8 +229,8 @@ class ITRValidator:
         cess = Decimal(tti.get("HealthEducationCess", "0"))
 
         # Recompute
-        tax_after_rebate = max(Decimal("0"), tax_before_rebate - rebate)
-        expected_cess = (tax_after_rebate * Decimal("4") / Decimal("100")).quantize(Decimal("1"))
+        tax_after_rebate = max(Decimal(0), tax_before_rebate - rebate)
+        expected_cess = (tax_after_rebate * Decimal(4) / Decimal(100)).quantize(Decimal(1))
         expected_total = tax_after_rebate + expected_cess
 
         actual_total = Decimal(tti.get("TotalTaxLiability", "0"))

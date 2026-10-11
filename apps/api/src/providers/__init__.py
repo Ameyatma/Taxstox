@@ -50,10 +50,10 @@ class BaseProvider(ABC):
 
 # ── Provider Registry ─────────────────────────────────────────────────
 
-_registry: dict[str, Type[BaseProvider]] = {}
+_registry: dict[str, type[BaseProvider]] = {}
 
 
-def register_provider(cls: Type[BaseProvider]) -> Type[BaseProvider]:
+def register_provider(cls: type[BaseProvider]) -> type[BaseProvider]:
     """Decorator to register a provider class."""
     # Instantiate temporarily to get the name
     try:

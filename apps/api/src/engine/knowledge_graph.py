@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 
 class NodeType(str, Enum):
@@ -76,7 +75,7 @@ class KnowledgeGraph:
     def add_edge(self, edge: KnowledgeEdge) -> None:
         self.edges.append(edge)
 
-    def get_node(self, node_id: str) -> Optional[KnowledgeNode]:
+    def get_node(self, node_id: str) -> KnowledgeNode | None:
         return self.nodes.get(node_id)
 
     def query_edges(
@@ -100,7 +99,7 @@ class KnowledgeGraph:
         edges = self.query_edges(from_node=provision_id, edge_type=EdgeType.CONTAINS)
         return [self.nodes[e.to_node] for e in edges if e.to_node in self.nodes]
 
-    def get_itr_mapping(self, ais_code: str) -> Optional[KnowledgeNode]:
+    def get_itr_mapping(self, ais_code: str) -> KnowledgeNode | None:
         """Get ITR schedule for an AIS code."""
         edges = self.query_edges(from_node=ais_code, edge_type=EdgeType.MAPS_TO)
         if edges and edges[0].to_node in self.nodes:
@@ -391,7 +390,7 @@ def build_tax_knowledge_graph() -> KnowledgeGraph:
     ]
     for pid in new_excludes:
         kg.add_edge(KnowledgeEdge(EdgeType.EXCLUDES, "regime_new", pid,
-            f"Not available under New Regime"))
+            "Not available under New Regime"))
 
     # ── Edges: Section 115BAC overrides old regime structure ──
     kg.add_edge(KnowledgeEdge(EdgeType.OVERRIDES, "sec_115bac", "regime_old",

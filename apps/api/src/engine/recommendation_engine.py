@@ -18,7 +18,6 @@ Architecture aligns with the Tax Decision Intelligence System vision.
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass
@@ -46,7 +45,7 @@ class RecommendationResult:
     """Complete tax regime recommendation with full reasoning."""
     recommended_regime: str          # "new" or "old"
     confidence: float = 0.85          # 0.0-1.0
-    savings: Decimal = Decimal("0")   # How much the user saves with recommended regime
+    savings: Decimal = Decimal(0)   # How much the user saves with recommended regime
 
     # Detailed reasoning
     key_reasons: list[RecommendationReason] = field(default_factory=list)
@@ -99,12 +98,12 @@ class RecommendationEngine:
         self,
         new_breakdown: dict,
         old_breakdown: dict,
-        hra_received: Decimal = Decimal("0"),
+        hra_received: Decimal = Decimal(0),
         has_home_loan: bool = False,
-        total_80c: Decimal = Decimal("0"),
-        total_80d: Decimal = Decimal("0"),
-        total_80ccd1b: Decimal = Decimal("0"),
-        total_80tta: Decimal = Decimal("0"),
+        total_80c: Decimal = Decimal(0),
+        total_80d: Decimal = Decimal(0),
+        total_80ccd1b: Decimal = Decimal(0),
+        total_80tta: Decimal = Decimal(0),
         has_capital_gains: bool = False,
     ) -> RecommendationResult:
         """Generate full recommendation with reasoning."""
@@ -168,8 +167,8 @@ class RecommendationEngine:
         old_total = Decimal(old_breakdown.get("total_income", "0"))
 
         if new_total > 0 and old_total > 0:
-            new_eff_rate = (new_slab_tax / new_total * Decimal("100")).quantize(Decimal("0.1"))
-            old_eff_rate = (old_slab_tax / old_total * Decimal("100")).quantize(Decimal("0.1"))
+            new_eff_rate = (new_slab_tax / new_total * Decimal(100)).quantize(Decimal("0.1"))
+            old_eff_rate = (old_slab_tax / old_total * Decimal(100)).quantize(Decimal("0.1"))
 
             if new_eff_rate < old_eff_rate:
                 reasons.append(RecommendationReason(
@@ -221,8 +220,8 @@ class RecommendationEngine:
         old_80ccd1b = Decimal(str(ded_detail.get("sec80ccd1b", "0")))
 
         # Suggest NPS if not maxing out
-        if recommended == "old" and old_80ccd1b < Decimal("50000"):
-            remaining = Decimal("50000") - old_80ccd1b
+        if recommended == "old" and old_80ccd1b < Decimal(50000):
+            remaining = Decimal(50000) - old_80ccd1b
             saving = remaining * Decimal("0.30")  # Assume 30% slab
             optimizations.append(OptimizationSuggestion(
                 action=f"Invest ₹{int(remaining):,} more in NPS (80CCD(1B))",
@@ -239,7 +238,7 @@ class RecommendationEngine:
             optimizations.append(OptimizationSuggestion(
                 action="Buy health insurance policy for yourself/family",
                 section="80D",
-                potential_saving=Decimal("7800"),  # 25K * 30% + cess
+                potential_saving=Decimal(7800),  # 25K * 30% + cess
                 deadline="Before March 31, 2026",
                 priority=75,
                 explanation="Health insurance premium up to ₹25,000 is deductible under 80D. "
@@ -247,11 +246,11 @@ class RecommendationEngine:
             ))
 
         # If New Regime is close — suggest maximizing deductions to flip
-        if recommended == "new" and savings < Decimal("20000"):
+        if recommended == "new" and savings < Decimal(20000):
             optimizations.append(OptimizationSuggestion(
                 action="Max out 80C (₹1.5L), 80D, and 80CCD(1B) deductions",
                 section="80C + 80D + 80CCD(1B)",
-                potential_saving=savings + Decimal("5000"),
+                potential_saving=savings + Decimal(5000),
                 deadline="Before March 31, 2026",
                 priority=85,
                 explanation=f"Old Regime is within ₹{int(savings):,}. Maximizing deductions "

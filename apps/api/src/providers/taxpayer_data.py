@@ -22,29 +22,28 @@ The data model is identical regardless of source.
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass
 class SalaryDetail:
     """Complete salary breakup — from Form 16 Annexure / ITD API."""
-    basic_da: Decimal = Decimal("0")
-    hra_received: Decimal = Decimal("0")
-    lta_received: Decimal = Decimal("0")
-    special_allowance: Decimal = Decimal("0")
-    bonus: Decimal = Decimal("0")
-    other_allowances: Decimal = Decimal("0")
-    gross_salary: Decimal = Decimal("0")
+    basic_da: Decimal = Decimal(0)
+    hra_received: Decimal = Decimal(0)
+    lta_received: Decimal = Decimal(0)
+    special_allowance: Decimal = Decimal(0)
+    bonus: Decimal = Decimal(0)
+    other_allowances: Decimal = Decimal(0)
+    gross_salary: Decimal = Decimal(0)
 
     # Exempt allowances
-    hra_exempt: Decimal = Decimal("0")
-    lta_exempt: Decimal = Decimal("0")
+    hra_exempt: Decimal = Decimal(0)
+    lta_exempt: Decimal = Decimal(0)
     # Other exempt: child edu, hostel, transport, helper, uniform...
-    other_exempt: Decimal = Decimal("0")
-    total_exempt: Decimal = Decimal("0")
+    other_exempt: Decimal = Decimal(0)
+    total_exempt: Decimal = Decimal(0)
 
     # Perquisites (from 12BA)
-    perquisites: Decimal = Decimal("0")
+    perquisites: Decimal = Decimal(0)
 
     def to_dict(self) -> dict:
         return {
@@ -66,18 +65,18 @@ class SalaryDetail:
 class TDSDetail:
     """All TDS credits — from Form 16 + 26AS / ITD API."""
     # Salary TDS (TDS-192)
-    salary_tds: Decimal = Decimal("0")
+    salary_tds: Decimal = Decimal(0)
     employer_name: str = ""
     employer_tan: str = ""
 
     # Other TDS (from 26AS: interest, rent, professional, commission...)
-    interest_tds: Decimal = Decimal("0")      # TDS-194A
-    rent_tds: Decimal = Decimal("0")           # TDS-194I
-    professional_tds: Decimal = Decimal("0")   # TDS-194J
-    commission_tds: Decimal = Decimal("0")     # TDS-194H
-    other_tds: Decimal = Decimal("0")          # All other TDS codes
+    interest_tds: Decimal = Decimal(0)      # TDS-194A
+    rent_tds: Decimal = Decimal(0)           # TDS-194I
+    professional_tds: Decimal = Decimal(0)   # TDS-194J
+    commission_tds: Decimal = Decimal(0)     # TDS-194H
+    other_tds: Decimal = Decimal(0)          # All other TDS codes
 
-    total_tds: Decimal = Decimal("0")
+    total_tds: Decimal = Decimal(0)
 
     def to_dict(self) -> dict:
         return {
@@ -93,11 +92,11 @@ class TDSDetail:
 @dataclass
 class InterestIncome:
     """Interest income from all sources — from AIS / ITD API."""
-    savings_interest: Decimal = Decimal("0")     # SFT-016(SB)
-    fd_interest: Decimal = Decimal("0")           # SFT-005
-    rd_interest: Decimal = Decimal("0")           # SFT-006
-    bond_interest: Decimal = Decimal("0")         # SFT-009
-    other_interest: Decimal = Decimal("0")
+    savings_interest: Decimal = Decimal(0)     # SFT-016(SB)
+    fd_interest: Decimal = Decimal(0)           # SFT-005
+    rd_interest: Decimal = Decimal(0)           # SFT-006
+    bond_interest: Decimal = Decimal(0)         # SFT-009
+    other_interest: Decimal = Decimal(0)
 
     @property
     def total(self) -> Decimal:
@@ -117,15 +116,15 @@ class CapitalGainsSummary:
     """Capital gains from all sources — from AIS / broker CSV / ITD API."""
     equity_sales_count: int = 0          # SFT-018(EMF)
     other_unit_sales_count: int = 0      # SFT-017(OTU)
-    total_stcg: Decimal = Decimal("0")
-    total_ltcg: Decimal = Decimal("0")
-    total_cg: Decimal = Decimal("0")
+    total_stcg: Decimal = Decimal(0)
+    total_ltcg: Decimal = Decimal(0)
+    total_cg: Decimal = Decimal(0)
 
     # Ready for ITR schedules
-    schedule_112a_total: Decimal = Decimal("0")
-    schedule_111a_total: Decimal = Decimal("0")
-    schedule_a5_total: Decimal = Decimal("0")
-    schedule_b8_total: Decimal = Decimal("0")
+    schedule_112a_total: Decimal = Decimal(0)
+    schedule_111a_total: Decimal = Decimal(0)
+    schedule_a5_total: Decimal = Decimal(0)
+    schedule_b8_total: Decimal = Decimal(0)
 
     def to_dict(self) -> dict:
         return {
@@ -141,26 +140,26 @@ class CapitalGainsSummary:
 class DeductionsDetected:
     """Deductions detected from Form 16 + AIS / ITD API."""
     # 80C sub-components
-    epf: Decimal = Decimal("0")             # Form 16 80C line
-    ppf: Decimal = Decimal("0")
-    elss: Decimal = Decimal("0")
-    lic_premium: Decimal = Decimal("0")
-    tuition_fees: Decimal = Decimal("0")
-    home_loan_principal: Decimal = Decimal("0")
+    epf: Decimal = Decimal(0)             # Form 16 80C line
+    ppf: Decimal = Decimal(0)
+    elss: Decimal = Decimal(0)
+    lic_premium: Decimal = Decimal(0)
+    tuition_fees: Decimal = Decimal(0)
+    home_loan_principal: Decimal = Decimal(0)
 
     # NPS
-    nps_employer_80ccd2: Decimal = Decimal("0")   # Form 16 (f) line
-    nps_own_80ccd1b: Decimal = Decimal("0")
+    nps_employer_80ccd2: Decimal = Decimal(0)   # Form 16 (f) line
+    nps_own_80ccd1b: Decimal = Decimal(0)
 
     # Health insurance
-    health_premium_self: Decimal = Decimal("0")
-    health_premium_parents: Decimal = Decimal("0")
+    health_premium_self: Decimal = Decimal(0)
+    health_premium_parents: Decimal = Decimal(0)
 
     # Other
-    education_loan_interest_80e: Decimal = Decimal("0")
-    donations_80g: Decimal = Decimal("0")
+    education_loan_interest_80e: Decimal = Decimal(0)
+    donations_80g: Decimal = Decimal(0)
 
-    total_detected: Decimal = Decimal("0")
+    total_detected: Decimal = Decimal(0)
 
     def to_dict(self) -> dict:
         return {
@@ -183,7 +182,7 @@ class TaxpayerData:
     """
     pan: str = ""
     name: str = ""
-    dob: Optional[date] = None
+    dob: date | None = None
     assessment_year: str = "2026-27"
 
     # Income
@@ -199,10 +198,10 @@ class TaxpayerData:
 
     # User inputs (questions answered)
     pays_rent: bool = False
-    rent_per_month: Decimal = Decimal("0")
+    rent_per_month: Decimal = Decimal(0)
     rent_city_metro: bool = False
     has_home_loan: bool = False
-    home_loan_interest: Decimal = Decimal("0")
+    home_loan_interest: Decimal = Decimal(0)
 
     # Data source tracking
     data_source: str = ""  # "pdf", "itd_api", "manual"
@@ -276,12 +275,12 @@ class PDFDataProvider(TaxpayerDataProvider):
             annex = self.form16.annexure
             pb = self.form16.part_b
 
-            data.salary.basic_da = annex.basic or Decimal("0")
-            data.salary.hra_received = annex.hra or Decimal("0")
-            data.salary.lta_received = annex.lta or Decimal("0")
-            data.salary.special_allowance = annex.special_allowance or Decimal("0")
-            data.salary.bonus = annex.dbip_bonus or Decimal("0")
-            data.salary.gross_salary = pb.total_gross_salary or Decimal("0")
+            data.salary.basic_da = annex.basic or Decimal(0)
+            data.salary.hra_received = annex.hra or Decimal(0)
+            data.salary.lta_received = annex.lta or Decimal(0)
+            data.salary.special_allowance = annex.special_allowance or Decimal(0)
+            data.salary.bonus = annex.dbip_bonus or Decimal(0)
+            data.salary.gross_salary = pb.total_gross_salary or Decimal(0)
 
             # Section 10 exemptions from Form 16
             s10 = pb.exemptions_s10
@@ -290,11 +289,11 @@ class PDFDataProvider(TaxpayerDataProvider):
             data.salary.total_exempt = s10.total
 
             # Perquisites
-            data.salary.perquisites = pb.perquisites_172 or Decimal("0")
+            data.salary.perquisites = pb.perquisites_172 or Decimal(0)
 
             # Standard deduction (from Form 16 Part B)
             data.salary.other_allowances = max(
-                Decimal("0"),
+                Decimal(0),
                 data.salary.gross_salary
                 - data.salary.basic_da
                 - data.salary.hra_received
@@ -308,18 +307,18 @@ class PDFDataProvider(TaxpayerDataProvider):
         # ── TDS ──
         if self.form16:
             pa = self.form16.part_a
-            data.tds.salary_tds = pa.total_tds_deducted or Decimal("0")
+            data.tds.salary_tds = pa.total_tds_deducted or Decimal(0)
             data.tds.employer_name = pa.employer_name or ""
             data.tds.employer_tan = pa.employer_tan or ""
             data.extraction_confidence += 0.15
 
         # ── Interest income from AIS ──
         if self.ais:
-            data.interest.savings_interest = self.ais.total_savings_interest or Decimal("0")
+            data.interest.savings_interest = self.ais.total_savings_interest or Decimal(0)
 
             # Other TDS entries in AIS may indicate interest income
             for tds_entry in self.ais.other_tds:
-                tds_amount = tds_entry.tds_deducted or Decimal("0")
+                tds_amount = tds_entry.tds_deducted or Decimal(0)
                 data.tds.other_tds += tds_amount
 
                 # If TDS code suggests interest, add to interest income
@@ -327,7 +326,7 @@ class PDFDataProvider(TaxpayerDataProvider):
                 if '194A' in code:
                     # TDS on interest at 10% → estimate gross interest
                     if tds_amount > 0:
-                        data.interest.fd_interest += tds_amount * Decimal("10")  # 10% TDS → gross
+                        data.interest.fd_interest += tds_amount * Decimal(10)  # 10% TDS → gross
 
             data.tds.total_tds = data.tds.salary_tds + data.tds.other_tds
             data.extraction_confidence += 0.15
@@ -349,8 +348,8 @@ class PDFDataProvider(TaxpayerDataProvider):
         # ── Deductions from Form 16 ──
         if self.form16:
             via = self.form16.part_b.chapter_vi_a
-            data.deductions.epf = via.sec80c or Decimal("0")
-            data.deductions.nps_employer_80ccd2 = via.sec80ccd2 or Decimal("0")
+            data.deductions.epf = via.sec80c or Decimal(0)
+            data.deductions.nps_employer_80ccd2 = via.sec80ccd2 or Decimal(0)
             data.deductions.total_detected = (
                 data.deductions.epf
                 + data.deductions.nps_employer_80ccd2

@@ -12,10 +12,9 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from decimal import Decimal
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class AuditEventType(str, Enum):
@@ -93,7 +92,7 @@ class AuditEvent:
         return AuditEvent(
             event_id=str(uuid.uuid4()),
             event_type=event_type,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             correlation_id=correlation_id,
             financial_year=financial_year,
             bounded_context=bounded_context,

@@ -18,6 +18,9 @@ COPY src/ ./src/
 # DATABASE_URL is set via Render env vars (Neon PostgreSQL)
 # No local data directory needed — PostgreSQL is remote.
 
-EXPOSE 8000
+# Cloud Run injects the PORT environment variable
+ENV PORT=8080
+EXPOSE $PORT
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use shell form to evaluate the $PORT variable dynamically
+CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT}"]

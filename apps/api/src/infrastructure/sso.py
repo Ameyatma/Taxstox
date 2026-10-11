@@ -12,15 +12,14 @@ Traceability: C21.6 (Enterprise SSO — 30%→60%, P5)
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 from src.domain.enterprise.sso import (
+    DomainVerification,
+    OIDCConfig,
+    SAMLConfig,
     SSOConfig,
     SSOProviderType,
-    SAMLConfig,
-    OIDCConfig,
-    DomainVerification,
 )
 
 
@@ -65,7 +64,6 @@ class SAMLAdapter:
         Returns:
             SP metadata XML string
         """
-        import uuid
         entity_id = f"https://taxstox.com/sp/{tenant_slug}"
 
         return f"""<?xml version="1.0"?>

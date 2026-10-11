@@ -5,8 +5,8 @@ Traceability: C17.5 (Secrets Management — 40%→70%, P7)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -43,7 +43,7 @@ class SecretMetadata:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     @staticmethod
     def create(name: str, description: str = "", environment: str = "production") -> SecretMetadata:
@@ -59,7 +59,7 @@ class SecretMetadata:
     def needs_rotation(self) -> bool:
         if not self.rotation or not self.rotation.next_rotation:
             return False
-        return datetime.now(timezone.utc).isoformat() >= self.rotation.next_rotation
+        return datetime.now(UTC).isoformat() >= self.rotation.next_rotation
 
 
 # ── Required Secrets Inventory ───────────────────────────────────────

@@ -7,7 +7,6 @@ Rules (from 4 hours of painful trial and error):
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

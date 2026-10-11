@@ -9,17 +9,23 @@ load_dotenv()  # Load .env file for local dev (DATABASE_URL, etc.)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import router as itr_router
 from src.api.auth_routes import router as auth_router
-from src.api.dashboard import router as dashboard_router
 from src.api.calculators import router as calculators_router
+from src.api.dashboard import router as dashboard_router
+from src.api.routes import router as itr_router
 from src.api.simulation import router as simulation_router
 from src.api.tax_routes import router as tax_router
+# Market domain routers
+from src.domains.market.routers.charts import router as market_charts_router
+from src.domains.market.routers.recommendations import router as market_recommendations_router
+from src.domains.market.routers.users import router as market_users_router
+from src.domains.market.routers.bridge import router as market_bridge_router
+from src.domains.market.routers.asset import router as market_asset_router
 from src.middleware.correlation import CorrelationMiddleware
+from src.middleware.metrics import MetricsMiddleware
 from src.middleware.security_headers import SecurityHeadersMiddleware
 from src.middleware.tenant_context import TenantContextMiddleware
-from src.middleware.metrics import MetricsMiddleware
-from src.utils.logging import setup_logging, get_logger
+from src.utils.logging import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
@@ -32,10 +38,19 @@ async def lifespan(app: FastAPI):
     logger.info("TaxStox backend starting")
 
     from src.db.database import init_db, init_tax_tables
+    from src.domains.market.storage.database import init_db as init_market_db
 
     init_db()
     init_tax_tables()
-    logger.info("Database initialized")
+    logger.info("Tax domain database initialized")
+
+    # Initialize Market Domain Database
+    try:
+        init_market_db()
+        logger.info("Market Domain Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Error initializing Market Domain DB: {e}")
+        raise  # Fail fast if market database initialization fails
 
     # PR2: Enforce encryption key at startup — fail fast if missing
     try:
@@ -94,7 +109,10 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "https://taxstox.com",
         "https://www.taxstox.com",
+        "https://taxstox.co",
+        "https://www.taxstox.co",
         "https://taxstox.vercel.app",
+        "https://web-gm0ebzyt0-tax-stox.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -107,6 +125,12 @@ app.include_router(dashboard_router)
 app.include_router(calculators_router)
 app.include_router(simulation_router)
 app.include_router(tax_router)
+# Market domain routes
+app.include_router(market_charts_router, prefix="/api/v1/market/stocks", tags=["market-stocks"])
+app.include_router(market_recommendations_router, prefix="/api/v1/market/recommendations", tags=["market-recommendations"])
+app.include_router(market_users_router, prefix="/api/v1/market/users", tags=["market-users"])
+app.include_router(market_bridge_router, prefix="/api/v1/market/bridge", tags=["market-bridge"])
+app.include_router(market_asset_router, prefix="/api/v1/market/asset", tags=["market-asset"])
 
 
 @app.get("/")

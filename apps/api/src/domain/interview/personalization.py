@@ -10,9 +10,8 @@ Traceability: C13.6 (Interview Personalization — 10%→50%, P4)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -33,8 +32,8 @@ class TaxpayerProfile:
     is_senior_citizen: bool = False
     is_super_senior_citizen: bool = False
     regime: str = "new"             # "old" or "new"
-    estimated_income: Decimal = Decimal("0")
-    total_80c_detected: Decimal = Decimal("0")  # From Form 16 EPF
+    estimated_income: Decimal = Decimal(0)
+    total_80c_detected: Decimal = Decimal(0)  # From Form 16 EPF
     has_form16: bool = False
     has_ais: bool = False
 
@@ -147,13 +146,13 @@ class InterviewPersonalizationEngine:
                 reason="80C deduction not available under New Regime",
             )
         # If EPF already fills 80C (≥₹1.5L), suppress
-        if profile.total_80c_detected >= Decimal("150000"):
+        if profile.total_80c_detected >= Decimal(150000):
             return QuestionRelevanceScore(
                 question_id="additional_80c", score=0.1, suppress=True,
                 reason=f"EPF of ₹{profile.total_80c_detected:,.0f} already covers full 80C limit of ₹1,50,000",
             )
         # If EPF is close to limit, low priority
-        if profile.total_80c_detected >= Decimal("100000"):
+        if profile.total_80c_detected >= Decimal(100000):
             return QuestionRelevanceScore(
                 question_id="additional_80c", score=0.30, suppress=False,
                 reason=f"EPF covers ₹{profile.total_80c_detected:,.0f} — limited remaining 80C space",

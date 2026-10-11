@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from src.db.database import get_db, _exec_sql, _uid, _now_iso, _row_to_dict
-
+from src.db.database import _exec_sql, _now_iso, _uid, get_db
 
 # ── Tax Updates ───────────────────────────────────────────────────────
 

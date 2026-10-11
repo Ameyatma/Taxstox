@@ -13,16 +13,16 @@ import os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from src.providers import get_providers, RawUpdate
-from src.summarizer import summarize_update, ProcessedUpdate
 from src.db.tax_queries import (
-    upsert_tax_update,
-    start_sync_log,
     complete_sync_log,
     seed_tax_deadlines,
-    seed_tax_tips,
     seed_tax_facts,
+    seed_tax_tips,
+    start_sync_log,
+    upsert_tax_update,
 )
+from src.providers import RawUpdate, get_providers
+from src.summarizer import ProcessedUpdate, summarize_update
 
 logger = logging.getLogger(__name__)
 

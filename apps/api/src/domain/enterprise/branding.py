@@ -8,8 +8,7 @@ Traceability: C21.7 (White-Label/Branding — 0%→50%, P5)
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

@@ -10,7 +10,6 @@ Traceability: PRRP-DEFER-002 (Global Redis Rate Limiting → PR5)
 from __future__ import annotations
 
 import logging
-import time
 from typing import TYPE_CHECKING
 
 from src.domain.gateway.rate_limiter import RateLimitStore
@@ -36,10 +35,10 @@ class RedisRateLimitStore:
 
     def __init__(
         self,
-        redis_client: "redis.Redis | None" = None,
+        redis_client: redis.Redis | None = None,
         *,
         key_prefix: str = "ratelimit:",
-        fallback_store: "RateLimitStore | None" = None,
+        fallback_store: RateLimitStore | None = None,
     ) -> None:
         """
         Args:
@@ -55,7 +54,7 @@ class RedisRateLimitStore:
         self._redis_available = False
         self._init_redis(redis_client)
 
-    def _init_redis(self, redis_client: "redis.Redis | None") -> None:
+    def _init_redis(self, redis_client: redis.Redis | None) -> None:
         """Initialize Redis connection, test availability."""
         if redis_client is not None:
             self._redis = redis_client
@@ -97,7 +96,7 @@ class RedisRateLimitStore:
             self._redis = None
             return False
 
-    def _get_fallback(self) -> "RateLimitStore":
+    def _get_fallback(self) -> RateLimitStore:
         """Get or create the in-memory fallback store."""
         if self._fallback is not None:
             return self._fallback

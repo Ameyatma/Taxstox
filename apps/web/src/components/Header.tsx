@@ -64,29 +64,41 @@ export default function Header() {
           </span>
         </Link>
         <nav className="hidden md:flex gap-6 ml-4">
-          <Link
-            href="/"
-            className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
-            style={{ fontFamily: "var(--font-hanken-grotesk)" }}
-          >
-            Home
-          </Link>
-          {isAuthenticated && (
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
-              style={{ fontFamily: "var(--font-hanken-grotesk)" }}
-            >
-              Dashboard
-            </Link>
+          {isAuthenticated ? (
+            <>
+              <Link
+                href="/"
+                className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                style={{ fontFamily: "var(--font-hanken-grotesk)" }}
+              >
+                Tax Workspace
+              </Link>
+              <Link
+                href="/terminal"
+                className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                style={{ fontFamily: "var(--font-hanken-grotesk)" }}
+              >
+                Market Terminal
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/"
+                className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                style={{ fontFamily: "var(--font-hanken-grotesk)" }}
+              >
+                Tax Workspace
+              </Link>
+              <Link
+                href="/auth"
+                className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                style={{ fontFamily: "var(--font-hanken-grotesk)" }}
+              >
+                Sign In
+              </Link>
+            </>
           )}
-          <Link
-            href="/#how-it-works"
-            className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
-            style={{ fontFamily: "var(--font-hanken-grotesk)" }}
-          >
-            How it Works
-          </Link>
         </nav>
       </div>
       <div className="flex items-center gap-4">

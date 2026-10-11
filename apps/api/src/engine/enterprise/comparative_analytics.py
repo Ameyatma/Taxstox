@@ -10,12 +10,11 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import UUID
 
+from src.domain.enterprise.tenant import TenantRepository
 from src.domain.reporting.analytics import (
     ComparativeAnalytics,
     CrossClientBenchmark,
-    TrendData,
 )
-from src.domain.enterprise.tenant import Tenant, TenantRepository
 
 
 class ComparativeAnalyticsEngine:
@@ -59,12 +58,12 @@ class ComparativeAnalyticsEngine:
         # Revenue analytics
         sub = getattr(tenant, 'subscription', None)
         if sub:
-            price_per = getattr(sub, 'price_per_filing', Decimal("0"))
+            price_per = getattr(sub, 'price_per_filing', Decimal(0))
             filing_count = len(portfolio.filing_statuses)
             analytics.avg_revenue_per_client = (
                 (Decimal(str(filing_count)) * price_per).quantize(Decimal("0.01"))
                 if filing_count > 0 and price_per > 0
-                else Decimal("0")
+                else Decimal(0)
             )
 
         return analytics

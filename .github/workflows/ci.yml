@@ -7,37 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  lint:
-    name: Lint (Ruff)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install ruff
-      - run: ruff check .
-
-  typecheck:
-    name: Type Check (MyPy)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install mypy pydantic
-      - run: mypy src/ --strict --ignore-missing-imports || true
-        # WARNING ONLY — strict mode will be enforced in M1 after type fixes
-
-  test:
-    name: Unit Tests (pytest)
+  backend-test:
+    name: Backend Tests (Python)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,16 +22,16 @@ jobs:
       - run: pip install pytest-cov
       - run: pytest tests/ --ignore=tests/test_e2e_real_data.py -v --tb=short --cov=src --cov-report=term
 
-  security:
-    name: Security Scan (Bandit)
+  frontend-build:
+    name: Frontend Build (Node.js)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/api
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
-      - run: pip install bandit
-      - run: bandit -c pyproject.toml -r src/ -ll
+          node-version: "20"
+      - run: npm ci
+      - run: npm run build

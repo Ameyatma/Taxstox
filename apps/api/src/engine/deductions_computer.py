@@ -18,11 +18,10 @@ FY 2025-26 limits. All values in INR.
 """
 
 from decimal import Decimal
-from typing import Optional
 
 from src.engine.rules.config import FY2025_26, rule_repository
 from src.models.financial_year import FinancialYear
-from src.models.form16 import Form16Data, ChapterVIADeductions
+from src.models.form16 import Form16Data
 from src.models.tax import UserAnswers
 
 
@@ -30,23 +29,23 @@ class DeductionsBreakdown:
     """Complete Chapter VI-A deduction breakdown."""
 
     def __init__(self):
-        self.sec80c: Decimal = Decimal("0")
+        self.sec80c: Decimal = Decimal(0)
         self.sec80c_components: dict[str, Decimal] = {}   # epf, ppf, elss, lic, tuition, hl_principal
-        self.sec80ccc: Decimal = Decimal("0")
-        self.sec80ccd1: Decimal = Decimal("0")
-        self.sec80ccd1b: Decimal = Decimal("0")           # Additional NPS
-        self.sec80ccd2: Decimal = Decimal("0")            # Employer NPS
-        self.sec80d: Decimal = Decimal("0")
+        self.sec80ccc: Decimal = Decimal(0)
+        self.sec80ccd1: Decimal = Decimal(0)
+        self.sec80ccd1b: Decimal = Decimal(0)           # Additional NPS
+        self.sec80ccd2: Decimal = Decimal(0)            # Employer NPS
+        self.sec80d: Decimal = Decimal(0)
         self.sec80d_breakup: dict[str, Decimal] = {}      # self_premium, parents_premium
-        self.sec80dd: Decimal = Decimal("0")
-        self.sec80ddb: Decimal = Decimal("0")
-        self.sec80e: Decimal = Decimal("0")
-        self.sec80g: Decimal = Decimal("0")
-        self.sec80gg: Decimal = Decimal("0")
-        self.sec80tta: Decimal = Decimal("0")
-        self.sec80ttb: Decimal = Decimal("0")
-        self.sec80u: Decimal = Decimal("0")
-        self.total: Decimal = Decimal("0")
+        self.sec80dd: Decimal = Decimal(0)
+        self.sec80ddb: Decimal = Decimal(0)
+        self.sec80e: Decimal = Decimal(0)
+        self.sec80g: Decimal = Decimal(0)
+        self.sec80gg: Decimal = Decimal(0)
+        self.sec80tta: Decimal = Decimal(0)
+        self.sec80ttb: Decimal = Decimal(0)
+        self.sec80u: Decimal = Decimal(0)
+        self.total: Decimal = Decimal(0)
 
     def to_dict(self) -> dict:
         return {
@@ -71,14 +70,14 @@ class DeductionsComputer:
 
     def compute(
         self,
-        form16: Optional[Form16Data] = None,
-        answers: Optional[UserAnswers] = None,
-        savings_interest: Decimal = Decimal("0"),
-        total_interest: Decimal = Decimal("0"),
-        salary_income: Decimal = Decimal("0"),
+        form16: Form16Data | None = None,
+        answers: UserAnswers | None = None,
+        savings_interest: Decimal = Decimal(0),
+        total_interest: Decimal = Decimal(0),
+        salary_income: Decimal = Decimal(0),
         is_new_regime: bool = False,
         is_senior_citizen: bool = False,
-        financial_year: Optional[FinancialYear] = None,
+        financial_year: FinancialYear | None = None,
     ) -> DeductionsBreakdown:
         """
         Compute all applicable Chapter VI-A deductions.
@@ -94,7 +93,7 @@ class DeductionsComputer:
 
         # ── 80CCD(2): Employer NPS — available in BOTH regimes ──
         if form16:
-            result.sec80ccd2 = form16.part_b.chapter_vi_a.sec80ccd2 or Decimal("0")
+            result.sec80ccd2 = form16.part_b.chapter_vi_a.sec80ccd2 or Decimal(0)
 
         # Under New Regime, ONLY 80CCD(2) is available
         if is_new_regime:
@@ -104,8 +103,8 @@ class DeductionsComputer:
         # ── Below: OLD REGIME ONLY ──
 
         # ── 80C: Auto-capped at ₹1,50,000 ──
-        epf_from_f16 = form16.part_b.chapter_vi_a.sec80c if form16 else Decimal("0")
-        additional_80c = Decimal("0")
+        epf_from_f16 = form16.part_b.chapter_vi_a.sec80c if form16 else Decimal(0)
+        additional_80c = Decimal(0)
         components_80c = {}
 
         if form16:
@@ -123,13 +122,13 @@ class DeductionsComputer:
 
         # ── 80CCD(1B): Additional NPS (beyond 80C) ──
         if ua.has_additional_80c and ua.additional_80c_breakup:
-            nps_own = ua.additional_80c_breakup.get("nps_own", Decimal("0"))
+            nps_own = ua.additional_80c_breakup.get("nps_own", Decimal(0))
             result.sec80ccd1b = min(Decimal(str(nps_own)), config.get_deduction_limit("80CCD(1B)"))
 
         # ── 80D: Health Insurance ──
         if ua.has_health_insurance:
-            self_premium = ua.health_premium_self or Decimal("0")
-            parents_premium = ua.health_premium_parents or Decimal("0")
+            self_premium = ua.health_premium_self or Decimal(0)
+            parents_premium = ua.health_premium_parents or Decimal(0)
 
             limit_self = config.get_deduction_limit("80D_SELF_SENIOR" if is_senior_citizen else "80D_SELF")
             limit_parents = config.get_deduction_limit("80D_PARENTS_SENIOR" if ua.parents_senior_citizen else "80D_PARENTS")
@@ -150,15 +149,15 @@ class DeductionsComputer:
 
         # ── 80GG: Rent without HRA (ONLY if taxpayer does NOT receive HRA) ──
         hra_received_from_f16 = (
-            form16.annexure.hra if form16 else Decimal("0")
+            form16.annexure.hra if form16 else Decimal(0)
         )
         if ua.pays_rent and hra_received_from_f16 == 0:
-            annual_rent = (ua.rent_per_month or Decimal("0")) * Decimal("12")
+            annual_rent = (ua.rent_per_month or Decimal(0)) * Decimal(12)
             if annual_rent > 0:
                 # Formula: least of ₹5,000/month, 25% of total income, or rent-10% of total income
-                option_a = Decimal("5000") * Decimal("12")  # ₹60,000
+                option_a = Decimal(5000) * Decimal(12)  # ₹60,000
                 option_b = salary_income * Decimal("0.25")
-                option_c = max(Decimal("0"), annual_rent - (salary_income * Decimal("0.10")))
+                option_c = max(Decimal(0), annual_rent - (salary_income * Decimal("0.10")))
                 result.sec80gg = min(option_a, option_b, option_c)
                 result.sec80gg = min(result.sec80gg, config.get_deduction_limit("80GG"))
 

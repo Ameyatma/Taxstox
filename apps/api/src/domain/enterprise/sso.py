@@ -10,9 +10,8 @@ Traceability: C21.6 (Enterprise SSO — 30%→60%, P5)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -43,7 +42,7 @@ class DomainVerification:
             return DomainVerification(
                 domain=self.domain,
                 verification_token=self.verification_token,
-                verified_at=datetime.now(timezone.utc).isoformat(),
+                verified_at=datetime.now(UTC).isoformat(),
                 verified=True,
             )
         return self
@@ -111,7 +110,7 @@ class SSOConfig:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
         if not self.updated_at:
             self.updated_at = self.created_at
 
@@ -158,4 +157,4 @@ class SSOConfig:
                      or self.oidc.is_configured if self.oidc else False))
 
     def _touch(self) -> None:
-        self.updated_at = datetime.now(timezone.utc).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()

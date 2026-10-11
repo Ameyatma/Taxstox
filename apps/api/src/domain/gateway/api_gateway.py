@@ -6,7 +6,7 @@ Traceability: C16.1 (API Gateway — 40%→70%, P7)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -52,7 +52,7 @@ class ApiKey:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
     def revoke(self) -> None:
         self.is_active = False

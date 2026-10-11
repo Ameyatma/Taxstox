@@ -11,12 +11,11 @@ Also computes CG date ranges for Schedule CG Section F.
 
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 from src.engine.rules.config import FY2025_26, rule_repository
-from src.models.financial_year import FinancialYear
-from src.models.tax import CGSaleEntry, ClassifiedCGData, CGDateRanges
 from src.models.ais import AISEquityMFSale, AISOtherUnitSale
+from src.models.financial_year import FinancialYear
+from src.models.tax import CGDateRanges, CGSaleEntry, ClassifiedCGData
 
 # ISIN prefixes that indicate equity
 EQUITY_ISIN_PREFIXES = ("INF", "INE")
@@ -167,7 +166,7 @@ class ClassificationEngine:
     def apply_112a_exemption(
         self,
         data: ClassifiedCGData,
-        financial_year: Optional[FinancialYear] = None,
+        financial_year: FinancialYear | None = None,
     ) -> ClassifiedCGData:
         """
         Apply the ₹1.25L LTCG exemption under Section 112A.
@@ -188,19 +187,19 @@ class ClassificationEngine:
 
             if entry.gain <= remaining_exemption:
                 # Entire gain is exempt
-                entry.gain_after_exemption = Decimal("0")
+                entry.gain_after_exemption = Decimal(0)
                 remaining_exemption -= entry.gain
             else:
                 # Partially exempt
                 entry.gain_after_exemption = entry.gain - remaining_exemption
-                remaining_exemption = Decimal("0")
+                remaining_exemption = Decimal(0)
 
         return data
 
     def get_tax_summary(
         self,
         data: ClassifiedCGData,
-        financial_year: Optional[FinancialYear] = None,
+        financial_year: FinancialYear | None = None,
     ) -> dict:
         """Get a summary of capital gains tax liability."""
         config = rule_repository.get(financial_year or FY2025_26)
@@ -210,28 +209,28 @@ class ClassificationEngine:
 
         # Compute tax on each category
         ltcg_112a_taxable = sum(
-            (e.gain_after_exemption for e in data.schedule_112a), Decimal("0")
+            (e.gain_after_exemption for e in data.schedule_112a), Decimal(0)
         )
         ltcg_112a_tax = ltcg_112a_taxable * config.equity_ltcg_rate  # 12.5%
 
         stcg_15pct_total = sum(
-            (e.gain for e in data.cg_a2_stcg_111a), Decimal("0")
+            (e.gain for e in data.cg_a2_stcg_111a), Decimal(0)
         )
         stcg_15pct_tax = stcg_15pct_total * config.equity_stcg_rate  # 15%
 
         stcg_slab_total = sum(
-            (e.gain for e in data.cg_a5_stcg_app_rate), Decimal("0")
+            (e.gain for e in data.cg_a5_stcg_app_rate), Decimal(0)
         )
         # STCG slab-rate gains are taxed at the taxpayer's slab rate — computed by RegimeOptimizer
 
         ltcg_other_total = sum(
-            (e.gain for e in data.cg_b8_ltcg_other), Decimal("0")
+            (e.gain for e in data.cg_b8_ltcg_other), Decimal(0)
         )
         ltcg_other_tax = ltcg_other_total * config.non_equity_ltcg_rate  # 12.5% without indexation
 
         return {
-            "ltcg_112a_total_gain": sum((e.gain for e in data.schedule_112a), Decimal("0")),
-            "ltcg_112a_exempt": config.ltcg_112a_exemption - max(Decimal("0"), config.ltcg_112a_exemption - sum((e.gain for e in data.schedule_112a), Decimal("0"))),
+            "ltcg_112a_total_gain": sum((e.gain for e in data.schedule_112a), Decimal(0)),
+            "ltcg_112a_exempt": config.ltcg_112a_exemption - max(Decimal(0), config.ltcg_112a_exemption - sum((e.gain for e in data.schedule_112a), Decimal(0))),
             "ltcg_112a_taxable": ltcg_112a_taxable,
             "ltcg_112a_tax": ltcg_112a_tax,
             "stcg_15pct_total": stcg_15pct_total,
