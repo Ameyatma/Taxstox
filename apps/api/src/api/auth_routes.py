@@ -45,6 +45,7 @@ class ForgotPasswordRequest(BaseModel):
 class GoogleAuthRequest(BaseModel):
     credential: str  # Google ID token
 
+
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
@@ -88,6 +89,69 @@ def _set_token_cookies(response: Response, access_token: str, refresh_token: str
     return response
 
 
+async def _exchange_google_code_for_tokens(code: str, redirect_uri: str) -> tuple[str, str, dict]:
+    """Exchange Google authorization code for access token, refresh token, and user info.
+
+    Returns: (access_token, refresh_token, user_info)
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    client_id = get_client_id()
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+
+    # Exchange code for tokens
+    token_url = "https://oauth2.googleapis.com/token"
+    token_data = {
+        "code": code,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    }
+
+    import httpx
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(token_url, data=token_data)
+    if token_resp.status_code != 200:
+        detail = f"Failed to exchange Google code for tokens: {token_resp.text}"
+        raise HTTPException(status_code=401, detail=detail)
+
+    tokens = token_resp.json()
+    id_token_str = tokens.get("id_token")
+    if not id_token_str:
+        raise HTTPException(status_code=401, detail="No ID token in Google response.")
+
+    # Verify the ID token
+    from src.auth.google_verifier import verify_google_id_token
+
+    try:
+        token_info = verify_google_id_token(id_token_str)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Google ID token: {e}")
+
+    email = (token_info.get("email") or "").lower()
+    name = token_info.get("name") or token_info.get("given_name") or "Google User"
+    google_id = token_info.get("sub") or ""
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not found in Google token.")
+
+    # Find or create user
+    user = create_user_google(email, name, google_id)
+
+    logger.info(
+        "Google OAuth login successful",
+        extra={"user_id": user["id"], "email_masked": f"{email[0]}***@{email.split('@')[1]}" if '@' in email else email[:3] + "***"},
+    )
+
+    access_token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
+    repo = RefreshTokenRepository()
+    refresh_token_raw, _ = repo.create_token(user["id"])
+
+    return access_token, refresh_token_raw, user
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     body: UserCreate,
@@ -108,7 +172,7 @@ async def register(
     token = create_access_token({
         "sub": user["id"],
         "pan": user["pan"],
-        "email": user["email"],
+        "email": body.email,
     })
 
     response = JSONResponse(
@@ -116,9 +180,9 @@ async def register(
             "access_token": token,
             "user": UserResponse(
                 id=user["id"],
-                email=user["email"],
-                pan=user.get("pan") or "",
-                name=user["name"],
+                email=body.email,
+                pan=body.pan or "",
+                name=body.name,
             ).model_dump(),
         },
         status_code=status.HTTP_201_CREATED,
@@ -171,7 +235,7 @@ async def get_me(current_user: Annotated[dict, Depends(get_current_user)]):
         id=user["id"],
         email=user["email"],
         pan=user.get("pan") or "",
-        name=user["name"],
+        name=user.get("name"),
         created_at=user.get("created_at").isoformat() if user.get("created_at") else None,
     )
 
@@ -206,54 +270,6 @@ async def change_password(body: PasswordChange, current_user: Annotated[dict, De
             detail="Current password is incorrect.",
         )
     return {"message": "Password changed successfully."}
-
-
-@router.post("/google", response_model=TokenResponse)
-async def google_auth(body: GoogleAuthRequest):
-    """Sign in / sign up with Google ID token.
-
-    The token is cryptographically verified against Google's JWKS endpoint
-    using the official google-auth library. This validates:
-    - RSA signature (proves Google issued the token)
-    - iss (issuer = accounts.google.com)
-    - aud (audience = our client ID)
-    - exp (expiry)
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-
-    if not body.credential:
-        raise HTTPException(status_code=400, detail="Missing Google credential.")
-
-    # Verify the ID token cryptographically
-
-    try:
-        token_info = verify_google_id_token(body.credential)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Google credential. Please sign in again.")
-
-    email = (token_info.get("email") or "").lower()
-    name = token_info.get("name") or token_info.get("given_name") or "Google User"
-    google_id = token_info.get("sub") or ""
-
-    if not email:
-        raise HTTPException(status_code=400, detail="Email not found in Google token.")
-
-    # Find or create user
-    user = create_user_google(email, name, google_id)
-
-    logger.info(
-        "Google OAuth login successful",
-        extra={"user_id": user["id"], "email_masked": f"{email[0]}***@{email.split('@')[1]}" if '@' in email else email[:3] + "***"},
-    )
-
-    token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
-    response = JSONResponse(content={
-        "access_token": token,
-        "user": UserResponse(id=user["id"], email=user["email"], pan=user.get("pan", ""), name=user.get("name", "")).model_dump(),
-    })
-    _set_token_cookies(response, token)
-    return response
 
 
 @router.post("/forgot-password")
@@ -433,12 +449,15 @@ async def google_login(request: Request):
 
 @router.get("/google/callback")
 async def google_callback(request: Request, response: Response):
-    """Handle Google OAuth callback — exchange code for tokens, set cookies, redirect."""
-    import logging
-    logger = logging.getLogger(__name__)
+    """Handle Google OAuth callback — exchange code for tokens, set cookies, redirect.
 
+    Supports two modes:
+    - Browser mode (default): redirects to frontend handoff page with tokens in query params
+    - Server mode (?format=json): returns JSON with tokens for server-side consumption
+    """
     code = request.query_params.get("code")
     error = request.query_params.get("error")
+    format_mode = request.query_params.get("format", "browser")
 
     if error:
         raise HTTPException(status_code=400, detail=f"Google OAuth error: {error}")
@@ -446,69 +465,23 @@ async def google_callback(request: Request, response: Response):
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code.")
 
-
-    client_id = get_client_id()
-    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-
-    # Safe credential presence logging (never print secret values)
-    print(f"DEBUG OAUTH: Client ID present? {bool(client_id)}")
-    print(f"DEBUG OAUTH: Client Secret present? {bool(client_secret)}")
-
-    # Exchange code for tokens
     redirect_uri = _get_frontend_redirect_uri()
-    token_url = "https://oauth2.googleapis.com/token"
-    token_data = {
-        "code": code,
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "redirect_uri": redirect_uri,
-        "grant_type": "authorization_code",
-    }
+    access_token, refresh_token_raw, user = await _exchange_google_code_for_tokens(code, redirect_uri)
 
-    import httpx
-    async with httpx.AsyncClient() as client:
-        token_resp = await client.post(token_url, data=token_data)
-    if token_resp.status_code != 200:
-        detail = f"Failed to exchange Google code for tokens: {token_resp.text}"
-        raise HTTPException(status_code=401, detail=detail)
+    # Server mode: return JSON for Next.js server-side consumption
+    if format_mode == "json":
+        return JSONResponse(content={
+            "access_token": access_token,
+            "refresh_token": refresh_token_raw,
+            "user": UserResponse(
+                id=user["id"],
+                email=user["email"],
+                pan=user.get("pan", ""),
+                name=user.get("name", ""),
+            ).model_dump(),
+        })
 
-    tokens = token_resp.json()
-    id_token_str = tokens.get("id_token")
-    if not id_token_str:
-        raise HTTPException(status_code=401, detail="No ID token in Google response.")
-
-    # Verify the ID token
-    from src.auth.google_verifier import verify_google_id_token
-
-    try:
-        token_info = verify_google_id_token(id_token_str)
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Google ID token: {e}")
-
-    email = (token_info.get("email") or "").lower()
-    name = token_info.get("name") or token_info.get("given_name") or "Google User"
-    google_id = token_info.get("sub") or ""
-
-    if not email:
-        raise HTTPException(status_code=400, detail="Email not found in Google token.")
-
-    # Find or create user
-    user = create_user_google(email, name, google_id)
-
-    logger.info(
-        "Google OAuth login successful",
-        extra={"user_id": user["id"], "email_masked": f"{email[0]}***@{email.split('@')[1]}" if '@' in email else email[:3] + "***"},
-    )
-
-    
-    access_token = create_access_token({"sub": user["id"], "pan": user.get("pan", ""), "email": user["email"]})
-    repo = RefreshTokenRepository()
-    refresh_token_raw, _ = repo.create_token(user["id"])
-
-    # Handoff to the frontend handoff page so the session cookie is set on the
-    # frontend origin (taxstox.com) instead of the Cloud Run origin. The
-    # frontend handoff page absorbs the tokens, sets its own cookies, and
-    # redirects to the requested dashboard.
+    # Browser mode: redirect to frontend handoff page
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
     handoff_url = f"{frontend_url}/auth/google-callback"
     query = urllib.parse.urlencode({

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 /**
- * API route to handle Google OAuth callback.
- * Acts as a transparent proxy: forwards query params to backend,
- * captures Set-Cookie and Location headers, and redirects client accordingly.
+ * API route to handle Google OAuth callback with native cookie issuance.
+ *
+ * Phase 13A.10: Refactored to issue cookies natively on taxstox.com
+ * instead of proxying backend Set-Cookie headers.
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
+    const code = searchParams.get("code");
+
+    if (!code) {
+      return NextResponse.redirect(new URL('/auth?error=MissingCode', request.url));
+    }
 
     // Backend base URL (ensure no trailing slash)
     let baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://taxstox-api-435349196142.asia-south1.run.app/api/v1";
@@ -15,35 +22,42 @@ export async function GET(request: NextRequest) {
       baseUrl = baseUrl.slice(0, -1);
     }
 
-    // Forward query params (code, state, etc.) to FastAPI backend
-    const targetUrl = `${baseUrl}/api/v1/auth/google/callback?${searchParams.toString()}`;
-
-    // Fetch from backend with redirect: 'manual' so we can catch cookies and redirect instructions
-    const backendRes = await fetch(targetUrl, {
+    // 1. Exchange code with FastAPI backend server-side to get token JSON
+    const backendRes = await fetch(`${baseUrl}/api/v1/auth/google/callback?code=${code}&format=json`, {
       method: 'GET',
-      redirect: 'manual',
       headers: {
         'Accept': 'application/json',
       },
     });
 
-    const setCookie = backendRes.headers.get('set-cookie');
-    const location = backendRes.headers.get('location') || '/dashboard';
-
-    // Create the redirect response to the frontend dashboard
-    const response = NextResponse.redirect(new URL(location, request.url), 303);
-
-    // Explicitly pass the session cookie to the client browser
-    if (setCookie) {
-      // Strip domain constraints so the browser binds it to taxstox.com
-      const cleanedCookie = setCookie.replace(/Domain=[^;]+(;|$)/gi, '');
-      response.headers.set('set-cookie', cleanedCookie);
+    if (!backendRes.ok) {
+      throw new Error('Backend token exchange failed');
     }
 
-    return response;
+    const data = await backendRes.json();
+    const accessToken = data.access_token;
+
+    if (!accessToken) {
+      throw new Error('No access token returned from backend');
+    }
+
+    // 2. Natively set the cookie on taxstox.com using Next.js cookies API
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: 'session_token', // matches backend TOKEN_COOKIE_NAME
+      value: accessToken,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS in production
+      sameSite: 'lax', // allows for top-level navigation
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+
+    // 3. Redirect user to dashboard with cookie securely attached
+    return NextResponse.redirect(new URL('/dashboard', request.url), 303);
   } catch (error) {
-    console.error('OAuth callback proxy error:', error);
-    return NextResponse.redirect(new URL('/auth?error=OAuthProxyFailed', request.url));
+    console.error('OAuth native callback error:', error);
+    return NextResponse.redirect(new URL('/auth?error=OAuthFailed', request.url));
   }
 }
 
