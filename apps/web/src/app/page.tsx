@@ -76,7 +76,7 @@ export default function HomePage() {
       if (result.status === "parsed") {
         setState({ sessionId: result.session_id, pan, dob, step: "questions", uploadResult: result as unknown as Record<string, unknown> });
         setTimeout(() => router.push(`/questions?session=${result.session_id}`), 600);
-      } else if (result.password_required) {
+      } else if (result.status === "password_required") {
         setError(`Password required. ${result.password_hint || "Enter Form 16 password below."}`);
         setLoading(false);
         setProgress(0);

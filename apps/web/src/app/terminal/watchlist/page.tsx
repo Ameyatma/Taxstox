@@ -105,7 +105,11 @@ const sessionId = useMemo(() => getSessionId(), []);
       const pos = map.get(key);
       if (!pos?.isWatchlistOnly) {
         const symbol = pos!.symbol.replace('.NS', '').replace('.BO', '');
-        const rec = recommendationsMap[symbol] ?? recommendationsMap[pos!.isin];
+        let rec = recommendationsMap[symbol];
+        if (!rec && pos?.isin) {
+          const isin = pos!.isin;
+          rec = recommendationsMap[isin];
+        }
         if (rec) {
           pos!.rating = rec.rating;
           pos!.composite_score = rec.composite_score;
@@ -133,7 +137,7 @@ const sessionId = useMemo(() => getSessionId(), []);
     return {
       realizedSTCG: harvesting.realized_stcg,
       potentialSavings: harvesting.total_potential_savings,
-      count: harvesting.opportunities.length,
+      count: harvesting.opportunities?.length ?? 0,
     };
   }, [harvesting]);
 
@@ -146,7 +150,7 @@ const sessionId = useMemo(() => getSessionId(), []);
       await axios.post(`/api/v1/market/users/portfolio/${symbol}`);
       setPortfolio((prev) => [
         ...prev,
-        { symbol, added_at: new Date().toISOString() },
+        { symbol, name: symbol, quantity: 0, added_at: new Date().toISOString() },
       ]);
       setAddSymbol('');
     } catch (err: any) {
@@ -280,7 +284,7 @@ const sessionId = useMemo(() => getSessionId(), []);
               <p className="text-foreground">
                 You can save up to{' '}
                 <span className="font-bold text-emerald-400">
-                  ₹{harvestSummary.potentialSavings.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  ₹{(harvestSummary?.potentialSavings ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>{' '}
                 in capital gains tax by harvesting the{' '}
                 <span className="font-bold text-emerald-400">{harvestSummary.count}</span> losing
@@ -290,7 +294,7 @@ const sessionId = useMemo(() => getSessionId(), []);
               <p className="text-sm text-muted-foreground">
                 Realized STCG (FY2025-26, Section 111A @15%):{' '}
                 <span className="text-foreground font-medium">
-                  ₹{harvestSummary.realizedSTCG.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  ₹{(harvestSummary?.realizedSTCG ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>{' '}
                 · Positions shown with live prices and unrealized P&L.
               </p>

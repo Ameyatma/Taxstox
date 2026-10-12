@@ -172,7 +172,7 @@ function AuthContent() {
                   onChange={(e) => setPan(e.target.value)}
                   className={inputClass}
                   placeholder="ABCDE1234F"
-                  maxLength="10"
+                  maxLength={10}
                 />
                 {panTooLong && (
                   <p className="text-xs text-red-500">PAN too long</p>
@@ -330,7 +330,9 @@ function AuthContent() {
 export default function AuthPage() {
   return (
     <AuthProvider>
-      <AuthContent />
+      <Suspense fallback={<div>Loading...</div>}>
+        <AuthContent />
+      </Suspense>
     </AuthProvider>
   );
 }

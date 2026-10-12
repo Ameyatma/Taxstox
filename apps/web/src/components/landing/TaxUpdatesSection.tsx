@@ -48,12 +48,12 @@ interface DisplayFact {
 function mapApiUpdate(u: TaxUpdateItem): DisplayUpdate {
   return {
     id: u.id,
-    title: u.title,
-    summary: u.summary_short,
-    category: u.category,
-    publishedDate: u.published_date,
-    url: u.source_url,
-    source: u.source,
+    title: u.title ?? "",
+    summary: u.summary_short ?? "",
+    category: u.category ?? "",
+    publishedDate: u.published_date ?? "",
+    url: u.source_url ?? "",
+    source: u.source ?? "",
   };
 }
 
@@ -347,10 +347,10 @@ export default function TaxUpdatesSection() {
 
   const deadlines: DisplayDeadline[] = apiData?.deadlines?.length
     ? apiData.deadlines.map((d: TaxDeadlineItem) => ({
-        id: d.id, title: d.title, date: d.date, description: d.description,
+        id: d.id, title: d.title, date: d.date, description: d.description ?? "",
       }))
     : fallbackDeadlines.map((d: TaxDeadline) => ({
-        id: d.id, title: d.title, date: d.date, description: d.description,
+        id: d.id, title: d.title, date: d.date, description: d.description ?? "",
       }));
 
   const tips: DisplayTip[] = apiData?.tips?.length
@@ -359,10 +359,10 @@ export default function TaxUpdatesSection() {
 
   const facts: DisplayFact[] = apiData?.facts?.length
     ? apiData.facts.map((f: TaxFactItem) => ({
-        id: f.id, title: f.title, description: f.description, icon: f.icon,
+        id: f.id, title: f.title, description: f.description, icon: f.icon ?? "",
       }))
     : fallbackFacts.map((f: TaxFact) => ({
-        id: f.id, title: f.title, description: f.description, icon: f.icon,
+        id: f.id, title: f.title, description: f.description, icon: f.icon ?? "",
       }));
 
   const lastSynced = apiData?.last_synced;

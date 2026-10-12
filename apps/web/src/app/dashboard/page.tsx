@@ -197,7 +197,7 @@ export default function DashboardPage() {
         if (!pan || !dob) {
           throw new Error("PAN and DOB are required to identify your tax records. Please enter them above.");
         }
-        result = await uploadPDFs(pan, dob, type === "form16" ? file : null, type === "ais" ? file : null, type === "form16" ? passwords.form16 : undefined);
+        result = await uploadPDFs(pan, dob, type === "form16" ? file : undefined, type === "ais" ? file : undefined, type === "form16" ? passwords.form16 : undefined);
       } else {
         throw new Error("Unknown document type");
       }
