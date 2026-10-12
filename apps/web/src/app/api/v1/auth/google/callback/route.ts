@@ -2,53 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * API route to handle Google OAuth callback.
- * This proxies the request to the backend to avoid any issues with Next.js rewrites.
+ * Acts as a transparent proxy: forwards query params to backend,
+ * captures Set-Cookie and Location headers, and redirects client accordingly.
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get the base URL for the backend API
-    let baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-    
-    // Remove trailing slash if present to avoid double slashes
+    const searchParams = request.nextUrl.searchParams;
+
+    // Backend base URL (ensure no trailing slash)
+    let baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://taxstox-api-435349196142.asia-south1.run.app/api/v1";
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.slice(0, -1);
     }
-    
-    // Get the original URL from the request to preserve query parameters
-    const url = new URL(request.url);
-    
-    // Construct the backend URL
-    // We want to go to: {baseUrl}/auth/google/callback{pathAfterCallback}{search}
-    // Where pathAfterCallback is everything after "/api/v1/auth/google/callback" in the original path
-    const pathAfterCallback = url.pathname.replace(/^\/api\/v1\/auth\/google\/callback/, "");
-    const backendUrl = `${baseUrl}/auth/google/callback${pathAfterCallback}${url.search}`;
-    
-    // Forward the request to the backend
-    const backendResponse = await fetch(backendUrl, {
-      method: request.method,
-      headers: request.headers,
+
+    // Forward query params (code, state, etc.) to FastAPI backend
+    const targetUrl = `${baseUrl}/api/v1/auth/google/callback?${searchParams.toString()}`;
+
+    // Fetch from backend with redirect: 'manual' so we can catch cookies and redirect instructions
+    const backendRes = await fetch(targetUrl, {
+      method: 'GET',
+      redirect: 'manual',
+      headers: {
+        'Accept': 'application/json',
+      },
     });
 
-    // Create a new headers object and strip problematic headers
-    const responseHeaders = new Headers(backendResponse.headers);
-    responseHeaders.delete('content-encoding');
-    responseHeaders.delete('content-length');
-    responseHeaders.delete('transfer-encoding');
+    const setCookie = backendRes.headers.get('set-cookie');
+    const location = backendRes.headers.get('location') || '/dashboard';
 
-    // Create a new response to send back to the client
-    const response = new NextResponse(backendResponse.body, {
-      status: backendResponse.status,
-      statusText: backendResponse.statusText,
-      headers: responseHeaders,
-    });
+    // Create the redirect response to the frontend dashboard
+    const response = NextResponse.redirect(new URL(location, request.url), 303);
+
+    // Explicitly pass the session cookie to the client browser
+    if (setCookie) {
+      response.headers.set('set-cookie', setCookie);
+    }
 
     return response;
   } catch (error) {
-    console.error("Error proxying Google OAuth callback:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error('OAuth callback proxy error:', error);
+    return NextResponse.redirect(new URL('/auth?error=OAuthProxyFailed', request.url));
   }
 }
 
