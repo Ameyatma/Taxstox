@@ -4,8 +4,9 @@ import { cookies } from "next/headers";
 /**
  * API route to handle Google OAuth callback with native cookie issuance.
  *
- * Phase 13A.10: Refactored to issue cookies natively on taxstox.com
- * instead of proxying backend Set-Cookie headers.
+ * Phase 13A.12: Fixed cross-site OAuth cookie rejection by using
+ * sameSite: 'none' and secure: true for cookies issued during the
+ * cross-site OAuth redirect from Google to taxstox.com.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -36,24 +37,40 @@ export async function GET(request: NextRequest) {
 
     const data = await backendRes.json();
     const accessToken = data.access_token;
+    const refreshToken = data.refresh_token;
 
     if (!accessToken) {
       throw new Error('No access token returned from backend');
     }
 
-    // 2. Natively set the cookie on taxstox.com using Next.js cookies API
+    // 2. Natively set the cookies on taxstox.com using Next.js cookies API
     const cookieStore = await cookies();
+
+    // Set access/session token (1 week expiry)
     cookieStore.set({
       name: 'session_token', // matches backend TOKEN_COOKIE_NAME
       value: accessToken,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS in production
-      sameSite: 'lax', // allows for top-level navigation
+      secure: true, // Required when sameSite is 'none'
+      sameSite: 'none', // Allows cross-site redirect acceptance from Google
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
     });
 
-    // 3. Redirect user to dashboard with cookie securely attached
+    // Set refresh token if available (7 days expiry to match backend)
+    if (refreshToken) {
+      cookieStore.set({
+        name: 'taxstox_refresh_token', // matches backend REFRESH_TOKEN_COOKIE_NAME
+        value: refreshToken,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+    }
+
+    // 3. Redirect user to dashboard with cookies securely attached
     return NextResponse.redirect(new URL('/dashboard', request.url), 303);
   } catch (error) {
     console.error('OAuth native callback error:', error);
@@ -68,7 +85,7 @@ export async function OPTIONS(request: NextRequest) {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization"
     },
   });
 }
