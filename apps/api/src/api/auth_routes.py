@@ -58,18 +58,18 @@ def _get_frontend_redirect_uri() -> str:
 
 def _set_token_cookies(response: Response, access_token: str, refresh_token: str | None = None) -> Response:
     """Set JWT tokens as httpOnly cookies."""
-    # In production, these settings should use environment variables
-    # For cross-domain OAuth flow through Next.js proxy:
-    # - secure=True enables cookies only over HTTPS
-    # - samesite="Lax" allows cookies for top-level navigations
-    secure = os.environ.get("ENVIRONMENT", "development") == "production"
+    # For cross-site requests (frontend on taxstox.com, backend on different subdomain),
+    # we need SameSite=None and Secure=True so the browser accepts and sends the cookies.
+    # In production, we are always HTTPS. In development, you may need to serve the backend
+    # over HTTPS to make this work.
+    secure = True  # Required when SameSite is None
     response.set_cookie(
         key=TOKEN_COOKIE_NAME,
         value=access_token,
         httponly=True,
         max_age=ACCESS_TOKEN_EXPIRE_HOURS * 3600,
         expires=ACCESS_TOKEN_EXPIRE_HOURS * 3600,
-        samesite="Lax",
+        samesite="none",
         secure=secure,
         path="/",
     )
@@ -82,7 +82,7 @@ def _set_token_cookies(response: Response, access_token: str, refresh_token: str
             httponly=True,
             max_age=REFRESH_TOKEN_EXPIRE_HOURS * 3600,
             expires=REFRESH_TOKEN_EXPIRE_HOURS * 3600,
-            samesite="Lax",
+            samesite="none",
             secure=secure,
             path="/",
         )
@@ -327,19 +327,19 @@ async def reset_password(body: dict):
         raise HTTPException(status_code=400, detail="Email, token, and new password are required.")
 
     if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters.")
 
     from src.db.database import get_user_by_email, update_user_password
 
     user = get_user_by_email(email)
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token.")
 
-    from src.infrastructure.password_reset_repo import PsycopgPasswordResetRepository
-    repo = PsycopgPasswordResetRepository()
+    from src.infrastructure.password_reset_repo import PsocopgPasswordResetRepository
+    repo = PsocopgPasswordResetRepository()
 
     if not repo.verify_and_consume(user["id"], raw_token):
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token.")
 
     # Update password
     update_user_password(user["id"], new_password)
