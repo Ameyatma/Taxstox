@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        // Exclude Google OAuth callback from rewrite so it goes to our API route
+        source: '/api/v1/auth/google/callback',
+        destination: '/api/v1/auth/google/callback', // Handle via Next.js API route
+      },
+      {
         source: '/api/:path*',
         destination: process.env.NEXT_PUBLIC_API_URL
           ? `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`
