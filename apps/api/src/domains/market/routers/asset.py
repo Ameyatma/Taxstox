@@ -37,7 +37,7 @@ def fetch_asset_data(symbol: str) -> Dict[str, Any]:
 
         # Create ticker with .NS suffix to check if it's an Indian stock
         try:
-            ticker_with_suffix = _get_yf_session().Ticker(symbol_with_suffix)
+            ticker_with_suffix = yf.Ticker(symbol_with_suffix, session=_get_yf_session())
             info_with_suffix = ticker_with_suffix.info
 
             # If it's an Indian stock (has proper name and currency INR), use it
@@ -53,7 +53,7 @@ def fetch_asset_data(symbol: str) -> Dict[str, Any]:
         final_symbol = symbol
 
     # Create the ticker with the final symbol
-    ticker = _get_yf_session().Ticker(final_symbol)
+    ticker = yf.Ticker(final_symbol, session=_get_yf_session())
 
     # Get basic info
     info = ticker.info

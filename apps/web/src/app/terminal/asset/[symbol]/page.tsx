@@ -37,8 +37,8 @@ interface Props {
   };
 }
 
-export default function AssetDetailPage({ params }: Props) {
-  const { symbol } = params;
+export default async function AssetDetailPage({ params }: Props) {
+  const { symbol } = await params;
   const [assetData, setAssetData] = useState<AssetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

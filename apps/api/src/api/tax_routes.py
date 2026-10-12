@@ -223,7 +223,7 @@ def _fetch_live_price(ticker: str) -> tuple[float, float] | None:
     if not YFINANCE_AVAILABLE:
         return None
     try:
-        stock = _get_yf_session().Ticker(ticker)
+        stock = yf.Ticker(ticker, session=_get_yf_session())
         info = stock.info
         if info is None:
             return None
