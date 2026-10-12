@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 // Resolve the backend origin (scheme + host) once. We tolerate an env value that
-// is either the bare origin or already carries a trailing `/api/v1` segment, so
-// the same-origin proxy rewrite below can safely append `/api/:path*`.
+// is either the bare origin or already carries a trailing `/api/v1` segment.
 const backendOrigin = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000")
   .trim()
   .replace(/\/+$/, "")
@@ -18,6 +17,7 @@ const nextConfig: NextConfig = {
         destination: '/api/v1/auth/google/callback', // Handle via Next.js API route
       },
       {
+        // Rewrite all other API paths to the backend
         source: '/api/:path*',
         destination: `${backendOrigin}/api/:path*`,
       },
