@@ -67,7 +67,7 @@ export default function Header() {
           {isAuthenticated ? (
             <>
               <Link
-                href="/"
+                href="/dashboard"
                 className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
                 style={{ fontFamily: "var(--font-hanken-grotesk)" }}
               >
@@ -84,7 +84,7 @@ export default function Header() {
           ) : (
             <>
               <Link
-                href="/"
+                href="/dashboard"
                 className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
                 style={{ fontFamily: "var(--font-hanken-grotesk)" }}
               >
