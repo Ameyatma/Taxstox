@@ -458,6 +458,10 @@ async def google_callback(request: Request, response: Response):
     code = request.query_params.get("code")
     error = request.query_params.get("error")
     format_mode = request.query_params.get("format", "browser")
+    # A server-side orchestrator (e.g. the Next.js callback route) may request
+    # the tokens as JSON either via ?format=json or by sending
+    # `Accept: application/json`. Both are honoured.
+    accepts_json = "application/json" in request.headers.get("accept", "").lower()
 
     if error:
         raise HTTPException(status_code=400, detail=f"Google OAuth error: {error}")
@@ -469,7 +473,7 @@ async def google_callback(request: Request, response: Response):
     access_token, refresh_token_raw, user = await _exchange_google_code_for_tokens(code, redirect_uri)
 
     # Server mode: return JSON for Next.js server-side consumption
-    if format_mode == "json":
+    if format_mode == "json" or accepts_json:
         return JSONResponse(content={
             "access_token": access_token,
             "refresh_token": refresh_token_raw,

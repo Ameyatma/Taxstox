@@ -30,7 +30,18 @@ function AuthContent() {
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    // Surface OAuth failures forwarded by the callback route
+    // (e.g. /auth?error=OAuthFailed).
+    const oauthError = searchParams.get("error");
+    if (!oauthError) return "";
+    const messages: Record<string, string> = {
+      OAuthFailed: "Google sign-in failed. Please try again.",
+      MissingOAuthCode: "Google sign-in was cancelled or returned no code. Please try again.",
+      OAuthProxyException: "Google sign-in failed. Please try again.",
+    };
+    return messages[oauthError] || `Google sign-in failed (${oauthError}).`;
+  });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 

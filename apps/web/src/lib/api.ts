@@ -1,9 +1,15 @@
 /** TaxStox API client — communicates with the FastAPI backend. */
 
-/** Resolve the backend base URL. Use this for any direct fetch so we never
- *  duplicate the `NEXT_PUBLIC_API_URL || localhost` fallback across files. */
+/** Resolve the backend base path for API calls.
+ *
+ *  API calls are always issued against the *same origin* (`/api/v1/...`) and are
+ *  proxied to the FastAPI backend by the rewrites in `next.config.ts`. This is
+ *  required for cookie-based auth: the Google OAuth callback mints httpOnly
+ *  session cookies on the frontend domain (taxstox.com), and those cookies are
+ *  only transmitted on same-origin requests — a cross-origin backend such as
+ *  `*.run.app` would never receive them. */
 export function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  return "/api/v1";
 }
 
 /** Optional handler for 401 Unauthorized responses from authenticated endpoints.
