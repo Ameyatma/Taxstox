@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { exportITR, processPDFs, type TaxSummaryData, type ExportData } from "@/lib/api";
+import { exportITR, processPDFs, getApiBase, type TaxSummaryData, type ExportData } from "@/lib/api";
 import { getState, setState } from "@/lib/store";
 
 // ────────────────────────────────────────────────────────────────────────
@@ -84,7 +84,9 @@ function SummaryContent() {
     if (!sessionId) return;
     const filename = `${pan}_ITR-2_AY${ayFilenameSuffix()}.json`;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/tax/export/${sessionId}`, {
+    // Same-origin request so the httpOnly session cookie (issued on this
+    // domain) is transmitted; a cross-origin backend would never receive it.
+    const res = await fetch(`${getApiBase()}/tax/export/${sessionId}`, {
       credentials: "include",
     });
 
