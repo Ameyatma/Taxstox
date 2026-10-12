@@ -29,16 +29,17 @@ export async function GET(request: NextRequest) {
       headers: request.headers,
     });
 
+    // Create a new headers object and strip problematic headers
+    const responseHeaders = new Headers(backendResponse.headers);
+    responseHeaders.delete('content-encoding');
+    responseHeaders.delete('content-length');
+    responseHeaders.delete('transfer-encoding');
+
     // Create a new response to send back to the client
     const response = new NextResponse(backendResponse.body, {
       status: backendResponse.status,
       statusText: backendResponse.statusText,
-    });
-
-    // Copy all headers from the backend response
-    // Important: We need to copy Set-Cookie headers to maintain authentication
-    backendResponse.headers.forEach((value, key) => {
-      response.headers.set(key, value);
+      headers: responseHeaders,
     });
 
     return response;
