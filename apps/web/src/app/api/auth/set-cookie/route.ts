@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/request";
 
 /**
  * Set httpOnly auth cookies on the frontend origin.
  * Called by the Google OAuth handoff page after receiving tokens in query string.
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const { access_token, refresh_token, redirect } = await request.json();
 

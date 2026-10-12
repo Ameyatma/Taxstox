@@ -180,3 +180,145 @@ export async function exportTaxReturn(
 
   return res.json();
 }
+
+export async function exportITR(
+  sessionId: string,
+  format: string = "json"
+): Promise<{ downloadUrl: string }> {
+  const res = await fetchApi(`${getApiBase()}/tax/${sessionId}/export/${format}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to export ITR");
+  }
+
+  return res.json();
+}
+
+export async function fetchPortfolio(
+  userId: string
+): Promise<{ holdings: Array<{ symbol: string; name: string; quantity: number }> }> {
+  const res = await fetchApi(`${getApiBase()}/portfolio/${userId}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to fetch portfolio");
+  }
+
+  return res.json();
+}
+
+export async function fetchRecommendations(
+  userId: string
+): Promise<{ recommendations: Array<{ symbol: string; name: string; type: string }> }> {
+  const res = await fetchApi(`${getApiBase()}/recommendations/${userId}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to fetch recommendations");
+  }
+
+  return res.json();
+}
+
+export async function fetchTaxInsights(
+  userId: string
+): Promise<{ insights: Array<{ type: string; value: string }> }> {
+  const res = await fetchApi(`${getApiBase()}/tax-insights/${userId}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to fetch tax insights");
+  }
+
+  return res.json();
+}
+
+export async function getTaxHarvesting(
+  userId: string
+): Promise<{ harvesting: Array<{ symbol: string; gainLoss: string }> }> {
+  const res = await fetchApi(`${getApiBase()}/tax/harvesting/${userId}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to get tax harvesting");
+  }
+
+  return res.json();
+}
+
+export async function processPDFs(
+  sessionId: string,
+  files: File[]
+): Promise<{ processed: boolean }> {
+  const formData = new FormData();
+  files.forEach(file => formData.append("files", file));
+  formData.append("sessionId", sessionId);
+
+  const res = await fetchApi(`${getApiBase()}/process-pdfs`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to process PDFs");
+  }
+
+  return res.json();
+}
+
+export async function submitAnswers(
+  sessionId: string,
+  answers: Record<string, string>
+): Promise<{ success: boolean }> {
+  const res = await fetchApi(`${getApiBase()}/answers/${sessionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(answers),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to submit answers");
+  }
+
+  return res.json();
+}
+
+export async function uploadBrokerPL(
+  sessionId: string,
+  file: File
+): Promise<{ success: boolean }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("sessionId", sessionId);
+
+  const res = await fetchApi(`${getApiBase()}/upload-broker-pl`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to upload broker PL");
+  }
+
+  return res.json();
+}
+
+export async function uploadPDFs(
+  sessionId: string,
+  files: File[]
+): Promise<{ success: boolean }> {
+  const formData = new FormData();
+  files.forEach(file => formData.append("files", file));
+  formData.append("sessionId", sessionId);
+
+  const res = await fetchApi(`${getApiBase()}/upload-pdfs`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to upload PDFs");
+  }
+
+  return res.json();
+}

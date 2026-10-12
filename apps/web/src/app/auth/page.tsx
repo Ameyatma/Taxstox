@@ -3,7 +3,7 @@
 import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth";
+import { useAuth, AuthProvider } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
 
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -15,7 +15,7 @@ function AuthContent() {
 
   const { signIn, signUp, signInWithToken } = useAuth();
 
-  const [activeTab, setActiveTab] = setActiveTab || useState<"signup" | "signin">("signup");
+  const [activeTab, setActiveTab] = useState<"signup" | "signin">("signup");
 
   // Sign Up
   const [pan, setPan] = useState("");
@@ -45,11 +45,7 @@ function AuthContent() {
 
     setLoading(true);
     try {
-      const result = await signUp(email, password, pan, name, dob);
-      // Store the access token for API calls
-      if (result.accessToken) {
-        localStorage.setItem("taxstox_access_token", result.accessToken);
-      }
+      await signUp(email, password, pan, name, dob);
       router.push(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed.");
@@ -62,11 +58,7 @@ function AuthContent() {
     if (!loginEmail || !loginPassword) { setError("Email and password are required."); return; }
     setLoading(true);
     try {
-      const result = await signIn(loginEmail, loginPassword);
-      // Store the access token for API calls
-      if (result.accessToken) {
-        localStorage.setItem("taxstox_access_token", result.accessToken);
-      }
+      await signIn(loginEmail, loginPassword);
       router.push(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
@@ -173,7 +165,7 @@ function AuthContent() {
           {activeTab === "signup" ? (
             <>
               <div className="space-y-3">
-                <label className={labelCell}>PAN</label>
+                <label className={labelClass}>PAN</label>
                 <input
                   type="text"
                   value={pan}
@@ -191,7 +183,7 @@ function AuthContent() {
               </div>
 
               <div className="space-y-3">
-                <label className={labelCell}>Date of Birth</label>
+                <label className={labelClass}>Date of Birth</label>
                 <input
                   type="date"
                   value={dob}
@@ -202,7 +194,7 @@ function AuthContent() {
               </div>
 
               <div className="space-y-3">
-                <label className={labelCell}>Name</label>
+                <label className={labelClass}>Name</label>
                 <input
                   type="text"
                   value={name}
@@ -213,7 +205,7 @@ function AuthContent() {
               </div>
 
               <div className="space-y-3">
-                <label className={labelCell}>Email</label>
+                <label className={labelClass}>Email</label>
                 <input
                   type="email"
                   value={email}
@@ -224,7 +216,7 @@ function AuthContent() {
               </div>
 
               <div className="space-y-3">
-                <label className={labelCell}>Password</label>
+                <label className={labelClass}>Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -246,7 +238,7 @@ function AuthContent() {
           ) : (
             <>
               <div className="space-y-3">
-                <label className={labelCell}>Email</label>
+                <label className={labelClass}>Email</label>
                 <input
                   type="email"
                   value={loginEmail}
@@ -257,7 +249,7 @@ function AuthContent() {
               </div>
 
               <div className="space-y-3">
-                <label className={labelCell}>Password</label>
+                <label className={labelClass}>Password</label>
                 <div className="relative">
                   <input
                     type={showLoginPassword ? "text" : "password"}
@@ -305,14 +297,14 @@ function AuthContent() {
               <div className="h-0.5 w-full bg-[#E2E8F0]" />
               <span className="text-xs text-[#434652]">Or continue with</span>
               <div className="h-0.5 w-full bg-[#E2E8F0]" />
-            </>
+            </div>
           )}
 
           {/* ── Error Message ─────────────────────────────────────── */}
           {error && (
             <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700">
               {error}
-            </>
+            </div>
           )}
         </div>
       </div>
