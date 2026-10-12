@@ -57,14 +57,19 @@ def _get_frontend_redirect_uri() -> str:
 
 def _set_token_cookies(response: Response, access_token: str, refresh_token: str | None = None) -> Response:
     """Set JWT tokens as httpOnly cookies."""
+    # In production, these settings should use environment variables
+    # For cross-domain OAuth flow through Next.js proxy:
+    # - secure=True enables cookies only over HTTPS
+    # - samesite="Lax" allows cookies for top-level navigations
+    secure = os.environ.get("ENVIRONMENT", "development") == "production"
     response.set_cookie(
         key=TOKEN_COOKIE_NAME,
         value=access_token,
         httponly=True,
         max_age=ACCESS_TOKEN_EXPIRE_HOURS * 3600,
         expires=ACCESS_TOKEN_EXPIRE_HOURS * 3600,
-        samesite="Strict",
-        secure=False,  # Set to True in production via environment
+        samesite="Lax",
+        secure=secure,
         path="/",
     )
     if refresh_token:
@@ -76,8 +81,8 @@ def _set_token_cookies(response: Response, access_token: str, refresh_token: str
             httponly=True,
             max_age=REFRESH_TOKEN_EXPIRE_HOURS * 3600,
             expires=REFRESH_TOKEN_EXPIRE_HOURS * 3600,
-            samesite="Strict",
-            secure=False,  # Set to True in production via environment
+            samesite="Lax",
+            secure=secure,
             path="/",
         )
     return response

@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
 
     // Explicitly pass the session cookie to the client browser
     if (setCookie) {
-      response.headers.set('set-cookie', setCookie);
+      // Strip domain constraints so the browser binds it to taxstox.com
+      const cleanedCookie = setCookie.replace(/Domain=[^;]+(;|$)/gi, '');
+      response.headers.set('set-cookie', cleanedCookie);
     }
 
     return response;
