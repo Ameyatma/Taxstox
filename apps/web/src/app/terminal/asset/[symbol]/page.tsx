@@ -1,18 +1,12 @@
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 export default async function AssetPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
-  const cookieStore = await cookies();
-  const token = cookieStore.get('taxstox_token')?.value;
-
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://taxstox-api-435349196142.asia-south1.run.app/api/v1";
 
   try {
-    const res = await fetch(`${backendUrl}/api/v1/market/asset/${symbol}`, {
+    const res = await fetch(`/api/v1/market/asset/${symbol}`, {
       headers: {
         'Accept': 'application/json',
-        'Cookie': `taxstox_token=${token || ''}`,
       },
       cache: 'no-store',
     });
