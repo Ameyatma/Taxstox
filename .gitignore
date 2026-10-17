@@ -45,3 +45,6 @@ apps/api/tests/fixtures/
 *.log
 logs/
 PLAN_PRRP_DEFER_001.md
+
+# Next.js auto-generated agent rules
+AGENTS.md
