@@ -4,11 +4,94 @@ import yfinance as yf
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from sqlalchemy import or_
+
+from src.domains.market.storage.database import get_db_session
+from src.domains.market.storage.models import Stock
 
 router = APIRouter()
 
 # We'll use a thread pool to run yfinance calls because they are blocking
 executor = ThreadPoolExecutor(max_workers=5)
+
+
+def _score(candidate_ticker: str, candidate_name: str, needle: str) -> int:
+    """Relevance score for a search candidate. Lower is better.
+
+    Exact ticker > bare ticker == needle > bare ticker prefix > name prefix >
+    name contains. The bare ticker is the part before the exchange suffix
+    (e.g. "HDFCBANK" from "HDFCBANK.NS").
+    """
+    t = (candidate_ticker or "").upper()
+    n = (candidate_name or "").upper()
+    bare = t.split(".")[0]
+    if t == needle:
+        return 0
+    if bare == needle:
+        return 1
+    if bare.startswith(needle):
+        return 2
+    if n.startswith(needle):
+        return 3
+    return 4
+
+
+def _resolve_symbol(symbol: str) -> str:
+    """Resolve a user-typed symbol to its canonical yfinance ticker.
+
+    Users type short forms and company names — "HDFC", "MAHINDRA", "RELIANCE" —
+    none of which are valid yfinance tickers on their own. Without this, the
+    asset endpoint passes the raw string to yfinance, which returns 404 and
+    the page shows "Could not load asset data".
+
+    Resolution order:
+      1. Already canonical (contains a dot or .NS/.BO suffix) — return as-is.
+      2. Exact ticker match in the stocks table.
+      3. Ticker stored with a suffix we can append ("HDFC" -> "HDFCBANK.NS").
+      4. Company-name match ("MAHINDRA" -> "M&M.NS").
+      5. No match — return the input unchanged so the caller can still try
+         yfinance with it (US stocks, unseeded symbols, etc.).
+    """
+    needle = symbol.strip().upper()
+    if not needle:
+        return symbol
+
+    # Already canonical — contains an exchange suffix or a dot.
+    if "." in needle or needle.endswith("NS") or needle.endswith("BO"):
+        return symbol
+
+    with get_db_session() as session:
+        # 2. Exact ticker match.
+        exact = session.query(Stock).filter(Stock.ticker == needle).first()
+        if exact:
+            return exact.ticker
+
+        # 3. Ticker stored with a suffix we can append.
+        suffix_hits = (
+            session.query(Stock)
+            .filter(
+                or_(
+                    Stock.ticker == f"{needle}.NS",
+                    Stock.ticker == f"{needle}.BO",
+                )
+            )
+            .all()
+        )
+        if suffix_hits:
+            suffix_hits.sort(key=lambda s: (_score(s.ticker, s.name, needle), len(s.ticker)))
+            return suffix_hits[0].ticker
+
+        # 4. Company-name match, ranked by relevance.
+        name_hits = (
+            session.query(Stock)
+            .filter(Stock.name.ilike(f"%{needle}%"))
+            .all()
+        )
+        if name_hits:
+            name_hits.sort(key=lambda s: (_score(s.ticker, s.name, needle), len(s.ticker)))
+            return name_hits[0].ticker
+
+    return symbol
 
 # Create a session with browser headers to avoid yfinance blocking
 _yf_session = None
@@ -194,11 +277,21 @@ async def get_asset(
 ):
     """
     Get asset data including price, fundamentals, performance, and analyst consensus.
+
+    Accepts both canonical tickers ("HDFCBANK.NS") and the short forms / company
+    names users actually type ("HDFC", "MAHINDRA"). The latter are resolved to
+    their canonical ticker against the stocks table before yfinance is called,
+    so a direct URL like /terminal/asset/HDFC works instead of 404-ing.
     """
     try:
+        canonical = _resolve_symbol(symbol)
         # Run the blocking yfinance call in a thread
         loop = asyncio.get_event_loop()
-        data = await loop.run_in_executor(executor, fetch_asset_data, symbol)
+        data = await loop.run_in_executor(executor, fetch_asset_data, canonical)
+        # Surface the canonical ticker the caller typed in the response, so the
+        # UI breadcrumb shows "HDFC" rather than the resolved "HDFCBANK.NS".
+        if canonical != symbol:
+            data["requested_symbol"] = symbol
         return data
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Asset data not found for symbol '{symbol}': {str(e)}")
