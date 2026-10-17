@@ -3,7 +3,19 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   async rewrites() {
-    return [];
+    return [
+      {
+        // Exclude Google OAuth callback from rewrite so it goes to our API route
+        source: '/api/v1/auth/google/callback',
+        destination: '/api/v1/auth/google/callback', // Handle via Next.js API route
+      },
+      {
+        source: '/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`
+          : 'https://taxstox-api-435349196142.asia-south1.run.app/api/:path*',
+      },
+    ];
   }
 };
 
