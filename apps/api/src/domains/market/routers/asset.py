@@ -37,8 +37,12 @@ def fetch_asset_data(symbol: str) -> Dict[str, Any]:
 
         # Create ticker with .NS suffix to check if it's an Indian stock
         try:
-            ticker_with_suffix = yf.Ticker(symbol_with_suffix, session=_get_yf_session())
+            # Use the session properly as the second argument to yf.Ticker
+            session_obj = _get_yf_session()
+            ticker_with_suffix = yf.Ticker(symbol_with_suffix, session=session_obj)
             info_with_suffix = ticker_with_suffix.info
+            # log the symbols for debugging
+            print(f"DEBUG: Created ticker_with_suffix for {symbol_with_suffix}: {ticker_with_suffix.info.get('symbol', 'unknown')}")
 
             # If it's an Indian stock (has proper name and currency INR), use it
             # If not, try without the .NS suffix for US stocks
@@ -53,10 +57,14 @@ def fetch_asset_data(symbol: str) -> Dict[str, Any]:
         final_symbol = symbol
 
     # Create the ticker with the final symbol
-    ticker = yf.Ticker(final_symbol, session=_get_yf_session())
+    session_obj = _get_yf_session()
+    ticker = yf.Ticker(final_symbol, session=session_obj)
+    print(f"DEBUG: Created ticker for {final_symbol}: {ticker.info.get('symbol', 'unknown')}")
 
     # Get basic info
+    print(f"DEBUG: About to fetch info for symbol {final_symbol}")
     info = ticker.info
+    print(f"DEBUG: Fetched info, keys: {list(info.keys())}")
     # Clean the info dict: replace NaN with None
     import math
     cleaned_info = {}

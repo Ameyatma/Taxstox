@@ -1,4 +1,5 @@
 {
+  "outputDirectory": ".next",
   "rewrites": [
     { "source": "/api/v1/auth/google/callback", "destination": "/api/v1/auth/google/callback" },
     { "source": "/api/:path*", "destination": "https://taxstox-api-435349196142.asia-south1.run.app/api/:path*" }
