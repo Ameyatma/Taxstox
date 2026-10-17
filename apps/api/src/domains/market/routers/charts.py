@@ -1,11 +1,66 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any
-from sqlalchemy import asc
+from sqlalchemy import asc, or_
 
 from src.domains.market.storage.database import get_db_session
-from src.domains.market.storage.models import EODCandle, NewsCatalyst
+from src.domains.market.storage.models import EODCandle, NewsCatalyst, Stock
 
 router = APIRouter()
+
+
+@router.get("/search", response_model=List[Dict[str, Any]])
+async def search_stocks(
+    q: str = Query(..., min_length=1, description="Search query (symbol or company name)"),
+    limit: int = Query(10, ge=1, le=50, description="Max results to return"),
+):
+    """Search the stock universe by ticker or company name.
+
+    Results are ranked best-match-first using a simple relevance score:
+    exact ticker prefix match > ticker contains > name contains. The
+    caller can cap the result set with `limit` (default 10, max 50).
+    """
+    needle = q.strip().upper()
+    if not needle:
+        return []
+
+    with get_db_session() as session:
+        # Pull a generous candidate pool, then rank in Python so the
+        # ordering stays predictable and easy to tune.
+        candidates = (
+            session.query(Stock)
+            .filter(
+                or_(
+                    Stock.ticker.ilike(f"{needle}%"),
+                    Stock.ticker.ilike(f"%{needle}%"),
+                    Stock.name.ilike(f"%{needle}%"),
+                )
+            )
+            .all()
+        )
+
+    def _score(stock: Stock) -> int:
+        ticker = (stock.ticker or "").upper()
+        name = (stock.name or "").upper()
+        if ticker == needle:
+            return 0
+        if ticker.startswith(needle):
+            return 1
+        if name.startswith(needle):
+            return 2
+        return 3
+
+    ranked = sorted(candidates, key=_score)
+    return [
+        {
+            "symbol": s.ticker,
+            "company_name": s.name or s.ticker,
+            "exchange": s.exchange,
+            "sector": s.sector,
+            "industry": s.industry,
+        }
+        for s in ranked[:limit]
+    ]
+
 
 @router.get("/{symbol}/chart")
 async def get_chart_data(symbol: str) -> Dict[str, Any]:

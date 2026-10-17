@@ -17,6 +17,7 @@ class Stock(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     ticker = Column(String(10), unique=True, nullable=False, index=True)
+    name = Column(String(255), nullable=True)
     exchange = Column(String(50))
     sector = Column(String(100))
     industry = Column(String(100))
