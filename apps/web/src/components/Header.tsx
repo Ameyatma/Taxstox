@@ -2,9 +2,17 @@
 
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const { isAuthenticated, user, signOut } = useAuth();
+  const pathname = usePathname();
+
+  // Active-tab logic: highlight the nav entry whose path matches the current
+  // route. Without this, /terminal/... always rendered "Tax Workspace" as the
+  // active tab because the underline was hardcoded onto the /dashboard link.
+  const isActive = (href: string) =>
+    pathname === href || pathname?.startsWith(href + "/");
 
   return (
     <>
@@ -68,14 +76,22 @@ export default function Header() {
             <>
               <Link
                 href="/dashboard"
-                className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                className={
+                  isActive("/dashboard")
+                    ? "text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                    : "text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                }
                 style={{ fontFamily: "var(--font-hanken-grotesk)" }}
               >
                 Tax Workspace
               </Link>
               <Link
                 href="/terminal"
-                className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                className={
+                  isActive("/terminal")
+                    ? "text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                    : "text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                }
                 style={{ fontFamily: "var(--font-hanken-grotesk)" }}
               >
                 Market Terminal
@@ -85,14 +101,22 @@ export default function Header() {
             <>
               <Link
                 href="/dashboard"
-                className="text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                className={
+                  isActive("/dashboard")
+                    ? "text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                    : "text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                }
                 style={{ fontFamily: "var(--font-hanken-grotesk)" }}
               >
                 Tax Workspace
               </Link>
               <Link
                 href="/auth"
-                className="text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                className={
+                  isActive("/auth")
+                    ? "text-sm font-medium text-[#0b1c30] border-b-2 border-[#003366]"
+                    : "text-sm font-medium text-[#434652] hover:text-[#003366] transition-colors"
+                }
                 style={{ fontFamily: "var(--font-hanken-grotesk)" }}
               >
                 Sign In
